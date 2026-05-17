@@ -1,0 +1,157 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #fff7fa, #f8d6e1);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #333;
+}
+
+.PrimeiroBlocoDados {
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    border: 1px solid #f1d6e3;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 24px rgba(182, 92, 138, 0.08);
+
+    display: flex;
+    align-items: center;
+}
+
+.TextoHeader {
+    display: flex;
+    flex-direction: column;
+}
+
+.PrimeiroBlocoDados a {
+    margin-left: auto;
+    text-decoration: none;
+    background: white;
+    color: #b5336c;
+    border: 1px solid #e8ccd8;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.PrimeiroBlocoDados a:hover {
+    background: #fff5f9;
+}
+
+.PrimeiroBlocoDados h1 {
+    font-size: 42px;
+    margin-bottom: 10px;
+    color: #1f1f1f;
+}
+
+.PrimeiroBlocoDados p {
+    color: #666;
+}
+
+form div,
+.SegundoBlocoDados {
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    border: 1px solid #f1d6e3;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 24px rgba(182, 92, 138, 0.08);
+}
+
+h2 {
+    margin-bottom: 20px;
+    color: #1f1726;
+}
+
+form p {
+    margin-bottom: 8px;
+    margin-top: 15px;
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e8ccd8;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+button {
+    padding: 12px 22px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d94f8a, #b5336c);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 15px;
+    margin-right: 10px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+thead,
+th {
+    background: #fffafc;
+}
+
+th {
+    padding: 16px;
+    text-align: left;
+    color: #8f6c7c;
+    border-bottom: 1px solid #f0d7e3;
+}
+
+td {
+    padding: 16px;
+    border-bottom: 1px solid #f5e4ec;
+}
+
+tr:hover {
+    background: #fff9fc;
+}
+
+@media (max-width: 768px) {
+
+    .PrimeiroBlocoDados {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .PrimeiroBlocoDados a {
+        margin-left: 0;
+    }
+
+    .PrimeiroBlocoDados h1 {
+        font-size: 30px;
+    }
+
+    button {
+        width: 100%;
+        margin-right: 0;
+    }
+}

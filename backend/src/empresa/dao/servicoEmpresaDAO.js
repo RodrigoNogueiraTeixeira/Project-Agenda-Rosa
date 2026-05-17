@@ -1,0 +1,106 @@
+const { run, get, all } = require("../../config/database");
+
+function selecionarCamposServico() {
+  return `SELECT
+    id,
+    empresa_id AS empresaId,
+    nome,
+    categoria,
+    preco_centavos AS precoCentavos,
+    duracao_minutos AS duracaoMinutos,
+    descricao,
+    status,
+    criado_em AS criadoEm,
+    atualizado_em AS atualizadoEm
+  FROM servicos`;
+}
+
+async function listarPorEmpresa(empresaId) {
+  return all(
+    `${selecionarCamposServico()}
+    WHERE empresa_id = ?
+    ORDER BY nome`,
+    [empresaId]
+  );
+}
+
+async function buscarPorId(id, empresaId) {
+  return get(
+    `${selecionarCamposServico()}
+    WHERE id = ? AND empresa_id = ?`,
+    [id, empresaId]
+  );
+}
+
+async function criar(dados) {
+  const resultado = await run(
+    `INSERT INTO servicos (
+      empresa_id,
+      nome,
+      categoria,
+      preco_centavos,
+      duracao_minutos,
+      descricao,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      dados.empresaId,
+      String(dados.nome).trim(),
+      String(dados.categoria).trim(),
+      dados.precoCentavos,
+      dados.duracaoMinutos,
+      dados.descricao ? String(dados.descricao).trim() : null,
+      dados.status,
+    ]
+  );
+
+  return buscarPorId(resultado.lastID, dados.empresaId);
+}
+
+async function atualizar(id, dados) {
+  const resultado = await run(
+    `UPDATE servicos
+    SET
+      nome = ?,
+      categoria = ?,
+      preco_centavos = ?,
+      duracao_minutos = ?,
+      descricao = ?,
+      status = ?,
+      atualizado_em = CURRENT_TIMESTAMP
+    WHERE id = ? AND empresa_id = ?`,
+    [
+      String(dados.nome).trim(),
+      String(dados.categoria).trim(),
+      dados.precoCentavos,
+      dados.duracaoMinutos,
+      dados.descricao ? String(dados.descricao).trim() : null,
+      dados.status,
+      id,
+      dados.empresaId,
+    ]
+  );
+
+  if (resultado.changes === 0) {
+    return null;
+  }
+
+  return buscarPorId(id, dados.empresaId);
+}
+
+async function excluir(id, empresaId) {
+  const resultado = await run(
+    "DELETE FROM servicos WHERE id = ? AND empresa_id = ?",
+    [id, empresaId]
+  );
+
+  return resultado.changes > 0;
+}
+
+module.exports = {
+  listarPorEmpresa,
+  buscarPorId,
+  criar,
+  atualizar,
+  excluir,
+};

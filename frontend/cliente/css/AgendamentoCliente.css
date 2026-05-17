@@ -1,0 +1,212 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--fonte-principal);
+}
+
+body.pagina-agendamentos {
+  background: #faeef5; /* Fundo mais claro e suave do mockup */
+  color: #1f1830;
+}
+
+.container-agendamentos {
+  width: min(1080px, calc(100% - 40px));
+  margin: 14px auto 34px;
+}
+
+.cabecalho-agendamentos {
+  background: #f6f1f4;
+  border: 1px solid #e7bfd1;
+  border-radius: 18px;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cabecalho-agendamentos h1 {
+  font-size: clamp(2rem, 2.5vw, 2.9rem);
+  margin-bottom: 6px;
+}
+
+.cabecalho-agendamentos p {
+  color: #54495f;
+  font-size: 1.05rem;
+}
+
+.btn-voltar {
+  text-decoration: none;
+  border: 1px solid #e7bfd1;
+  border-radius: 8px;
+  color: #a02c61;
+  font-weight: 600;
+  background: #fff;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.btn-voltar:hover {
+  background: #fdf5f9;
+}
+
+.resumo-agendamentos {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.card-resumo {
+  background: #fff;
+  border: 1px solid #f0dae6;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(201, 63, 125, 0.03);
+}
+
+.card-resumo span {
+  display: block;
+  color: #8c7e96;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.card-resumo strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.6rem;
+}
+
+.lista-agendamentos {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-agendamento {
+  background: #fff;
+  border: 1px solid #f0dae6;
+  border-left: 6px solid #c93f7d;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(201, 63, 125, 0.03);
+}
+
+.dados-agendamento {
+  display: grid;
+  grid-template-columns: 1.15fr 1.2fr 1fr 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.dados-agendamento span {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c7e96;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 5px;
+}
+
+.dados-agendamento strong {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #2c2428;
+}
+
+.status-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 8px 14px;
+}
+
+.status-agendado {
+  background: #f1d4e2;
+}
+
+.status-concluido {
+  background: #cee4d4;
+}
+
+.status-cancelado {
+  background: #e8e9ed;
+}
+
+.status-pendente {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.btn-acao-card {
+  border: 1px solid #f0dae6;
+  border-radius: 8px;
+  padding: 8px 16px;
+  background: #fff;
+  color: #8c7e96;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-acao-card:hover {
+  background: #fdf5f9;
+  border-color: #e7bfd1;
+}
+
+.btn-acao-card.btn-cancelar {
+  color: #c93f7d;
+  border-color: #f7e6ef;
+}
+
+.btn-acao-card.btn-cancelar:hover {
+  background: #fff0f5;
+  border-color: #c93f7d;
+}
+
+/* Arredondamento do SweetAlert2 */
+.swal2-borda-arredondada {
+  border-radius: 20px !important;
+}
+
+@media (max-width: 1000px) {
+  .dados-agendamento {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .container-agendamentos {
+    width: min(1080px, calc(100% - 20px));
+    margin-top: 10px;
+  }
+
+  .cabecalho-agendamentos {
+    padding: 14px;
+    border-radius: 14px;
+    flex-direction: column;
+  }
+
+  .resumo-agendamentos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dados-agendamento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .resumo-agendamentos,
+  .dados-agendamento {
+    grid-template-columns: 1fr;
+  }
+}

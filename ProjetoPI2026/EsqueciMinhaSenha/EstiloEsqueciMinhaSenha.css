@@ -1,0 +1,105 @@
+:root {
+    --rosa-50: #fff6fa;
+    --rosa-100: #fde8f1;
+    --rosa-principal: #f7d5eb;
+    --rosa-botao: #db5a8e;
+}
+
+body {
+    background-color: var(--rosa-principal);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+main {
+    background-color: #fff;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 450px;
+    text-align: left;
+}
+
+main h1 {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+main h2 {
+    font-size: 14px;
+    font-weight: normal;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+main p {
+    font-size: 13px;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 8px;
+    margin-top: 15px;
+}
+
+select, input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 14px;
+    color: #666;
+}
+
+.CamposObrigatorios {
+    background-color: var(--rosa-50);
+    border: 1px solid #f9dbe7;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-top: 15px;
+}
+
+.CamposObrigatorios p {
+    font-size: 12px;
+    color: #886070;
+    font-weight: normal;
+    margin: 0;
+    line-height: 1.4;
+}
+
+button {
+    width: 100%;
+    margin-top: 30px;
+    padding: 14px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    border: none;
+    background-color: var(--rosa-botao);
+    color: white;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #c44d7a;
+}
+
+.VoltarLogin {
+    display: inline-block;
+    margin-top: 15px;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+    color: var(--rosa-botao);
+}
+
+.VoltarLogin:hover {
+    text-decoration: underline;
+}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorias de serviço</title>
+
+    <link rel="stylesheet" href="EstiloCategoriaServicos.css">
+</head>
+<body>
+    
+<div class="PrimeiroBlocoDados">
+   
+    <header>
+    <h1>Categoria de serviços</h1>
+    <p>Cadastro e gerenciamento das categorias do sistema.</p>
+    </header>
+    <a href="../DashboardAdm/Dashboard.html">Voltar</a>
+</div>
+
+<div class="SegundoBlocoDados">
+    <h1>Cadastros de categoria</h1>
+    <p>Nome da categoria</p>
+    <input type="text" name="NomeCategoria" id="NomeCategoria">
+<br>
+    <p>Descrição</p>
+    <input type="text" name="DescricaoBloco" id="DescricaoBloco">
+
+    <p>Ativa/Inativa</p>
+    <select name="SeletorAtividade" id="SeletorAtividade">
+        <option value="Ativa">Ativa</option>
+        <option value="Inativa">Inativa</option>
+    </select>
+
+    <button class="CadastrarCategoria" id="btnCadastrarCategoria">Cadastrar Categoria</button>
+</div>
+
+<div class="TerceiroBlocoDados">
+
+     <table>
+            <thead> 
+                <tr>
+                    <th>Nome da categoria</th>
+                    <th>Descrição</th>
+                    <th>Ativa/Inativa</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-categorias">
+                <!-- Linhas geradas pelo JS -->
+            </tbody>
+        </table>
+</div>
+<script src="CategoriaServicos.js"></script>
+</body>
+</html>

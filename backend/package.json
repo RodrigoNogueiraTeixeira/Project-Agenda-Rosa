@@ -1,0 +1,17 @@
+{
+  "name": "agendarosa-backend-node",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend Node + Express + SQLite do Agenda Rosa",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "sqlite3": "^6.0.1"
+  }
+}

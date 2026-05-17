@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda Rosa | Bloqueio de Horários</title>
+  <link rel="stylesheet" href="../css/bloqueio-de-horarios.css">
+</head>
+<body>
+
+  <main class="container">
+
+    <header class="page-header">
+      <div>
+        <h1>Bloqueio de Horários</h1>
+        <p>Cadastro de indisponibilidades pontuais.</p>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Registrar bloqueio</h2>
+
+      <form id="form-bloqueio-horario">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="data-bloqueio">Data</label>
+            <input type="date" id="data-bloqueio" name="data-bloqueio">
+          </div>
+
+          <div class="form-group">
+            <label for="bloqueio-profissional">Profissional</label>
+            <select id="bloqueio-profissional" name="profissional">
+              <option value="">Carregando profissionais...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="bloqueio-horario-inicial">Horário inicial</label>
+            <input type="time" id="bloqueio-horario-inicial" name="bloqueio-horario-inicial">
+          </div>
+
+          <div class="form-group">
+            <label for="bloqueio-horario-final">Horário final</label>
+            <input type="time" id="bloqueio-horario-final" name="bloqueio-horario-final">
+          </div>
+
+          <div class="form-group full">
+            <label for="motivo-bloqueio">Motivo do bloqueio</label>
+            <textarea id="motivo-bloqueio" name="motivo-bloqueio"></textarea>
+          </div>
+        </div>
+
+        <button type="submit">Bloquear horário</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Horários bloqueados</h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Horário inicial</th>
+              <th>Horário final</th>
+              <th>Motivo do bloqueio</th>
+              <th>Profissional</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td colspan="6">Carregando bloqueios...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="back-button">
+      <a href="home-empresa.html">Voltar</a>
+    </div>
+
+  </main>
+
+  <script src="../js/bloqueio-horarios.js"></script>
+</body>
+</html>

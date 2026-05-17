@@ -1,0 +1,242 @@
+﻿/* 1) Reset basico:
+   padroniza calculo de largura e remove margens padrao do navegador. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+/* 2) Layout da pagina:
+   usa flex em coluna e centraliza o cartao no meio da tela.
+   o fundo usa gradientes para dar o visual rosa suave. */
+body {
+  font-family: var(--fonte-principal);
+  color: var(--neutro-900);
+  line-height: 1.4;
+  background:
+    radial-gradient(circle at 12% 10%, var(--rosa-100), transparent 35%),
+    radial-gradient(circle at 88% 100%, var(--rosa-200), transparent 30%),
+    var(--rosa-50);
+  display: flex;                                        
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--espaco-6) var(--espaco-3) var(--espaco-3);
+}
+
+/* 3) Cartao principal:
+   define largura maxima, sombra, borda e espacos internos do formulario. */
+#login-card {
+  width: min(100%, 430px);
+  
+  /* linear-gradient aqui cria uma transicao vertical suave no fundo do card
+     (de --neutro-0 para --neutro-100), dando profundidade sem pesar no visual. */
+  background: linear-gradient(180deg, var(--neutro-0), var(--neutro-100));
+  border: 1px solid var(--neutro-300);
+  border-radius: var(--raio-2);
+  box-shadow: var(--sombra-cartao);
+  padding: var(--espaco-6) var(--espaco-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-4);
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* 4) Cabecalho:
+   alinha titulo e subtitulo no centro com espacamento pequeno. */
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--espaco-1);
+}
+
+#login-titulo {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
+  letter-spacing: 0.01em;
+}
+
+header p {
+  margin: 0;
+  color: var(--neutro-500);
+}
+
+/* 5) Blocos de formulario:
+   organiza campos em coluna e aplica tipografia das labels. */
+#campos-formulario form,
+#campos-login {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+}
+
+#campos-formulario label,
+#campos-login label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* 6) Inputs e select:
+   estilo base dos campos e destaque visual no foco para acessibilidade. */
+#campos-formulario select,
+#campos-login input {
+  width: 100%;
+  border: 1px solid var(--neutro-300);
+  border-radius: var(--raio-1);
+  padding: 0.78rem 0.9rem;
+  background: var(--neutro-0);
+  color: var(--neutro-900);
+  font-size: 0.98rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+#campos-formulario select:focus,
+#campos-login input:focus {
+  border-color: var(--foco);
+  box-shadow: 0 0 0 4px rgba(217, 74, 131, 0.17);
+  outline: none;
+}
+
+/* 7) Grupo da senha:
+   coloca campo e botao lado a lado na mesma linha. */
+#grupo-senha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-2);
+}
+
+#grupo-senha input {
+  /* Faz o input ocupar todo o espaco disponivel da linha no flex. */
+  flex: 1;
+}
+
+/* 8) Caixa de informacao dinamica:
+   area destacada para mostrar orientacoes do perfil selecionado. */
+#informacao-dinamica-intrucacao-campo {
+  border: 1px solid var(--rosa-200);
+  background: var(--rosa-50);
+  border-radius: var(--raio-1);
+  padding: var(--espaco-3);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+#informacao {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--neutro-700);
+}
+
+/* 9) Botao "Mostrar/Ocultar":
+   botao secundario ao lado do input com feedback de hover e foco. */
+#grupo-senha button[type="button"] {
+  border: 1px solid var(--neutro-300);
+  background: var(--neutro-0);
+  color: var(--neutro-700);
+  border-radius: var(--raio-1);
+  min-height: 42px;
+  min-width: 96px;
+  padding: 0 var(--espaco-3);
+  font-weight: 600;
+  /* Mostra a "maozinha" para indicar que o elemento e clicavel. */
+  cursor: pointer;
+  /* Impede o botao de encolher quando o espaco estiver menor. */
+  flex-shrink: 0;
+}
+
+#grupo-senha button[type="button"]:hover {
+  background: var(--rosa-100);
+  border-color: var(--rosa-200);
+}
+
+#grupo-senha button[type="button"]:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* 10) Botao principal "Entrar":
+   botao de destaque com gradiente, hover suave e foco acessivel. */
+#btn-entrar {
+  border: none;
+  border-radius: var(--raio-1);
+  min-height: 48px;
+  padding: 0 var(--espaco-4);
+  margin-top: var(--espaco-2);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  /* linear-gradient aqui e usado no botao principal para criar destaque visual,
+     misturando tons de rosa e reforcando a hierarquia de acao ("Entrar"). */
+  background: linear-gradient(135deg, var(--rosa-500), var(--rosa-400));
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+#btn-entrar:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+#btn-entrar:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* 11) Links auxiliares:
+   deixa "Criar conta" na esquerda e "Esqueci minha senha" na direita. */
+#nav-criar-conta-esqueci-senha {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+  margin-top: var(--espaco-2);
+  font-size: 0.94rem;
+}
+
+#nav-criar-conta-esqueci-senha a {
+  color: var(--rosa-700);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+#nav-criar-conta-esqueci-senha a:hover {
+  text-decoration: underline;
+}
+
+/* 12) Rodape:
+   fixa a altura e centraliza o texto informativo no final da pagina. */
+footer {
+  height: 56px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--espaco-2);
+}
+
+#copyright {
+  margin: 0;
+  color: var(--neutro-500);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* 13) Responsividade:
+   no mobile reduz o padding lateral do cartao. */
+/* @media aplica estilos somente quando a condicao da tela for verdadeira.
+   Aqui: os estilos abaixo valem para telas com ate 480px de largura. */
+@media (max-width: 480px) {
+  #login-card {
+    padding: var(--espaco-5) var(--espaco-4);
+  }
+}

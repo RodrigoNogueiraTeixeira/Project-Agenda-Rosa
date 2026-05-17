@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meus agendamentos</title>
+    <link rel="stylesheet" href="../css/variavies.css" />
+    <link rel="stylesheet" href="../css/AgendamentoCliente.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </head>
+  <body class="pagina-agendamentos">
+    <main class="container-agendamentos">
+      <header class="cabecalho-agendamentos">
+        <div>
+          <h1>Meus agendamentos</h1>
+          <p>Acompanhe seus serviços e gerencie cancelamentos futuros.</p>
+        </div>
+        <a class="btn-voltar" href="./homeDoCliente.html">Voltar</a>
+      </header>
+
+      <section class="resumo-agendamentos" aria-label="Resumo dos agendamentos">
+        <article class="card-resumo">
+          <span>Total</span>
+          <strong id="contador-total">0</strong>
+        </article>
+        <article class="card-resumo">
+          <span>Agendado</span>
+          <strong id="contador-agendado">0</strong>
+        </article>
+        <article class="card-resumo">
+          <span>Concluído</span>
+          <strong id="contador-concluido">0</strong>
+        </article>
+        <article class="card-resumo">
+          <span>Cancelado</span>
+          <strong id="contador-cancelado">0</strong>
+        </article>
+      </section>
+
+      <section class="lista-agendamentos" id="container-lista-agendamentos" aria-label="Lista de agendamentos">
+        <!-- Os cards serão gerados dinamicamente via Javascript -->
+        <p style="text-align: center; color: #8c7e96; margin-top: 40px;">Carregando agendamentos...</p>
+      </section>
+    </main>
+
+    <!-- Modal de Mapa -->
+    <div id="overlayMapa" class="sobreposicao-agendamento" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+      <section class="modal-agendamento" style="background: white; border-radius: 12px; padding: 20px; width: 90%; max-width: 500px; position: relative;">
+        <button onclick="fecharMapaAgendamento()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        <h2 id="tituloMapa" style="margin-bottom: 5px; color: #c93f7d;">Localização</h2>
+        <p id="enderecoMapa" style="font-size: 0.85em; color: #666; margin-bottom: 15px;"></p>
+        <div style="width: 100%; height: 250px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd;">
+          <iframe id="iframeMapa" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
+      </section>
+    </div>
+
+    <script src="../js/AgendamentoCliente.js"></script>
+    <script>
+      function abrirMapaAgendamento(nome, lat, lng, endereco) {
+        document.getElementById('tituloMapa').textContent = nome;
+        document.getElementById('enderecoMapa').textContent = endereco;
+        document.getElementById('iframeMapa').src = `https://maps.google.com/maps?q=${lat},${lng}&z=15&output=embed`;
+        document.getElementById('overlayMapa').style.display = 'flex';
+      }
+      function fecharMapaAgendamento() {
+        document.getElementById('overlayMapa').style.display = 'none';
+        document.getElementById('iframeMapa').src = '';
+      }
+    </script>
+  </body>
+</html>
