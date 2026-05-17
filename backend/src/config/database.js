@@ -3,10 +3,16 @@ const fs = require("fs");
 const sqlite3 = require("sqlite3").verbose();
 
 // Caminho do arquivo final do banco SQLite.
-const DATABASE_FILE = path.join(__dirname, "..", "..", "data", "agendarosa.db");
+const DATABASE_DIR = path.join(__dirname, "..", "..", "data");
+const DATABASE_FILE = path.join(DATABASE_DIR, "agendarosa.db");
+
+// Garante que a pasta 'data' exista para evitar erro SQLITE_CANTOPEN em servidores de nuvem
+if (!fs.existsSync(DATABASE_DIR)) {
+  fs.mkdirSync(DATABASE_DIR, { recursive: true });
+}
 
 // Caminho do JSON que estamos usando como seed inicial.
-const SEED_FILE = path.join(__dirname, "..", "..", "data", "db.json");
+const SEED_FILE = path.join(DATABASE_DIR, "db.json");
 
 // Abre a conexao com o banco SQLite.
 const db = new sqlite3.Database(DATABASE_FILE);
