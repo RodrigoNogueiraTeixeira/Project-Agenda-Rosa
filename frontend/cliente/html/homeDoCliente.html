@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home - Cliente</title>
+    <link rel="stylesheet" href="../css/variavies.css" />
+    <link rel="stylesheet" href="../css/homeCliente.css" />
+  </head>
+
+  <body class="pagina-home-cliente">
+    <header class="cabecalho-home">
+      <div>
+        <h1>Home do Cliente</h1>
+        <p>Início</p>
+      </div>
+      <nav aria-label="Menu do Usuário">
+        <button id="deslogar">Deslogar</button>
+      </nav>
+    </header>
+
+    <main id="conteudoPrincipal">
+      <section id="mensagemIlustrativa">
+        <div class="mensagem-texto">
+          <h2>Buscar estabelecimentos</h2>
+          <p>Encontre serviços por cidade, bairro e tipo de serviço.</p>
+        </div>
+        <div class="mensagem-arte" aria-hidden="true"></div>
+      </section>
+
+      <nav id="menusDeNavegacao" aria-label="Menu Principal">
+        <a href="#">Buscar estabelecimentos</a>
+        <a href="./AgendamentoCliente.html">Meus agendamentos</a>
+        <a href="./ClienteEditarPerfil.html">Ver Perfil</a>
+      </nav>
+
+      <section id="area-de-busca">
+        <h2>Buscar estabelecimentos</h2>
+        <form id="formBuscarEstabelecimentos">
+          <div class="linha-campos">
+            <div class="campo-metade">
+              <label for="cidade">Cidade (opcional)</label>
+              <input type="text" id="cidade" name="cidade" placeholder="Digite a cidade" />
+            </div>
+            <div class="campo-metade">
+              <label for="bairro">Bairro (opcional)</label>
+              <input type="text" id="bairro" name="bairro" placeholder="Digite o bairro" />
+            </div>
+          </div>
+
+          <div class="linha-campos">
+            <div class="campo-metade">
+              <label for="tipoServico">Tipo de serviço (opcional)</label>
+              <select id="tipoServico" name="tipoServico">
+                <option value="">Selecione</option>
+                <option value="cabelo">Cabelo</option>
+                <option value="manicure">Manicure</option>
+                <option value="pedicure">Pedicure</option>
+                <option value="depilacao">Depilação</option>
+                <option value="sobrancelha">Sobrancelha</option>
+                <option value="cilios">Cílios</option>
+                <option value="maquiagem">Maquiagem</option>
+                <option value="massagem">Massagem</option>
+                <option value="estetica facial">Estética facial</option>
+                <option value="estetica corporal">Estética corporal</option>
+              </select>
+            </div>
+            <div class="campo-metade">
+              <label for="campoBusca">Busca pelo nome (opcional)</label>
+              <input type="text" id="campoBusca" name="campoBusca" placeholder="Nome do estabelecimento" />
+            </div>
+          </div>
+
+          <div id="feedbackBusca" aria-live="polite"></div>
+
+          <button type="button" onclick="filtrarResultados()">Buscar</button>
+        </form>
+      </section>
+
+      <section id="area-de-resultados">
+        <h2>Resultados</h2>
+
+        <div id="lista-resultados"></div>
+
+        <div id="container-ver-mais" style="text-align: center; margin-top: 20px;">
+          <button id="btn-ver-mais" onclick="mostrarMaisLojas()" style="display: none;">Ver mais</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal de agendamento.
+         Ele começa escondido e é aberto via JavaScript ao clicar em "Agendar". -->
+    <div id="overlayAgendamento" class="sobreposicao-agendamento" style="display: none;">
+      <section id="modalAgendamento" class="modal-agendamento" role="dialog" aria-modal="true" aria-labelledby="tituloAgendamento">
+        <button id="fecharAgendamento" class="btn-fechar-modal" type="button" aria-label="Fechar">×</button>
+
+        <div class="layout-modal-agendamento">
+          <div class="painel-formulario-agendamento">
+            <h2 id="tituloAgendamento">Agendamento</h2>
+
+            <div class="campo-full">
+              <label for="estabelecimentoAgendamento">Estabelecimento</label>
+              <input id="estabelecimentoAgendamento" type="text" readonly style="margin-bottom: 15px;"/>
+            </div>
+
+            <fieldset class="bloco-servicos">
+              <legend>Serviços Prestados</legend>
+              <div id="listaServicosModal"></div>
+              <p id="totalAgendamento">Total: R$ 0,00</p>
+            </fieldset>
+
+            <div class="grid-campos-dupla">
+              <div class="campo-metade">
+                <label for="dataAgendamento">Data</label>
+                <input id="dataAgendamento" type="date" />
+              </div>
+              <div class="campo-metade">
+                <label for="horarioAgendamento">Horário disponível</label>
+                <select id="horarioAgendamento">
+                  <option value="">Selecione</option>
+                  <option>09:00</option>
+                  <option>10:00</option>
+                  <option>11:00</option>
+                  <option>14:00</option>
+                  <option>15:00</option>
+                  <option>16:00</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="campo-full">
+              <label for="profissionalAgendamento">Profissional (opcional)</label>
+              <select id="profissionalAgendamento">
+                <option>Sem preferência</option>
+                <option>Ana</option>
+                <option>Bruna</option>
+                <option>Carlos</option>
+              </select>
+            </div>
+
+            <div class="campo-full">
+              <label for="observacoesAgendamento">Observações (opcional)</label>
+              <textarea id="observacoesAgendamento" rows="4" placeholder="Escreva observações para o atendimento"></textarea>
+            </div>
+
+            <div class="campo-full">
+              <p id="enderecoAgendamentoModal" style="font-size: 0.85em; color: #666; margin-bottom: 2px;"></p>
+              <p id="cepAgendamentoModal" style="font-size: 0.85em; color: #888; margin-bottom: 10px; font-weight: bold;"></p>
+              <div id="containerMapaModal" style="width: 100%; height: 150px; border-radius: 8px; overflow: hidden; display: none; margin-bottom: 15px; border: 1px solid #ddd;">
+                <iframe id="iframeMapaModal" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+              </div>
+            </div>
+
+            <div class="acoes-modal">
+              <button id="confirmarAgendamento" type="button">Confirmar agendamento</button>
+              <button id="cancelarAgendamento" class="btn-secundario" type="button">Cancelar</button>
+            </div>
+
+            <div id="feedbackAgendamento" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="../js/homeCliente.js"></script>
+  </body>
+</html>

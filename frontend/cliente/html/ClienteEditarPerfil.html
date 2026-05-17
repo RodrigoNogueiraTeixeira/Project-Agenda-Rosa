@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ver perfil</title>
+    <link rel="stylesheet" href="../css/variavies.css" />
+    <link rel="stylesheet" href="../css/ClienteEditarPerfil.css" />
+  </head>
+  <body class="pagina-perfil-cliente">
+    <main class="card-perfil">
+      <header class="cabecalho-perfil">
+        <h1>Ver perfil</h1>
+        <p>Dados da sua conta</p>
+      </header>
+
+      <form class="form-perfil" action="#" method="post">
+        <label for="nome">Nome <span>(opcional)</span></label>
+        <input id="nome" type="text" value="Cliente Agenda Rosa" />
+
+        <label for="email">E-mail <span>(opcional)</span></label>
+        <input id="email" type="email" value="cliente@exemplo.com" />
+
+        <label for="telefone">Telefone <span>(opcional)</span></label>
+        <input id="telefone" type="tel" value="(11) 90000-0000" />
+
+        <label for="cidade">Cidade <span>(opcional)</span></label>
+        <input id="cidade" type="text" placeholder="Digite sua cidade" />
+
+        <label for="bairro">Bairro <span>(opcional)</span></label>
+        <input id="bairro" type="text" placeholder="Digite seu bairro" />
+
+        <label for="senha">Alterar senha <span>(opcional)</span></label>
+        <input id="senha" type="password" placeholder="Digite a nova senha" />
+
+        <label for="confirmarSenha">Confirmar nova senha <span>(opcional)</span></label>
+        <input id="confirmarSenha" type="password" placeholder="Repita a nova senha" />
+
+        <button class="btn-editar" type="submit">Editar perfil</button>
+      </form>
+
+      <a class="link-voltar" href="./homeDoCliente.html">Voltar</a>
+    </main>
+  </body>
+</html>

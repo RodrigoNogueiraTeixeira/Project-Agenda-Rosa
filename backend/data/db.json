@@ -1,0 +1,97 @@
+{
+  "clientes": [
+    {
+      "id": 1,
+      "nome": "Cliente Agenda Rosa",
+      "email": "cliente@exemplo.com",
+      "senha": "123456",
+      "telefone": "(11) 90000-0000",
+      "cidade": "Sao Paulo",
+      "bairro": "Centro"
+    }
+  ],
+  "estabelecimentos": [
+    {
+      "id": 1,
+      "nome": "Studio Rosa Bela",
+      "cidade": "Sao Paulo",
+      "bairro": "Centro",
+      "endereco": "Rua das Flores, 123 - Centro, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/rosa-bela/320/180",
+      "tipos": ["cabelo", "manicure"],
+      "servicos": [
+        { "id": 1, "nome": "Corte", "preco": 85.0 },
+        { "id": 2, "nome": "Manicure", "preco": 45.0 },
+        { "id": 3, "nome": "Escova", "preco": 60.0 }
+      ]
+    },
+    {
+      "id": 2,
+      "nome": "Espaco Charme",
+      "cidade": "Sao Paulo",
+      "bairro": "Jardim America",
+      "endereco": "Av. Bela Vista, 450 - Jardim America, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/espaco-charme/320/180",
+      "tipos": ["barba", "estetica"],
+      "servicos": [
+        { "id": 1, "nome": "Barba", "preco": 50.0 },
+        { "id": 2, "nome": "Estetica", "preco": 120.0 },
+        { "id": 3, "nome": "Limpeza de pele", "preco": 95.0 }
+      ]
+    },
+    {
+      "id": 3,
+      "nome": "Esmalteria Chic",
+      "cidade": "Sao Paulo",
+      "bairro": "Moema",
+      "endereco": "Rua Azul, 22 - Moema, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/esmalteria-chic/320/180",
+      "tipos": ["manicure"],
+      "servicos": [
+        { "id": 1, "nome": "Pe e mao", "preco": 55.0 },
+        { "id": 2, "nome": "Spa das maos", "preco": 70.0 }
+      ]
+    },
+    {
+      "id": 4,
+      "nome": "Clinica Estetica Bela",
+      "cidade": "Sao Paulo",
+      "bairro": "Vila Mariana",
+      "endereco": "Rua Primavera, 89 - Vila Mariana, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/clinica-bela/320/180",
+      "tipos": ["estetica"],
+      "servicos": [
+        { "id": 1, "nome": "Drenagem", "preco": 90.0 },
+        { "id": 2, "nome": "Limpeza de pele", "preco": 110.0 }
+      ]
+    },
+    {
+      "id": 5,
+      "nome": "Barbearia do Joao",
+      "cidade": "Sao Paulo",
+      "bairro": "Centro",
+      "endereco": "Rua Direita, 789 - Centro, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/barbearia-joao/320/180",
+      "tipos": ["barba", "cabelo"],
+      "servicos": [
+        { "id": 1, "nome": "Barba", "preco": 35.0 },
+        { "id": 2, "nome": "Corte masculino", "preco": 45.0 }
+      ]
+    },
+    {
+      "id": 6,
+      "nome": "Espaco Glamour Premium",
+      "cidade": "Sao Paulo",
+      "bairro": "Pinheiros",
+      "endereco": "Rua Bela Rosa, 501 - Pinheiros, Sao Paulo",
+      "logoUrl": "https://picsum.photos/seed/glamour-premium/320/180",
+      "tipos": ["estetica", "manicure"],
+      "servicos": [
+        { "id": 1, "nome": "Design de sobrancelha", "preco": 65.0 },
+        { "id": 2, "nome": "Alongamento de cilios", "preco": 180.0 },
+        { "id": 3, "nome": "Limpeza de pele", "preco": 140.0 }
+      ]
+    }
+  ],
+  "agendamentos": []
+}
