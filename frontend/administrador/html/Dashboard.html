@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt_br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Administrador</title>
+
+    <link rel="stylesheet" href="../css/EstilosDashBoard.css">
+</head>
+
+<body>
+    <div class="PrimeiroBlocoDeDados">
+        <div class="TextosEsquerda"></div>
+        <header>
+            <h1> Dashboard Administrador</h1>
+            <h2> Painel com visão geral dos indicadores principais do sistema.</h2>
+        </header>
+        <a href="../../EsqueciMinhaSenha/EsqueciMinhaSenha.html">Sair</a>
+
+    </div>
+
+    <div class="SegundoBlocoDeDados">
+        <h3>Atalhos administrativos</h3>
+
+        <div class="AtalhosAdmAncoras">
+            <a href="./DashboardAprovacao.html">Aprovação de cadastros</a>
+            <a href="./CategoriaServicos.html">Categoria de serviços</a>
+            <a href="./RelatoriosBasicos.html">Relatórios básicos</a>
+        </div>
+    </div>
+
+    <div class="FiltroPeriodos">
+        <p>Data Inicial</p>
+        <input type="date" id="data-inicial">
+
+        <p>Data Final
+            <input type="date" id="data-final">
+        </p>
+
+        <button id="bntAplicarPeriodo">Aplicar período</button>
+    </div>
+
+    <div class="TerceiroBlocoDeDados">
+
+        <div class="TotalClientes">
+            <p>Total de clientes cadastrados</p>
+            <strong id="TClientesCadastrados">1.248</strong>
+        </div>
+
+        <div class="TotalEmpresasProfissionaisCadastrados">
+
+            <div>
+                <p>Total de empresas/profissionais cadastrados</p>
+                <strong id="TotalEmpresasProfissionaisCadastrados">163</strong>
+            </div>
+
+        </div>
+
+
+    </div>
+
+    <div class="TerceiroBlocoDeDadosPart2">
+
+        <div class="EmpresasPendentesAprovacao">
+            <div>
+                <p>Empresas pendentes de aprovação</p>
+                <strong id="AprovacoesPendentesEmpresas">19</strong>
+            </div>
+
+        </div>
+
+        <div class="TotalAgendamentos">
+            <p>Total de agendamentos</p>
+            <strong id="AgendamentosTotais">8.402</strong>
+        </div>
+
+        <div class="AgendamentosPeriodo">
+            <p>Agendamentos no período</p>
+            <strong id="AgendamentosPorPeriodo">524</strong>
+        </div>
+    </div>
+
+    <script src="../js/Dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+const { Router } = require("express");
+const dashboardController = require("../controllers/dashboardController");
+const empresaController = require("../controllers/empresaController");
+const relatorioController = require("../controllers/relatorioController");
+const categoriaController = require("../controllers/categoriaController");
+const recuperarSenhaController = require("../controllers/recuperarSenhaController");
+
+const router = Router();
+
+// Dashboard
+router.get("/dashboard/stats", dashboardController.getDashboard);
+router.post("/dashboard/apply-period", dashboardController.applyPeriod);
+
+// Empresas
+router.get("/empresas/pendentes", empresaController.getEmpresasPendentes);
+router.post("/empresas/:id/aprovar", empresaController.approveEmpresa);
+router.post("/empresas/:id/reprovar", empresaController.rejectEmpresa);
+
+// Relatorios
+router.get("/relatorios", relatorioController.getRelatorio);
+
+// Categorias
+router.get("/categorias", categoriaController.getCategorias);
+router.post("/categorias", categoriaController.criarCategoria);
+
+// Recuperação de senha
+router.post("/recuperar-senha", recuperarSenhaController.recuperarSenha);
+
+module.exports = router;

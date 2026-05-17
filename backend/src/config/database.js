@@ -238,6 +238,21 @@ async function criarTabelas() {
       FOREIGN KEY (profissional_id) REFERENCES profissionais(id) ON DELETE SET NULL
     )
   `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS categorias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      descricao TEXT,
+      status TEXT NOT NULL DEFAULT 'Ativa'
+    )
+  `);
+
+  const hasCategorias = await get("SELECT COUNT(*) AS count FROM categorias");
+  if (hasCategorias && hasCategorias.count === 0) {
+    await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Cabelo", "Servicos relacionados a corte e finalizacao.", "Ativa"]);
+    await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Unhas", "Servicos de manicure e pedicure.", "Ativa"]);
+  }
 }
 
 // Garante pequenas evolucoes de estrutura sem quebrar banco ja criado.
