@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios Basicos</title>
+    <link rel="stylesheet" href="../css/RelatoriosBasicos.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="PrimeiroBlocoDados">
+
+            <div class="TextoHeader">
+                <h1>Relatórios básicos</h1>
+                <p>Visão resumida dos indicadores principais do módulo administrativos</p>
+            </div>
+
+            <a href="./Dashboard.html">Voltar</a>
+
+        </div>
+
+    </header>
+
+    <form action="Filtros">
+        <div>
+            <h2>Filtros</h2>
+            <br>
+            <p>Data inicial</p>
+            <input type="date">
+            <br>
+            <p>Data Final</p>
+            <input type="date">
+            <br>
+            <p>Tipo de relatório</p>
+            <select name="TipoRelatorio" id="TipoRelatorio">
+                <option value="Geral">Geral</option>
+                <option value="Usuarios">Usuários</option>
+                <option value="Empresas">Empresas</option>
+                <option value="Agendamentos">Agendamentos</option>
+            </select>
+            <button>Filtrar</button>
+            <button>Exportar PDF</button>
+            <button>Exportar Excel</button>
+
+
+        </div>
+    </form>
+
+    <div class="SegundoBlocoDados">
+        <h2>indicadores</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuários Cadastrados</th>
+                    <th>Empresas Aprovadas</th>
+                    <th>Cancelamento</th>
+                </tr>
+            </thead>
+            <tbody id="CorpoTabela">
+                <tr>
+                    <td>1.248</td>
+                    <td>144</td>
+                    <td>5.920</td>
+                    <td>317</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="../js/RelatoriosBasicos.js"></script>
+</body>
+
+</html>
