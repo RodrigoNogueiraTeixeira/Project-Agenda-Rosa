@@ -2,8 +2,12 @@ const express = require("express");
 const clientRoutes = require("../cliente/routes");
 const empresaRoutes = require("../empresa/routes");
 const administradorRoutes = require("../administrador/routes");
+const authRoutes = require("../auth/routes");
 
 const router = express.Router();
+
+// Rotas de Autenticação Unificadas (Login e Recuperação de Senha)
+router.use(authRoutes);
 
 // Rotas do Cliente (Existentes)
 router.use("/cliente", clientRoutes);

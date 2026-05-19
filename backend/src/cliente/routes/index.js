@@ -5,7 +5,6 @@ const healthRoutes = require("./healthRoutes");
 const estabelecimentosRoutes = require("./estabelecimentosRoutes");
 const agendamentosRoutes = require("./agendamentosRoutes");
 const clientesRoutes = require("./clientesRoutes");
-const authRoutes = require("./authRoutes");
 const pagamentosRoutes = require("./pagamentosRoutes");
 const distanciaRoutes = require("./distanciaRoutes");
 
@@ -16,7 +15,6 @@ router.use(healthRoutes);
 router.use(estabelecimentosRoutes);
 router.use(agendamentosRoutes);
 router.use(clientesRoutes);
-router.use(authRoutes);
 router.use(pagamentosRoutes);
 router.use(distanciaRoutes);
 

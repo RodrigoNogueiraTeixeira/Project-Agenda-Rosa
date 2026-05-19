@@ -285,7 +285,7 @@ function configurarBotaoSair() {
   }
 
   btnSair.onclick = function onClickSair() {
-    window.location.href = "login.html";
+    window.location.href = "../../login/html/login.html";
   };
 }
 
