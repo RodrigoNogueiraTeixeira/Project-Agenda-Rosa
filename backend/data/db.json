@@ -8,6 +8,15 @@
       "telefone": "(11) 90000-0000",
       "cidade": "Sao Paulo",
       "bairro": "Centro"
+    },
+    {
+      "id": 2,
+      "nome": "Rodrigo",
+      "email": "rodrigo@agendarosa.com",
+      "senha": "123",
+      "telefone": "(11) 99999-9999",
+      "cidade": "São Paulo",
+      "bairro": "Centro"
     }
   ],
   "estabelecimentos": [

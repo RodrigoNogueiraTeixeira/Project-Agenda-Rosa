@@ -1,65 +1,93 @@
 const path = require("path");
 const fs = require("fs");
-const sqlite3 = require("sqlite3").verbose();
 
-// Caminho do arquivo final do banco SQLite.
+// Configuração híbrida: Turso (SQLite em Nuvem) ou SQLite Local
+const useTurso = !!process.env.TURSO_DATABASE_URL;
+let tursoClient = null;
+let sqliteDb = null;
+
+// Caminho do arquivo final do banco SQLite local.
 const DATABASE_DIR = path.join(__dirname, "..", "..", "data");
 const DATABASE_FILE = path.join(DATABASE_DIR, "agendarosa.db");
-
-// Garante que a pasta 'data' exista para evitar erro SQLITE_CANTOPEN em servidores de nuvem
-if (!fs.existsSync(DATABASE_DIR)) {
-  fs.mkdirSync(DATABASE_DIR, { recursive: true });
-}
 
 // Caminho do JSON que estamos usando como seed inicial.
 const SEED_FILE = path.join(DATABASE_DIR, "db.json");
 
-// Abre a conexao com o banco SQLite.
-const db = new sqlite3.Database(DATABASE_FILE);
+if (useTurso) {
+  console.log("☁️ Conectando ao SQLite na Nuvem via Turso...");
+  const { createClient } = require("@libsql/client");
+  tursoClient = createClient({
+    url: process.env.TURSO_DATABASE_URL,
+    authToken: process.env.TURSO_AUTH_TOKEN
+  });
+} else {
+  console.log("📁 Conectando ao SQLite Local em arquivo...");
+  // Garante que a pasta 'data' exista para evitar erro SQLITE_CANTOPEN em servidores de nuvem
+  if (!fs.existsSync(DATABASE_DIR)) {
+    fs.mkdirSync(DATABASE_DIR, { recursive: true });
+  }
+  const sqlite3 = require("sqlite3").verbose();
+  sqliteDb = new sqlite3.Database(DATABASE_FILE);
+}
 
 // Funcao utilitaria para executar SQL sem retorno de linhas (INSERT/UPDATE/DELETE).
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function onRun(error) {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve({
-        lastID: this.lastID,
-        changes: this.changes
+async function run(sql, params = []) {
+  if (useTurso) {
+    const result = await tursoClient.execute({ sql, args: params });
+    return {
+      lastID: result.lastInsertRowid !== undefined ? Number(result.lastInsertRowid) : null,
+      changes: result.rowsAffected
+    };
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.run(sql, params, function onRun(error) {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({
+          lastID: this.lastID,
+          changes: this.changes
+        });
       });
     });
-  });
+  }
 }
 
 // Funcao utilitaria para buscar uma linha.
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (error, row) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(row);
+async function get(sql, params = []) {
+  if (useTurso) {
+    const result = await tursoClient.execute({ sql, args: params });
+    return result.rows[0] || null;
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.get(sql, params, (error, row) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(row);
+      });
     });
-  });
+  }
 }
 
 // Funcao utilitaria para buscar varias linhas.
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (error, rows) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(rows);
+async function all(sql, params = []) {
+  if (useTurso) {
+    const result = await tursoClient.execute({ sql, args: params });
+    return result.rows;
+  } else {
+    return new Promise((resolve, reject) => {
+      sqliteDb.all(sql, params, (error, rows) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve(rows);
+      });
     });
-  });
+  }
 }
 
 // Cria as tabelas principais do sistema.
@@ -513,7 +541,7 @@ async function inicializarBanco() {
 }
 
 module.exports = {
-  db,
+  db: sqliteDb,
   run,
   get,
   all,
