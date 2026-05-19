@@ -508,8 +508,8 @@ async function popularComSeedSeNecessario() {
 // Funcao principal para inicializar banco no startup do servidor.
 async function inicializarBanco() {
   await criarTabelas();
-  await aplicarMigracoes();
   await popularComSeedSeNecessario();
+  await aplicarMigracoes();
 }
 
 module.exports = {
