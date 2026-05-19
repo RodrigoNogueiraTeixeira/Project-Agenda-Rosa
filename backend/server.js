@@ -34,7 +34,7 @@ app.use("/api", apiRoutes);
 
 // Rota inicial: abre a tela de login.
 app.get("/", (req, res) => {
-  res.redirect("/cliente/html/login.html");
+  res.redirect("/login/html/login.html");
 });
 
 // Fallback para qualquer rota nao encontrada.
@@ -44,7 +44,7 @@ app.use((req, res) => {
     return;
   }
 
-  res.redirect("/cliente/html/login.html");
+  res.redirect("/login/html/login.html");
 });
 
 async function startServer() {

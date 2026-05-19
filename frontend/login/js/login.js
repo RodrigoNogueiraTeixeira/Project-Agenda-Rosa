@@ -148,8 +148,8 @@ async function realizarLogin() {
     localStorage.setItem("clienteNome", resultado.cliente.nome || "");
     localStorage.setItem("clienteEmail", resultado.cliente.email || "");
 
-    // A tela fica dentro de /html, entao usamos caminho relativo.
-    window.location.href = "homeDoCliente.html";
+    // A tela fica dentro de login/html, entao usamos caminho relativo para ir a cliente/html.
+    window.location.href = "../../cliente/html/homeDoCliente.html";
   } catch (error) {
     alert("Nao foi possivel entrar: " + error.message);
   } finally {
