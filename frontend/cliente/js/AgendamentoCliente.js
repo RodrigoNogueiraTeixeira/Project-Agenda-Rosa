@@ -1,5 +1,5 @@
-const CLIENTE_ID = 1; // Fixo para este protótipo
-const API_BASE_URL = "http://localhost:3001/api";
+const CLIENTE_ID = Number(localStorage.getItem("clienteId") || 1);
+const API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || "http://localhost:3001/api";
 
 document.addEventListener("DOMContentLoaded", () => {
   carregarAgendamentos();
