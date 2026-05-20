@@ -116,15 +116,9 @@ async function realizarLogin() {
     perfil = String(opcaoSelecionada ? opcaoSelecionada.value || "" : "").trim();
   }
 
-  // Como nesta etapa so existe login de cliente, se o perfil vier vazio
-  // tratamos automaticamente como "cliente" para nao bloquear o acesso.
+  // Se o perfil vier vazio tratamos automaticamente como "cliente" para nao bloquear o acesso.
   if (!perfil) {
     perfil = "cliente";
-  }
-
-  if (perfil !== "cliente") {
-    alert("No momento, apenas login de cliente esta habilitado.");
-    return;
   }
 
   if (!email || !senha) {
@@ -141,15 +135,33 @@ async function realizarLogin() {
   try {
     var resultado = await chamarApiLogin("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email: email, senha: senha })
+      body: JSON.stringify({ email: email, senha: senha, perfil: perfil })
     });
 
-    localStorage.setItem("clienteId", String(resultado.cliente.id));
-    localStorage.setItem("clienteNome", resultado.cliente.nome || "");
-    localStorage.setItem("clienteEmail", resultado.cliente.email || "");
-
-    // A tela fica dentro de login/html, entao usamos caminho relativo para ir a cliente/html.
-    window.location.href = "../../cliente/html/homeDoCliente.html";
+    if (resultado.perfil === "cliente") {
+      localStorage.setItem("clienteId", String(resultado.usuario.id));
+      localStorage.setItem("clienteNome", resultado.usuario.nome || "");
+      localStorage.setItem("clienteEmail", resultado.usuario.email || "");
+      
+      // A tela fica dentro de login/html, entao usamos caminho relativo para ir a cliente/html.
+      window.location.href = "../../cliente/html/homeDoCliente.html";
+    } else if (resultado.perfil === "empresa") {
+      localStorage.setItem("empresaId", String(resultado.usuario.id));
+      localStorage.setItem("empresaNome", resultado.usuario.nome || "");
+      localStorage.setItem("empresaEmail", resultado.usuario.email || "");
+      
+      // Vai para a página inicial da empresa.
+      window.location.href = "../../empresa/html/home-empresa.html";
+    } else if (resultado.perfil === "administrador") {
+      localStorage.setItem("adminId", String(resultado.usuario.id));
+      localStorage.setItem("adminNome", resultado.usuario.nome || "");
+      localStorage.setItem("adminEmail", resultado.usuario.email || "");
+      
+      // Vai para o dashboard do administrador.
+      window.location.href = "../../administrador/html/Dashboard.html";
+    } else {
+      throw new Error("Perfil desconhecido retornado pelo servidor.");
+    }
   } catch (error) {
     alert("Nao foi possivel entrar: " + error.message);
   } finally {
