@@ -37,7 +37,23 @@ async function atualizarPerfil(req, res) {
   }
 }
 
+// POST /api/clientes/cadastro
+async function cadastrarCliente(req, res) {
+  try {
+    const cliente = await clientesRepository.cadastrarCliente(req.body || {});
+    res.status(201).json({
+      mensagem: "Cliente cadastrado com sucesso.",
+      cliente
+    });
+  } catch (error) {
+    const mensagem = error.message || "Erro ao cadastrar cliente.";
+    const status = mensagem.includes("obrigatorios") ? 400 : (mensagem.includes("ja cadastrado") ? 409 : 500);
+    res.status(status).json({ erro: mensagem });
+  }
+}
+
 module.exports = {
   buscarPerfil,
-  atualizarPerfil
+  atualizarPerfil,
+  cadastrarCliente
 };

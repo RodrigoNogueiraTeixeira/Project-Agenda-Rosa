@@ -16,6 +16,13 @@
 
         <form>
           <section>
+            <label for="perfil-cadastro">Deseja cadastrar-se como:</label>
+            <select id="perfil-cadastro">
+              <option value="cliente">Cliente (Agendar horários)</option>
+              <option value="empresa">Empresa / Profissional (Oferecer serviços)</option>
+            </select>
+            <br /><br />
+            
             <label for="nome-completo">Nome completo</label>
             <input
               type="text"
@@ -36,6 +43,16 @@
               id="telefone-cliente"
               placeholder="(00) 00000-0000"
             />
+            <div id="container-estabelecimento" style="display: none;">
+              <br />
+              <label for="nome-estabelecimento">Nome do Negócio</label>
+              <input
+                type="text"
+                id="nome-estabelecimento"
+                placeholder="Digite o nome do estabelecimento"
+              />
+            </div>
+            <br />
             <label for="senha-cliente">Senha</label>
             <input
               type="password"
@@ -60,5 +77,6 @@
         </div>
       </div>
     </main>
+    <script src="../js/cadastro-cliente.js"></script>
   </body>
 </html>
