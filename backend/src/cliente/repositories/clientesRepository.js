@@ -33,12 +33,13 @@ async function atualizarPerfil(clienteId, payload) {
   const telefone = String(payload.telefone || atual.telefone || "").trim();
   const cidade = String(payload.cidade || atual.cidade || "").trim();
   const bairro = String(payload.bairro || atual.bairro || "").trim();
+  const senha = payload.senha ? String(payload.senha).trim() : null;
 
   if (!nome || !email) {
     throw new Error("Nome e email sao obrigatorios.");
   }
 
-  await clientesDAO.atualizarPerfil({ id, nome, email, telefone, cidade, bairro });
+  await clientesDAO.atualizarPerfil({ id, nome, email, telefone, cidade, bairro, senha });
 
   return {
     id,
