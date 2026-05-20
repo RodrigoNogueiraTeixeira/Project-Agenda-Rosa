@@ -2,7 +2,6 @@ const express = require("express");
 const empresaRoutes = require("./empresaRoutes");
 const profissionalRoutes = require("./profissionalRoutes");
 const servicoRoutes = require("./servicoRoutes");
-// Nota: Ainda preciso criar os controllers/DAOs para estes:
 const horarioRoutes = require("./horarioRoutes");
 const bloqueioRoutes = require("./bloqueioRoutes");
 const agendamentoRoutes = require("./agendamentoRoutes");
