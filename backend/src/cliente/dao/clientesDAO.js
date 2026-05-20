@@ -12,6 +12,32 @@ async function buscarPorId(id) {
   );
 }
 
+// Busca cliente por e-mail para validar duplicidade.
+async function buscarPorEmail(email) {
+  return get(
+    `
+      SELECT id, nome, email, senha
+      FROM clientes
+      WHERE LOWER(email) = LOWER(?)
+      LIMIT 1
+    `,
+    [email]
+  );
+}
+
+// Cadastra um novo cliente no banco.
+async function cadastrarCliente({ nome, email, senha, telefone }) {
+  const resultado = await run(
+    `
+      INSERT INTO clientes (nome, email, senha, telefone)
+      VALUES (?, ?, ?, ?)
+    `,
+    [nome, email, senha, telefone]
+  );
+
+  return resultado.lastID;
+}
+
 // Atualiza os dados de perfil do cliente.
 async function atualizarPerfil({ id, nome, email, telefone, cidade, bairro, senha }) {
   let sql = `
@@ -34,5 +60,7 @@ async function atualizarPerfil({ id, nome, email, telefone, cidade, bairro, senh
 
 module.exports = {
   buscarPorId,
+  buscarPorEmail,
+  cadastrarCliente,
   atualizarPerfil
 };
