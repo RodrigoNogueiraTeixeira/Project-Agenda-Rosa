@@ -10,7 +10,7 @@ const express = require("express");
 // Import do cors: libera chamadas entre origens diferentes durante desenvolvimento.
 const cors = require("cors");
 
-// Import da inicializacao do banco SQLite.
+// Import da inicializacao do banco PostgreSQL.
 const { inicializarBanco } = require("./src/config/database");
 
 // Import do arquivo central que agrupa todas as rotas da API.
