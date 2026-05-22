@@ -1,5 +1,5 @@
 // URL base da API. Se nao houver configuracao, usamos localhost:3001.
-const API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || "http://localhost:3001/api";
+const API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
 
 // Id do cliente vem do localStorage (definido no login).
 const CLIENTE_ID = Number(localStorage.getItem("clienteId") || 1);
