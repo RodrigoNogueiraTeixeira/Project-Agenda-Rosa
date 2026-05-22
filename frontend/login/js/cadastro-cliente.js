@@ -15,7 +15,7 @@ var campoNomeEstabelecimento = document.getElementById("nome-estabelecimento");
 var campoSenha = document.getElementById("senha-cliente");
 var campoConfirmarSenha = document.getElementById("confirmar-senha-cliente");
 
-var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || "http://localhost:3001/api";
+var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
 
 // Lógica de alternância dos campos
 if (seletorPerfil) {
