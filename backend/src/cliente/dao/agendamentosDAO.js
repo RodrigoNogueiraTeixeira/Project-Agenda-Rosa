@@ -1,4 +1,4 @@
-const { all, get, run } = require("../../config/database");
+const { all, get, run, transaction } = require("../../config/database");
 
 // Salva um agendamento e seus servicos no banco.
 async function criarAgendamento({
@@ -12,10 +12,8 @@ async function criarAgendamento({
   total,
   servicos
 }) {
-  await run("BEGIN TRANSACTION");
-
-  try {
-    const resultadoInsert = await run(
+  return transaction(async (tx) => {
+    const resultadoInsert = await tx.run(
       `
         INSERT INTO agendamentos (
           cliente_id,
@@ -47,7 +45,7 @@ async function criarAgendamento({
     const agendamentoId = resultadoInsert.lastID;
 
     for (const servico of servicos) {
-      await run(
+      await tx.run(
         `
           INSERT INTO agendamento_servicos (agendamento_id, servico_id, nome, preco)
           VALUES (?, ?, ?, ?)
@@ -56,12 +54,8 @@ async function criarAgendamento({
       );
     }
 
-    await run("COMMIT");
     return agendamentoId;
-  } catch (error) {
-    await run("ROLLBACK");
-    throw error;
-  }
+  });
 }
 
 // Lista os agendamentos de um cliente.
@@ -136,7 +130,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario }) {
         AND horario = ?
         AND (
           status IN ('agendado', 'concluido')
-          OR (status = 'pendente' AND datetime(criado_em) >= datetime('now', '-15 minutes'))
+          OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
         )
       LIMIT 1
     `,
@@ -156,7 +150,7 @@ async function listarHorariosOcupados(estabelecimentoId, data) {
         AND data = ?
         AND (
           status IN ('agendado', 'concluido')
-          OR (status = 'pendente' AND datetime(criado_em) >= datetime('now', '-15 minutes'))
+          OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
         )
     `,
     [estabelecimentoId, data]

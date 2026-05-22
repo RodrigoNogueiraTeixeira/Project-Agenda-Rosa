@@ -1,17 +1,15 @@
-# Backend do Agenda Rosa (Node + Express + SQLite)
+# Backend do Agenda Rosa (Node + Express + PostgreSQL)
 
-Este backend foi refatorado para usar arquitetura em camadas e banco SQLite.
+Este backend foi refatorado para usar arquitetura em camadas e banco PostgreSQL (Neon.tech).
 
 ## Estrutura de Pastas
 
 ```text
 backend/
   server.js             # Ponto de entrada do servidor (Porta 3001)
-  data/
-    agendarosa.db       # Banco SQLite único e compartilhado
   src/
     config/
-      database.js       # Configuração central do banco (Master)
+      database.js       # Configuração central do banco (Master) e tradutor de sintaxe
     routes/
       index.js          # Roteador Mestre (Unifica Cliente e Empresa)
     cliente/            # Módulo do App Cliente
@@ -41,7 +39,7 @@ Servidor padrao: `http://localhost:3001`
 2. `routes` define endpoints e aponta para controllers.
 3. `controllers` trata HTTP (req/res) e validacao basica.
 4. `repositories` aplica regra de negocio.
-5. `dao` executa SQL no SQLite.
+5. `dao` executa SQL no PostgreSQL.
 
 ## Rotas principais
 
@@ -73,17 +71,15 @@ Servidor padrao: `http://localhost:3001`
 3. Endpoints:
    - `POST /api/distancia/calcular`
    - `POST /api/distancia/filtrar-estabelecimentos`
-4. O sistema guarda cache de geocoding em `geocoding_cache` para reduzir chamadas.
+4. O sistema guarda cache de geocoding em `geocoding_cache` no PostgreSQL para reduzir chamadas.
 
-## Sobre deploy com SQLite
+## Banco de Dados PostgreSQL (Neon.tech)
 
-SQLite funciona bem para projeto pequeno e MVP.
+O projeto foi migrado de SQLite para PostgreSQL para garantir persistência, robustez e escalabilidade em ambientes serverless como o Render.
 
-No deploy, voce precisa garantir:
-
-1. A plataforma permite gravar arquivo em disco (para atualizar `agendarosa.db`).
-2. O arquivo `backend/data/agendarosa.db` fica em volume persistente.
-3. Se o host nao tiver disco persistente (alguns serverless), troque para Postgres/MySQL.
+1. A variável `DATABASE_URL` deve conter a connection string do Neon.tech.
+2. O arquivo `backend/src/config/database.js` possui um tradutor automático que reescreve queries SQLite (`?`) para o padrão posicional do Postgres (`$1, $2, ...`), além de lidar com diferenças de schemas (como `SERIAL PRIMARY KEY` e tabelas de cache), permitindo que o restante da aplicação funcione perfeitamente sem alterações estruturais complexas.
+3. Há um mecanismo de reset automático de sequências (`resetarSequences()`) para evitar colisões de chaves primárias após inserção de seeds estáticos.
 
 ## Frontend
 
