@@ -105,6 +105,61 @@ async function all(sql, params = []) {
   return result.rows;
 }
 
+// Executa um bloco de operações sob a mesma transação e conexão.
+async function transaction(callback) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const tx = {
+      run: async (sql, params = []) => {
+        const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
+        if (ignorar) {
+          return { lastID: null, changes: 0 };
+        }
+
+        let sqlFinal = sqlPg;
+        const ehInsert = /^\s*INSERT\s+INTO/i.test(sqlFinal);
+        if (ehInsert && !/RETURNING/i.test(sqlFinal)) {
+          sqlFinal = sqlFinal.replace(/;?\s*$/, "") + " RETURNING id";
+        }
+
+        const result = await client.query(sqlFinal, params);
+
+        const lastID = ehInsert && result.rows && result.rows[0]
+          ? Number(result.rows[0].id)
+          : null;
+
+        return {
+          lastID,
+          changes: result.rowCount || 0
+        };
+      },
+      get: async (sql, params = []) => {
+        const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
+        if (ignorar) return null;
+        const result = await client.query(sqlPg, params);
+        return result.rows[0] || null;
+      },
+      all: async (sql, params = []) => {
+        const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
+        if (ignorar) return [];
+        const result = await client.query(sqlPg, params);
+        return result.rows;
+      }
+    };
+
+    const result = await callback(tx);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 // ============================================================
 // CRIAÇÃO DAS TABELAS (SCHEMA)
 // ============================================================
@@ -316,6 +371,17 @@ async function criarTabelas() {
     )
   `);
 
+  // Geocoding Cache
+  await run(`
+    CREATE TABLE IF NOT EXISTS geocoding_cache (
+      endereco_normalizado TEXT PRIMARY KEY,
+      endereco_original TEXT,
+      latitude REAL,
+      longitude REAL,
+      atualizado_em TEXT
+    )
+  `);
+
   // Categorias
   await run(`
     CREATE TABLE IF NOT EXISTS categorias (
@@ -402,11 +468,43 @@ async function popularComSeedSeNecessario() {
 // INICIALIZAÇÃO DO BANCO
 // ============================================================
 
+async function resetarSequences() {
+  // Após inserir dados com IDs fixos (seed), o contador automático
+  // do Postgres precisa ser atualizado para não conflitar com novos registros.
+  const tabelas = [
+    "clientes",
+    "estabelecimentos",
+    "estabelecimento_tipos",
+    "servicos",
+    "agendamentos",
+    "agendamento_servicos",
+    "pagamentos",
+    "pagamentos_webhooks",
+    "empresas",
+    "profissionais",
+    "horarios_funcionamento",
+    "bloqueios_horarios",
+    "categorias"
+  ];
+
+  for (const tabela of tabelas) {
+    try {
+      await pool.query(
+        `SELECT setval(pg_get_serial_sequence('${tabela}', 'id'), COALESCE((SELECT MAX(id) FROM ${tabela}), 0) + 1, false)`
+      );
+    } catch (_err) {
+      // Ignora se a tabela não tiver sequence (ex: tabelas sem SERIAL)
+    }
+  }
+  console.log("🔄 Sequences do PostgreSQL atualizadas.");
+}
+
 async function inicializarBanco() {
   console.log("🐘 Conectando ao PostgreSQL via Neon.tech...");
   await criarTabelas();
   await popularComSeedSeNecessario();
+  await resetarSequences();
   console.log("✅ Banco de dados pronto!");
 }
 
-module.exports = { run, get, all, inicializarBanco };
+module.exports = { run, get, all, transaction, inicializarBanco };

@@ -1,4 +1,4 @@
-const { run, get, all } = require("../../config/database");
+const { run, get, all, transaction } = require("../../config/database");
 
 function selecionarCamposHorario() {
   return `SELECT
@@ -23,11 +23,9 @@ async function listarPorEmpresa(empresaId) {
 }
 
 async function salvarTodos(empresaId, horarios) {
-  try {
-    await run("BEGIN TRANSACTION");
-
+  return transaction(async (tx) => {
     for (const horario of horarios) {
-      await run(
+      await tx.run(
         `INSERT INTO horarios_funcionamento (
           empresa_id,
           dia_semana,
@@ -56,12 +54,22 @@ async function salvarTodos(empresaId, horarios) {
       );
     }
 
-    await run("COMMIT");
-    return listarPorEmpresa(empresaId);
-  } catch (error) {
-    await run("ROLLBACK");
-    throw error;
-  }
+    return tx.all(
+      `SELECT
+        id,
+        empresa_id AS empresaId,
+        dia_semana AS diaSemana,
+        abre,
+        horario_abertura AS horarioAbertura,
+        horario_fechamento AS horarioFechamento,
+        intervalo_inicio AS intervaloInicio,
+        intervalo_fim AS intervaloFim
+      FROM horarios_funcionamento
+      WHERE empresa_id = ?
+      ORDER BY dia_semana`,
+      [empresaId]
+    );
+  });
 }
 
 module.exports = {
