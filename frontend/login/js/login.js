@@ -81,7 +81,7 @@ atualizarInfoPerfil();
 
 var campoAcesso = document.getElementById("acesso");
 var botaoEntrar = document.getElementById("btn-entrar");
-var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || "http://localhost:3001/api";
+var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
 
 async function chamarApiLogin(caminho, opcoes) {
   var resposta = await fetch(API_BASE_URL + caminho, {
