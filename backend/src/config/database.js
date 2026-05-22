@@ -15,10 +15,17 @@ const SEED_FILE = path.join(DATABASE_DIR, "db.json");
 
 if (useTurso) {
   console.log("☁️ Conectando ao SQLite na Nuvem via Turso...");
+  
+  // Limpando espaços em branco e aspas que podem ter vindo por engano ao copiar e colar
+  const urlLimpa = String(process.env.TURSO_DATABASE_URL || "").replace(/['"]/g, '').trim();
+  const tokenLimpo = String(process.env.TURSO_AUTH_TOKEN || "").replace(/['"]/g, '').trim();
+  
+  console.log(`🔍 URL interpretada após limpeza: ${urlLimpa.substring(0, 10)}... (tamanho: ${urlLimpa.length})`);
+  
   const { createClient } = require("@libsql/client");
   tursoClient = createClient({
-    url: process.env.TURSO_DATABASE_URL,
-    authToken: process.env.TURSO_AUTH_TOKEN
+    url: urlLimpa,
+    authToken: tokenLimpo
   });
 } else {
   console.log("📁 Conectando ao SQLite Local em arquivo...");
