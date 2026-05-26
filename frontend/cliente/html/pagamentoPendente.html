@@ -65,25 +65,15 @@
   </head>
   <body>
     <div class="card">
-      <div class="icone-pendente">⏳</div>
-      <h1>Pagamento Pendente</h1>
-      <p>O seu pagamento está em processamento ou aguardando o pagamento do Pix/Boleto.<br><br>Assim que for confirmado, o status será atualizado na sua tela de agendamentos!</p>
+      <div class="icone-pendente">✨</div>
+      <h1>Quase Lá!</h1>
+      <p>O Mercado Pago está finalizando o processamento do seu pagamento. (Isso é normal e pode levar alguns minutinhos).</p>
+      <p><strong>Fique tranquila!</strong> Seu horário já está pré-reservado.<br>Você pode fechar esta tela e acompanhar a confirmação automática na sua página de Agendamentos.</p>
       
       <div class="acoes">
-        <a href="/cliente/html/AgendamentoCliente.html" class="btn-principal">Acompanhar Meus Agendamentos</a>
+        <a href="/cliente/html/AgendamentoCliente.html" class="btn-principal">Ver Meus Agendamentos</a>
         <a href="/cliente/html/homeDoCliente.html" class="btn-secundario">Voltar para o Início</a>
       </div>
     </div>
-
-    <script>
-      // Verifica imediatamente se o Mercado Pago já informou que foi aprovado na URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const statusPagamento = urlParams.get('status') || urlParams.get('collection_status');
-      
-      if (statusPagamento === 'approved') {
-        // Redireciona na mesma hora para a tela de sucesso
-        window.location.replace('/cliente/html/pagamentoSucesso.html' + window.location.search);
-      }
-    </script>
   </body>
 </html>
