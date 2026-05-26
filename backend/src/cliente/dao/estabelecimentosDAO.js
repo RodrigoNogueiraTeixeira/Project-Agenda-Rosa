@@ -71,7 +71,7 @@ async function listarServicosPorEstabelecimentos(ids) {
   const marcadores = ids.map(() => "?").join(", ");
   return all(
     `
-      SELECT id, estabelecimento_id, nome, preco
+      SELECT id, estabelecimento_id, nome, preco, duracao_minutos
       FROM servicos
       WHERE estabelecimento_id IN (${marcadores})
       ORDER BY id ASC
@@ -89,7 +89,7 @@ async function listarServicosSelecionados(estabelecimentoId, servicosIds) {
   const marcadores = servicosIds.map(() => "?").join(", ");
   return all(
     `
-      SELECT id, nome, preco
+      SELECT id, nome, preco, duracao_minutos
       FROM servicos
       WHERE estabelecimento_id = ?
         AND id IN (${marcadores})

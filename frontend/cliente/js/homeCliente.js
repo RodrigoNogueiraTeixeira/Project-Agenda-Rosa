@@ -488,7 +488,11 @@ function abrirModalAgendamento(loja) {
     checkbox.type = "checkbox";
     checkbox.value = String(servico.id);
     checkbox.setAttribute("data-preco", String(servico.preco));
-    checkbox.onchange = atualizarTotalAgendamento;
+    checkbox.setAttribute("data-duracao", String(servico.duracao_minutos || 30));
+    checkbox.onchange = () => {
+      atualizarTotalAgendamento();
+      atualizarHorariosDisponiveis();
+    };
 
     const nome = document.createElement("span");
     nome.textContent = servico.nome;
@@ -545,7 +549,7 @@ function fecharModalAgendamento() {
   estadoTela.cardOrigem = null;
 }
 
-// Filtra horários passados se o usuário escolher o dia de hoje e busca horários ocupados
+// Filtra horários passados se o usuário escolher o dia de hoje e busca horários dinamicamente na API
 async function atualizarHorariosDisponiveis() {
   const campoData = document.getElementById("dataAgendamento");
   const campoHorario = document.getElementById("horarioAgendamento");
@@ -553,78 +557,45 @@ async function atualizarHorariosDisponiveis() {
   if (!campoData || !campoHorario) return;
   
   const dataSelecionada = campoData.value;
-  const hoje = new Date();
+  const checkboxes = document.querySelectorAll("#listaServicosModal input[type='checkbox']");
   
-  // yyyy-mm-dd local
-  const ano = hoje.getFullYear();
-  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-  const dia = String(hoje.getDate()).padStart(2, '0');
-  const hojeString = `${ano}-${mes}-${dia}`;
+  let duracaoTotal = 0;
+  for (const checkbox of checkboxes) {
+    if (checkbox.checked) {
+      duracaoTotal += Number(checkbox.getAttribute("data-duracao") || 30);
+    }
+  }
   
-  // Adicionando mais horários no final da tarde para você testar agora (que já passou das 16h)
-  const horariosPadrao = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+  // Se não marcou nenhum serviço, define no mínimo 30
+  if (duracaoTotal === 0) duracaoTotal = 30;
   
-  // Salva o valor que o usuário já tinha selecionado para tentar restaurar
   const valorAnterior = campoHorario.value;
-  
   campoHorario.innerHTML = '<option value="">Selecione</option>';
   
-  if (!dataSelecionada) {
-    // Se não tem data, mostra todos como base (ou poderia deixar vazio)
-    for (const horaStr of horariosPadrao) {
+  if (!dataSelecionada || !estadoTela.agendamentoAtual?.estabelecimentoId) {
+    return;
+  }
+  
+  try {
+    const resposta = await chamarApi(`/estabelecimentos/${estadoTela.agendamentoAtual.estabelecimentoId}/horarios-disponiveis?data=${dataSelecionada}&duracao=${duracaoTotal}`, { method: 'GET' });
+    const horarios = resposta.horarios || [];
+    
+    for (const horaStr of horarios) {
       const option = document.createElement("option");
       option.value = horaStr;
       option.textContent = horaStr;
       campoHorario.appendChild(option);
     }
-    return;
-  }
-  
-  let ocupados = [];
-  if (dataSelecionada && estadoTela.agendamentoAtual?.estabelecimentoId) {
-    try {
-      const resposta = await chamarApi(`/estabelecimentos/${estadoTela.agendamentoAtual.estabelecimentoId}/horarios-ocupados?data=${dataSelecionada}`, { method: 'GET' });
-      ocupados = resposta.ocupados || [];
-    } catch (e) {
-      console.error("Erro ao buscar horários ocupados", e);
-    }
-  }
-  
-  for (const horaStr of horariosPadrao) {
-    if (dataSelecionada === hojeString) {
-      const [horaPadraoStr, minutoPadraoStr] = horaStr.split(":");
-      const horaPadrao = Number(horaPadraoStr);
-      const minutoPadrao = Number(minutoPadraoStr);
-      
-      const horaAtual = hoje.getHours();
-      const minutoAtual = hoje.getMinutes();
-      
-      // Se a hora do sistema for maior que a hora do agendamento, pula
-      if (horaPadrao < horaAtual || (horaPadrao === horaAtual && minutoPadrao <= minutoAtual)) {
-        continue;
+    
+    // Tenta recolocar o valor se ele ainda existir nas opções
+    if (valorAnterior) {
+      const opcoesAtualizadas = Array.from(campoHorario.options).map(o => o.value);
+      if (opcoesAtualizadas.includes(valorAnterior)) {
+        campoHorario.value = valorAnterior;
       }
     }
-    
-    const option = document.createElement("option");
-    option.value = horaStr;
-    
-    if (ocupados.includes(horaStr)) {
-      option.textContent = `${horaStr} (Ocupado)`;
-      option.disabled = true;
-      option.style.color = "red";
-    } else {
-      option.textContent = horaStr;
-    }
-    
-    campoHorario.appendChild(option);
-  }
-  
-  // Tenta recolocar o valor se ele ainda existir nas opções
-  if (valorAnterior) {
-    const opcoesAtualizadas = Array.from(campoHorario.options).map(o => o.value);
-    if (opcoesAtualizadas.includes(valorAnterior)) {
-      campoHorario.value = valorAnterior;
-    }
+  } catch (e) {
+    console.error("Erro ao buscar horários disponíveis", e);
   }
 }
 

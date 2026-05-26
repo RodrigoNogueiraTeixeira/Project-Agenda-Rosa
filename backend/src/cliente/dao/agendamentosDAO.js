@@ -10,6 +10,7 @@ async function criarAgendamento({
   profissional,
   observacoes,
   total,
+  horarioFim,
   servicos
 }) {
   return transaction(async (tx) => {
@@ -24,9 +25,10 @@ async function criarAgendamento({
           profissional,
           observacoes,
           total,
+          horario_fim,
           status,
           criado_em
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         clienteId,
@@ -37,6 +39,7 @@ async function criarAgendamento({
         profissional,
         observacoes,
         total,
+        horarioFim,
         "pendente",
         new Date().toISOString()
       ]
@@ -120,21 +123,27 @@ async function buscarPorId(id) {
 }
 
 // Verifica se ja existe agendamento ativo no mesmo horario do estabelecimento.
-async function existeConflitoDeHorario({ estabelecimentoId, data, horario }) {
+async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horarioFim }) {
   const conflito = await get(
     `
       SELECT id
       FROM agendamentos
       WHERE estabelecimento_id = ?
         AND data = ?
-        AND horario = ?
         AND (
           status IN ('agendado', 'concluido')
           OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
         )
+        AND (
+          -- Verifica se existe intersecção de horários: 
+          -- (Novo Início < Existente Fim) E (Novo Fim > Existente Início)
+          -- OR fallback para agendamentos antigos que nao tinham horario_fim
+          (? < horario_fim AND ? > horario)
+          OR (horario_fim IS NULL AND horario = ?)
+        )
       LIMIT 1
     `,
-    [estabelecimentoId, data, horario]
+    [estabelecimentoId, data, horario, horarioFim, horario]
   );
 
   return Boolean(conflito);
@@ -144,7 +153,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario }) {
 async function listarHorariosOcupados(estabelecimentoId, data) {
   const rows = await all(
     `
-      SELECT horario
+      SELECT horario, horario_fim
       FROM agendamentos
       WHERE estabelecimento_id = ?
         AND data = ?
@@ -155,7 +164,10 @@ async function listarHorariosOcupados(estabelecimentoId, data) {
     `,
     [estabelecimentoId, data]
   );
-  return rows.map((row) => row.horario);
+  return rows.map((row) => ({
+    horario: row.horario,
+    horario_fim: row.horario_fim
+  }));
 }
 
 // Cancela o agendamento (se possivel).
