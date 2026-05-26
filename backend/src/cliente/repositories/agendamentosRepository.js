@@ -60,22 +60,36 @@ async function criarAgendamento(payload) {
     throw new Error("Estabelecimento nao encontrado.");
   }
 
-  const temConflito = await agendamentosDAO.existeConflitoDeHorario({
-    estabelecimentoId,
-    data,
-    horario
-  });
-
-  if (temConflito) {
-    throw new Error("Esse horario ja esta ocupado para este estabelecimento.");
-  }
-
   const servicosSelecionados = await estabelecimentosRepository.buscarServicosSelecionados(estabelecimentoId, ids);
   if (servicosSelecionados.length === 0) {
     throw new Error("Selecione pelo menos um servico valido.");
   }
 
   const total = servicosSelecionados.reduce((soma, item) => soma + Number(item.preco || 0), 0);
+  const duracaoTotalMinutos = servicosSelecionados.reduce((soma, item) => soma + Number(item.duracao_minutos || 30), 0);
+
+  // Calcula o horario de fim
+  const [horaStr, minStr] = horario.split(":");
+  let horaFimNum = Number(horaStr);
+  let minFimNum = Number(minStr) + duracaoTotalMinutos;
+  
+  horaFimNum += Math.floor(minFimNum / 60);
+  minFimNum = minFimNum % 60;
+  
+  const horarioFim = `${String(horaFimNum).padStart(2, '0')}:${String(minFimNum).padStart(2, '0')}`;
+
+  const temConflito = await agendamentosDAO.existeConflitoDeHorario({
+    estabelecimentoId,
+    data,
+    horario,
+    horarioFim
+  });
+
+  if (temConflito) {
+    throw new Error("Esse horario ja esta ocupado para este estabelecimento.");
+  }
+
+  const totalCalculado = total;
 
   const agendamentoId = await agendamentosDAO.criarAgendamento({
     clienteId,
@@ -85,7 +99,8 @@ async function criarAgendamento(payload) {
     horario,
     profissional,
     observacoes,
-    total,
+    total: totalCalculado,
+    horarioFim,
     servicos: servicosSelecionados
   });
 
@@ -98,7 +113,7 @@ async function criarAgendamento(payload) {
     horario,
     profissional,
     observacoes,
-    total,
+    total: totalCalculado,
     status: "pendente",
     servicos: servicosSelecionados
   };

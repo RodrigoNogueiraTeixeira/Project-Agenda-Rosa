@@ -60,7 +60,8 @@ async function listarEstabelecimentosComFiltro({ cidade, bairro, tipo, busca, pa
     const servicosDoEstabelecimento = (servicosMap.get(id) || []).map((row) => ({
       id: row.id,
       nome: row.nome,
-      preco: Number(row.preco || 0)
+      preco: Number(row.preco || 0),
+      duracao_minutos: Number(row.duracao_minutos || 30)
     }));
 
     return {
@@ -106,7 +107,8 @@ async function buscarEstabelecimentoPorId(id) {
     servicos: servicosRows.map((row) => ({
       id: row.id,
       nome: row.nome,
-      preco: Number(row.preco || 0)
+      preco: Number(row.preco || 0),
+      duracao_minutos: Number(row.duracao_minutos || 30)
     }))
   };
 }
@@ -117,12 +119,75 @@ async function buscarServicosSelecionados(estabelecimentoId, servicosIds) {
   return servicos.map((item) => ({
     id: Number(item.id),
     nome: item.nome,
-    preco: Number(item.preco || 0)
+    preco: Number(item.preco || 0),
+    duracao_minutos: Number(item.duracao_minutos || 30)
   }));
+}
+
+// Calcula horários disponíveis dinamicamente com base na duração dos serviços
+async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinutos) {
+  // Buscar horários ocupados já com os campos horario e horario_fim
+  // Lembrete: agendamentosDAO.listarHorariosOcupados agora retorna objetos com {horario, horario_fim}
+  const agendamentosDAO = require("../dao/agendamentosDAO");
+  const ocupados = await agendamentosDAO.listarHorariosOcupados(estabelecimentoId, data);
+
+  // Idealmente, buscaríamos de horarios_funcionamento para a empresa_id e dia da semana.
+  // Por enquanto, vamos adotar um padrão de 09:00 às 19:00 para suportar a lógica, 
+  // já que o app de cliente (mockado) não está linkado completamente à tabela horarios_funcionamento.
+  
+  const horarioAbertura = "09:00";
+  const horarioFechamento = "19:00";
+  
+  const [aberturaH, aberturaM] = horarioAbertura.split(":").map(Number);
+  const [fechamentoH, fechamentoM] = horarioFechamento.split(":").map(Number);
+  
+  const inicioMinutos = aberturaH * 60 + aberturaM;
+  const fimMinutos = fechamentoH * 60 + fechamentoM;
+  
+  const stepMinutos = 30; // Intervalo padrão de geração de slots
+  
+  const slotsLivres = [];
+  
+  const dataHoje = new Date();
+  const dataSelecionadaObj = new Date(`${data}T00:00:00`);
+  
+  const isHoje = dataHoje.toDateString() === dataSelecionadaObj.toDateString();
+  const agoraMinutos = dataHoje.getHours() * 60 + dataHoje.getMinutes();
+  
+  for (let m = inicioMinutos; m + duracaoMinutos <= fimMinutos; m += stepMinutos) {
+    if (isHoje && m <= agoraMinutos) {
+      continue; // Passou da hora de hoje
+    }
+    
+    const slotFimMinutos = m + duracaoMinutos;
+    
+    // Converter minutos para string HH:mm
+    const slotInicioStr = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+    const slotFimStr = `${String(Math.floor(slotFimMinutos / 60)).padStart(2, '0')}:${String(slotFimMinutos % 60).padStart(2, '0')}`;
+    
+    // Verificar se existe sobreposição com algum ocupado
+    let conflito = false;
+    for (const ocupado of ocupados) {
+      const oFim = ocupado.horario_fim || ocupado.horario; // fallback caso antigo não tenha fim
+      
+      // Existe interseção se (inicio < ocupadoFim) E (fim > ocupadoInicio)
+      if (slotInicioStr < oFim && slotFimStr > ocupado.horario) {
+        conflito = true;
+        break;
+      }
+    }
+    
+    if (!conflito) {
+      slotsLivres.push(slotInicioStr);
+    }
+  }
+  
+  return slotsLivres;
 }
 
 module.exports = {
   listarEstabelecimentosComFiltro,
   buscarEstabelecimentoPorId,
-  buscarServicosSelecionados
+  buscarServicosSelecionados,
+  calcularHorariosDisponiveis
 };

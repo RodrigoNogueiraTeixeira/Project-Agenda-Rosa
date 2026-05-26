@@ -50,8 +50,27 @@ async function horariosOcupados(req, res) {
   }
 }
 
+// GET /api/estabelecimentos/:id/horarios-disponiveis?data=YYYY-MM-DD&duracao=30
+async function horariosDisponiveis(req, res) {
+  try {
+    const data = req.query.data;
+    const duracaoMinutos = Number(req.query.duracao) || 30;
+
+    if (!data) {
+      res.status(400).json({ erro: "A data e obrigatoria." });
+      return;
+    }
+
+    const disponiveis = await estabelecimentosRepository.calcularHorariosDisponiveis(req.params.id, data, duracaoMinutos);
+    res.status(200).json({ horarios: disponiveis });
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao calcular horarios disponiveis.", detalhes: error.message });
+  }
+}
+
 module.exports = {
   listar,
   buscarPorId,
-  horariosOcupados
+  horariosOcupados,
+  horariosDisponiveis
 };
