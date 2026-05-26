@@ -74,5 +74,16 @@
         <a href="/cliente/html/homeDoCliente.html" class="btn-secundario">Voltar para o Início</a>
       </div>
     </div>
+
+    <script>
+      // Verifica imediatamente se o Mercado Pago já informou que foi aprovado na URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const statusPagamento = urlParams.get('status') || urlParams.get('collection_status');
+      
+      if (statusPagamento === 'approved') {
+        // Redireciona na mesma hora para a tela de sucesso
+        window.location.replace('/cliente/html/pagamentoSucesso.html' + window.location.search);
+      }
+    </script>
   </body>
 </html>
