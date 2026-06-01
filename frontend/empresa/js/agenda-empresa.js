@@ -9,7 +9,7 @@ const detalhesConteudo = document.querySelector("#detalhes-agendamento");
 
 // Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
 function obterEmpresaId() {
-  return localStorage.getItem("agendaRosaEmpresaId");
+  return localStorage.getItem("empresaId");
 }
 
 // Carrega os profissionais ativos da empresa no filtro da agenda.
