@@ -1,15 +1,4 @@
-// =========================================================================
-// Daniel e Rodrigo: Módulo de Relatórios Básicos do Administrador
-// =========================================================================
-// ESTRATÉGIA DE INTEGRAÇÃO (Estudo Futuro):
-// 1. Filtros Parametrizados (Query Strings): A busca envia parâmetros via URL
-//    (ex: `?tipo=${tipo}`). O backend capta esses parâmetros por meio de `req.query.tipo`
-//    e retorna os dados recalculados a partir do banco de dados PostgreSQL.
-// 2. Arquitetura Desacoplada: O frontend desconhece a lógica interna de consultas do banco;
-//    ele apenas solicita o recurso '/api/relatorios' e renderiza a resposta.
-// =========================================================================
-
-// Função para preencher a tabela de indicadores com os dados recebidos da API
+// Daniel e Rodrigo: Função para preencher a tabela
 function renderizarTabelaRelatorios(dados) {
     const tabela = document.getElementById('CorpoTabela');
     
@@ -18,9 +7,9 @@ function renderizarTabelaRelatorios(dados) {
 
         const linhaHTML = `
             <tr>
-                <td><strong>${dados.usuariosCadastrados || '0'}</strong></td>
-                <td><strong>${dados.empresasAprovadas || '0'}</strong></td>
-                <td><strong>${dados.cancelamentos || '0'}</strong></td>
+                <td>${dados.usuariosCadastrados}</td>
+                <td>${dados.empresasAprovadas}</td>
+                <td>${dados.cancelamentos}</td>
             </tr>
         `;
 
@@ -28,22 +17,19 @@ function renderizarTabelaRelatorios(dados) {
     }
 }
 
-// Busca os relatórios baseados no filtro selecionado (Geral, Usuários, Empresas, etc.)
+// Daniel e Rodrigo: Busca os relatórios baseados no filtro selecionado
 async function buscarRelatorios(tipo = 'Geral') {
     try {
-        // Envia o filtro na query string da URL relativo à raiz
         const response = await fetch(`/api/relatorios?tipo=${tipo}`);
-        if (!response.ok) throw new Error('Falha na rede ao carregar relatório');
+        if (!response.ok) throw new Error('Erro na rede');
         
         const json = await response.json();
         if (json.success) {
             renderizarTabelaRelatorios(json.data);
         } else {
-            throw new Error(json.message || 'Erro na resposta do backend');
+            throw new Error(json.message || 'Erro na resposta');
         }
     } catch (error) {
-        console.warn('⚠️ Backend inacessível para relatórios. Carregando simulação didática:', error.message);
-        // Fallback didático em caso de banco offline
         renderizarTabelaRelatorios({
             usuariosCadastrados: "1.248",
             empresasAprovadas: "144",
@@ -52,17 +38,14 @@ async function buscarRelatorios(tipo = 'Geral') {
     }
 }
 
-// Registro dos ouvintes de eventos da página de relatórios
+// Daniel e Rodrigo: Inicia eventos
 document.addEventListener('DOMContentLoaded', function() {
-    // Carrega o relatório geral inicialmente
     buscarRelatorios('Geral');
 
     const bntFiltrar = document.querySelector('button');
     if (bntFiltrar) {
         bntFiltrar.addEventListener('click', function(event) {
-            // Previne o recarregamento padrão da página ao submeter o formulário
             event.preventDefault();
-            
             const tipo = document.getElementById('TipoRelatorio').value;
             buscarRelatorios(tipo);
         });
