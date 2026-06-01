@@ -10,7 +10,7 @@ let servicoEmEdicaoId = null;
 
 // Busca o ID da empresa salvo no navegador durante o cadastro.
 function obterEmpresaId() {
-  return localStorage.getItem("agendaRosaEmpresaId");
+  return localStorage.getItem("empresaId");
 }
 
 // Busca o valor de um campo pelo ID.
