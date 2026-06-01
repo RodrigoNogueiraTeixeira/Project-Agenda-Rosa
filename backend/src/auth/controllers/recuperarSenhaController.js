@@ -33,7 +33,12 @@ async function recuperarSenha(req, res) {
         const host = req.headers.host;
         const frontendUrl = `${protocol}://${host}/login/html/RedefinirSenha.html?token=${token}`;
 
-        await emailUtils.enviarEmailRecuperacao(email, frontendUrl);
+        // Tenta enviar o e-mail, mas não falha a requisição se o envio falhar
+        try {
+            await emailUtils.enviarEmailRecuperacao(email, frontendUrl);
+        } catch (emailError) {
+            console.error("Aviso: Falha ao enviar e-mail de recuperação, mas o token foi salvo:", emailError.message);
+        }
 
         res.json({ success: true, message: "Se o e-mail existir na nossa base, você receberá um link de recuperação." });
     } catch (error) {
