@@ -26,7 +26,56 @@ async function buscarEmpresaPorEmail(email) {
   );
 }
 
+// Salva um token de recuperação de senha no banco.
+async function salvarTokenRecuperacao(email, perfil, token, expiracao) {
+  const { run } = require("../../config/database");
+  return run(
+    `INSERT INTO tokens_recuperacao (email, perfil, token, expiracao) VALUES (?, ?, ?, ?)`,
+    [email, perfil, token, expiracao]
+  );
+}
+
+// Busca um token de recuperação.
+async function buscarTokenRecuperacao(token) {
+  return get(
+    `SELECT id, email, perfil, token, expiracao, utilizado FROM tokens_recuperacao WHERE token = ? LIMIT 1`,
+    [token]
+  );
+}
+
+// Marca um token como utilizado.
+async function marcarTokenUtilizado(token) {
+  const { run } = require("../../config/database");
+  return run(
+    `UPDATE tokens_recuperacao SET utilizado = 1 WHERE token = ?`,
+    [token]
+  );
+}
+
+// Atualiza a senha do cliente.
+async function atualizarSenhaCliente(email, novaSenha) {
+  const { run } = require("../../config/database");
+  return run(
+    `UPDATE clientes SET senha = ? WHERE LOWER(email) = LOWER(?)`,
+    [novaSenha, email]
+  );
+}
+
+// Atualiza a senha da empresa.
+async function atualizarSenhaEmpresa(email, novaSenhaHash) {
+  const { run } = require("../../config/database");
+  return run(
+    `UPDATE empresas SET senha_hash = ? WHERE LOWER(email) = LOWER(?)`,
+    [novaSenhaHash, email]
+  );
+}
+
 module.exports = {
   buscarClientePorEmail,
-  buscarEmpresaPorEmail
+  buscarEmpresaPorEmail,
+  salvarTokenRecuperacao,
+  buscarTokenRecuperacao,
+  marcarTokenUtilizado,
+  atualizarSenhaCliente,
+  atualizarSenhaEmpresa
 };

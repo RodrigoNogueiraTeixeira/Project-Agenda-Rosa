@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt_br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redefinir Senha</title>
+    <link rel="stylesheet" href="../css/EstiloEsqueciMinhaSenha.css">
+    <style>
+        .campo-senha {
+            margin-bottom: 20px;
+        }
+        .campo-senha input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #mensagem-erro {
+            color: red;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        #mensagem-sucesso {
+            color: green;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <H1>Redefinir Senha</H1>
+        <h2 style="color: dimgray;">Digite a sua nova senha abaixo</h2>
+
+        <br>
+        
+        <div id="mensagem-erro"></div>
+        <div id="mensagem-sucesso"></div>
+
+        <div id="form-container">
+            <div class="campo-senha">
+                <p>Nova Senha</p>
+                <input type="password" id="nova-senha" placeholder="Digite sua nova senha">
+            </div>
+
+            <div class="campo-senha">
+                <p>Confirmar Nova Senha</p>
+                <input type="password" id="confirmar-senha" placeholder="Confirme sua nova senha">
+            </div>
+            
+            <h3><button type="button" id="btn-redefinir">Salvar Nova Senha</button></h3> 
+        </div>
+
+        <br>
+        <a class="VoltarLogin" href="./login.html">Voltar para login</a>
+    </main>
+
+    <script src="../js/RedefinirSenha.js"></script>
+</body>
+</html>
