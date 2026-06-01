@@ -80,7 +80,7 @@ async function cadastrarEmpresa(event) {
     }
 
     // Guarda temporariamente o ID da empresa para as proximas telas enquanto o login nao esta integrado.
-    localStorage.setItem("agendaRosaEmpresaId", resultado.empresa.id);
+    localStorage.setItem("empresaId", resultado.empresa.id);
 
     alert(resultado.message);
     formCadastroEmpresa.reset();

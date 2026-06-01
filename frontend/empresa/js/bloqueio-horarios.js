@@ -9,7 +9,7 @@ const selectProfissional = document.getElementById("bloqueio-profissional");
 
 // Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
 function obterEmpresaId() {
-  return localStorage.getItem("agendaRosaEmpresaId");
+  return localStorage.getItem("empresaId");
 }
 
 // Busca o valor de um campo pelo ID e remove espacos extras.

@@ -6,7 +6,7 @@ const botaoSalvarHorarios = document.querySelector("[data-salvar-horarios]");
 
 // Busca o ID da empresa salvo no navegador enquanto o login nao esta integrado.
 function obterEmpresaId() {
-  return localStorage.getItem("agendaRosaEmpresaId");
+  return localStorage.getItem("empresaId");
 }
 
 // Busca um campo dentro da linha do dia da semana.
