@@ -10,4 +10,7 @@ router.post("/auth/login", authController.login);
 // Recuperação de senha para clientes e empresas
 router.post("/recuperar-senha", recuperarSenhaController.recuperarSenha);
 
+// Redefinição de senha utilizando o token
+router.post("/redefinir-senha", recuperarSenhaController.redefinirSenha);
+
 module.exports = router;

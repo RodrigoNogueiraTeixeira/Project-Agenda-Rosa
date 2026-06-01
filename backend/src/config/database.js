@@ -392,6 +392,19 @@ async function criarTabelas() {
     )
   `);
 
+  // Tokens de Recuperação
+  await run(`
+    CREATE TABLE IF NOT EXISTS tokens_recuperacao (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      perfil TEXT NOT NULL,
+      token TEXT NOT NULL UNIQUE,
+      expiracao TEXT NOT NULL,
+      utilizado INTEGER DEFAULT 0,
+      criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Seed inicial de categorias
   const hasCategorias = await get("SELECT COUNT(*) AS count FROM categorias");
   if (hasCategorias && Number(hasCategorias.count) === 0) {
