@@ -7,7 +7,7 @@ const indicadorBloqueiosHoje = document.getElementById("bloqueios-hoje");
 
 // Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
 function obterEmpresaId() {
-  return localStorage.getItem("agendaRosaEmpresaId");
+  return localStorage.getItem("empresaId");
 }
 
 // Formata numeros pequenos com dois digitos, mantendo o padrao visual que ja existia na home.
