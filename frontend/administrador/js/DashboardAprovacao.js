@@ -1,7 +1,16 @@
 // Daniel e Rodrigo: Função que desenha a tabela na tela
 function renderizarTabela(empresas) {
     const tbody = document.getElementById('tabela-aprovacao');
-    tbody.innerHTML = "";
+    if (tbody) {
+        tbody.innerHTML = "";
+    } else {
+        return;
+    }
+
+    if (empresas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhum cadastro pendente de aprovação.</td></tr>`;
+        return;
+    }
 
     empresas.forEach(function(empresa) {
         const linhaHTML = `
@@ -9,8 +18,8 @@ function renderizarTabela(empresas) {
                 <td>${empresa.nome}</td>
                 <td>${empresa.responsavel}</td>
                 <td>${empresa.cidade}</td>
-                <td>${empresa.dataCadastro}</td>
-                <td>${empresa.status}</td>
+                <td>${empresa.datacadastro || empresa.dataCadastro || 'N/A'}</td>
+                <td><span class="status-pendente">${empresa.status}</span></td>
                 <td class="AcoesTabela">
                     <div class="AgrupadorBotoes"> 
                         <button type="button" class="BntAprovar" data-id="${empresa.id}">Aprovar</button>
@@ -28,11 +37,13 @@ function renderizarTabela(empresas) {
 async function carregarEmpresasPendentes() {
     try {
         const response = await fetch('/api/empresas/pendentes');
-        if (!response.ok) throw new Error('Erro na rede');
+        if (!response.ok) throw new Error('Falha ao obter lista de pendências');
         
         const json = await response.json();
         if (json.success) {
             renderizarTabela(json.data);
+        } else {
+            throw new Error(json.message || 'Erro ao carregar dados');
         }
     } catch (error) {
         renderizarTabela([
@@ -45,10 +56,11 @@ async function carregarEmpresasPendentes() {
 // Daniel e Rodrigo: Lógica para enviar aprovação/reprovação para o backend
 function configurarBotoesTabela() {
     const tbody = document.getElementById('tabela-aprovacao');
+    if (!tbody) return;
     
     tbody.addEventListener('click', async function(evento) {
         const botaoClicado = evento.target;
-        const idDaEmpresa = botaoClicado.getAttribute('data-id');const idDaEmpresa = botaoClicado.getAttribute('data-id');
+        const idDaEmpresa = botaoClicado.getAttribute('data-id');
 
         if (!idDaEmpresa) return;
 
@@ -62,18 +74,25 @@ function configurarBotoesTabela() {
                     method: 'POST'
                 });
                 
-                if (!response.ok) throw new Error('Erro na rede');
+                if (!response.ok) throw new Error(`Falha ao processar ação de ${acao}`);
                 
                 const json = await response.json();
                 if (json.success) {
-                    alert(json.message);
-                    document.getElementById(`linha-empresa-${idDaEmpresa}`).remove();
+                    alert(json.message || `Empresa ${acao} com sucesso!`);
+                    
+                    const linha = document.getElementById(`linha-empresa-${idDaEmpresa}`);
+                    if (linha) {
+                        linha.style.opacity = '0';
+                        setTimeout(() => linha.remove(), 300);
+                    }
                 }
             } catch (error) {
-                alert(`Empresa ${idDaEmpresa} foi ${acao} com sucesso.`);
+                alert(`Empresa ${idDaEmpresa} foi ${acao}da com sucesso (Simulado).`);
                 const linha = document.getElementById(`linha-empresa-${idDaEmpresa}`);
                 if (linha) linha.remove();
             }
+        } else if (botaoClicado.classList.contains('BntVerDetalhes')) {
+            alert(`Visualizando detalhes da Empresa ID: ${idDaEmpresa}`);
         }
     });
 }
@@ -83,3 +102,4 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarEmpresasPendentes();
     configurarBotoesTabela();
 });
+

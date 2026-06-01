@@ -1,6 +1,6 @@
 // Daniel e Rodrigo: Função para formatar números
 function formatarNumero(numero) {
-    return numero.toLocaleString('pt-BR');
+    return Number(numero || 0).toLocaleString('pt-BR');
 }
 
 // Daniel e Rodrigo: Função para injetar dados reais do backend na tela
@@ -76,3 +76,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+

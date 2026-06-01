@@ -1,7 +1,14 @@
 // Daniel e Rodrigo: Esta função renderiza os dados na tabela
 function renderizarTabelaCategorias(categorias) {
     const tbody = document.getElementById('tabela-categorias');
+    if (!tbody) return;
+    
     tbody.innerHTML = "";
+
+    if (!categorias || categorias.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Nenhuma categoria cadastrada.</td></tr>`;
+        return;
+    }
 
     categorias.forEach(categoria => {
         const linha = `
@@ -27,7 +34,12 @@ async function buscarCategorias() {
         const resposta = await fetch('/api/categorias');
         if (!resposta.ok) throw new Error('Erro');
         const json = await resposta.json();
-        renderizarTabelaCategorias(json.data);
+        
+        if (json.success) {
+            renderizarTabelaCategorias(json.data);
+        } else {
+            throw new Error(json.message || 'Falha na resposta da API');
+        }
     } catch (e) {
         let mock = [
             { id: 1, nome: "Cabelo", descricao: "Serviços relacionados a corte e finalização.", status: "Ativa" },
@@ -39,10 +51,17 @@ async function buscarCategorias() {
 
 // Daniel e Rodrigo: Esta função cuida do clique no botão de cadastrar
 function configurarCadastro() {
-    document.getElementById('btnCadastrarCategoria').addEventListener('click', async () => {
-        let nome = document.getElementById('NomeCategoria').value;
-        let descricao = document.getElementById('DescricaoBloco').value;
-        let status = document.getElementById('SeletorAtividade').value;
+    const btnCadastrar = document.getElementById('btnCadastrarCategoria');
+    if (!btnCadastrar) return;
+
+    btnCadastrar.addEventListener('click', async () => {
+        const elNome = document.getElementById('NomeCategoria');
+        const elDescricao = document.getElementById('DescricaoBloco');
+        const elStatus = document.getElementById('SeletorAtividade');
+
+        const nome = elNome.value.trim();
+        const descricao = elDescricao.value.trim();
+        const status = elStatus.value;
 
         if (!nome || !descricao) {
             alert('Preencha os campos!');
@@ -50,15 +69,27 @@ function configurarCadastro() {
         }
 
         try {
-            await fetch('/api/categorias', {
+            const resposta = await fetch('/api/categorias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, descricao, status })
             });
+
+            if (!resposta.ok) throw new Error('Erro ao salvar categoria no banco');
+
             alert('Cadastrado com sucesso!');
+            
+            elNome.value = "";
+            elDescricao.value = "";
+            elStatus.value = "Ativa";
+
             buscarCategorias();
         } catch (e) {
             alert('Erro de conexão. Mock: Categoria adicionada.');
+            
+            elNome.value = "";
+            elDescricao.value = "";
+            
             buscarCategorias(); 
         }
     });
@@ -69,3 +100,4 @@ document.addEventListener('DOMContentLoaded', () => {
     buscarCategorias();
     configurarCadastro();
 });
+

@@ -26,6 +26,8 @@ async function buscarRelatorios(tipo = 'Geral') {
         const json = await response.json();
         if (json.success) {
             renderizarTabelaRelatorios(json.data);
+        } else {
+            throw new Error(json.message || 'Erro na resposta');
         }
     } catch (error) {
         renderizarTabelaRelatorios({
@@ -49,3 +51,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
