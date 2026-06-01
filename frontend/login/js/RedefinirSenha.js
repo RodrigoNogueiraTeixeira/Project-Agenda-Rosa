@@ -34,8 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api");
+
         try {
-            const resposta = await fetch('/api/redefinir-senha', {
+            const resposta = await fetch(`${API_BASE_URL}/redefinir-senha`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
