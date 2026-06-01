@@ -11,10 +11,15 @@ function configurarRecuperacao() {
             return;
         }
 
-        var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api");
+        var API_BASE_URL = (window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api")).replace(/\/+$/, '');
+
+        var urlFinal = API_BASE_URL + "/recuperar-senha";
+        console.log("[Debug] API_BASE_URL =", API_BASE_URL);
+        console.log("[Debug] URL final =", urlFinal);
+        console.log("[Debug] localStorage.apiBaseUrl =", localStorage.getItem("apiBaseUrl"));
 
         try {
-            let resposta = await fetch(`${API_BASE_URL}/recuperar-senha`, {
+            let resposta = await fetch(urlFinal, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
