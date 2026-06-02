@@ -11,26 +11,44 @@ function configurarRecuperacao() {
             return;
         }
 
+        // Feedback visual: desabilita o botão durante o processamento
+        var textoOriginal = botao.textContent;
+        botao.disabled = true;
+        botao.textContent = 'Enviando...';
+
         var API_BASE_URL = (window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api")).replace(/\/+$/, '');
 
         var urlFinal = API_BASE_URL + "/recuperar-senha";
 
+        // Timeout de 25 segundos para nao travar o browser indefinidamente
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
+
         try {
             let resposta = await fetch(urlFinal, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: email, perfil: perfil })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, perfil: perfil }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
             if (resposta.ok) {
-                alert('Se o e-mail existir, você receberá um link de recuperação.');
+                alert('Link de recuperação enviado! Verifique a caixa de entrada do seu e-mail.');
             } else {
-                alert('Erro ao processar solicitação.');
+                var dados = await resposta.json().catch(function() { return {}; });
+                alert(dados.message || 'Erro ao processar solicitação. Tente novamente.');
             }
         } catch (erro) {
-            alert('Sem conexão com o backend. Simulando envio de e-mail de recuperação.');
+            clearTimeout(timeoutId);
+            if (erro.name === 'AbortError') {
+                alert('O servidor demorou demais para responder. Tente novamente em alguns instantes.');
+            } else {
+                alert('Erro de conexão. Verifique sua internet e tente novamente.');
+            }
+        } finally {
+            botao.disabled = false;
+            botao.textContent = textoOriginal;
         }
     });
 }

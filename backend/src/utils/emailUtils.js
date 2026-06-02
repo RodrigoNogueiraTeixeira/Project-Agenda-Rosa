@@ -3,7 +3,10 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // true for 465, false for other ports
+    secure: true,
+    connectionTimeout: 10000,  // 10 segundos para conectar
+    greetingTimeout: 10000,    // 10 segundos para o handshake
+    socketTimeout: 15000,      // 15 segundos para operações de socket
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
