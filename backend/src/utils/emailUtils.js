@@ -1,22 +1,9 @@
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,             // false = STARTTLS (mais compatível com cloud/Render)
-    family: 4,                 // força IPv4, evita ENETUNREACH no Render
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    }
-});
+// Utilizando a API nativa 'fetch' (disponível no Node.js 18+) para comunicar com o Brevo via HTTP,
+// contornando o bloqueio de portas SMTP do Render Free.
 
 async function enviarEmailRecuperacao(to, linkRecuperacao) {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.warn("⚠️ SMTP_USER ou SMTP_PASS não configurados. Simulação do envio de e-mail:");
+    if (!process.env.BREVO_API_KEY) {
+        console.warn("⚠️ BREVO_API_KEY não configurada. Simulação do envio de e-mail:");
         console.log("=========================================");
         console.log(`Para: ${to}`);
         console.log(`Assunto: Recuperação de Senha - Agenda Rosa`);
@@ -25,13 +12,22 @@ async function enviarEmailRecuperacao(to, linkRecuperacao) {
         return true;
     }
 
-    try {
-        const info = await transporter.sendMail({
-            from: '"Equipe Agenda Rosa" <' + process.env.SMTP_USER + '>',
-            to: to,
-            subject: "Recuperação de Senha - Agenda Rosa",
-            text: `Você solicitou a recuperação da sua senha. Clique no link a seguir para redefinir: ${linkRecuperacao}`,
-            html: `
+    // O email de remetente DEVE ser o mesmo que foi validado no painel do Brevo.
+    // Estamos pegando da variável de ambiente ou usando o padrão que vimos na sua tela.
+    const remetenteEmail = process.env.BREVO_SENDER_EMAIL || 'digo22nt@gmail.com';
+
+    const url = 'https://api.brevo.com/v3/smtp/email';
+
+    const body = {
+        sender: {
+            name: "Agenda Rosa",
+            email: remetenteEmail
+        },
+        to: [
+            { email: to }
+        ],
+        subject: "Recuperação de Senha - Agenda Rosa",
+        htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ff4da6; border-radius: 10px;">
                 <h2 style="color: #ff4da6; text-align: center;">Agenda Rosa</h2>
                 <p style="font-size: 16px; color: #333;">Olá,</p>
@@ -43,13 +39,32 @@ async function enviarEmailRecuperacao(to, linkRecuperacao) {
                 <hr style="border: none; border-top: 1px solid #eee; margin-top: 30px;" />
                 <p style="font-size: 12px; color: #999; text-align: center;">© Agenda Rosa. Todos os direitos reservados.</p>
             </div>
-            `
+        `
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'api-key': process.env.BREVO_API_KEY
+            },
+            body: JSON.stringify(body)
         });
-        console.log("E-mail enviado: %s", info.messageId);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Erro da API do Brevo:", errorData);
+            throw new Error(`Falha ao enviar e-mail via Brevo: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log("E-mail enviado com sucesso pelo Brevo. MessageId:", data.messageId);
         return true;
     } catch (error) {
-        console.error("Erro ao enviar e-mail:", error);
-        throw error;
+        console.error("Erro ao conectar com a API de e-mail:", error);
+        throw error; // Lança o erro para que o catch no controlador pegue
     }
 }
 
