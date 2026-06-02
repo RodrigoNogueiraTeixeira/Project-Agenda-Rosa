@@ -10,7 +10,7 @@ const { Pool } = require("pg");
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 pool.on("error", (err) => {
@@ -410,6 +410,7 @@ async function criarTabelas() {
   if (hasCategorias && Number(hasCategorias.count) === 0) {
     await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Cabelo", "Servicos relacionados a corte e finalizacao.", "Ativa"]);
     await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Unhas", "Servicos de manicure e pedicure.", "Ativa"]);
+    await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Estética Feminino", "Servicos de estetica corporal e facial feminina.", "Ativa"]);
   }
 }
 

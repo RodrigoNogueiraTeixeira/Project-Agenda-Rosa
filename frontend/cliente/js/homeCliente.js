@@ -315,26 +315,57 @@ function configurarModalAgendamento() {
   if (btnConfirmar) {
     btnConfirmar.onclick = confirmarAgendamento;
   }
+
+  const selectProfissional = document.getElementById("profissionalAgendamento");
+  if (selectProfissional) {
+    selectProfissional.onchange = function onProfissionalChange() {
+      const val = selectProfissional.value;
+      const campoHorario = document.getElementById("horarioAgendamento");
+      const notaHorario = document.getElementById("nota-horario");
+      
+      if (!val) {
+        if (campoHorario) {
+          campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
+          campoHorario.disabled = true;
+          campoHorario.value = "";
+        }
+        if (notaHorario) {
+          notaHorario.style.display = "block";
+        }
+      } else {
+        if (campoHorario) {
+          campoHorario.disabled = false;
+        }
+        if (notaHorario) {
+          notaHorario.style.display = "none";
+        }
+        atualizarHorariosDisponiveis();
+      }
+    };
+  }
 }
 
 async function confirmarAgendamento() {
   const btnConfirmar = document.getElementById("confirmarAgendamento");
   const campoData = document.getElementById("dataAgendamento");
   const campoHorario = document.getElementById("horarioAgendamento");
+  const selectProfissional = document.getElementById("profissionalAgendamento");
   const data = String(campoData?.value || "").trim();
   const horario = String(campoHorario?.value || "").trim();
-  const profissional = String(document.getElementById("profissionalAgendamento")?.value || "Sem preferencia").trim();
+  const profissionalId = String(selectProfissional?.value || "").trim();
   const observacoes = String(document.getElementById("observacoesAgendamento")?.value || "").trim();
   const validacaoData = validarDataAgendamentoFront(data);
   limparFeedbackAgendamento();
 
   if (campoData) campoData.style.borderColor = "";
   if (campoHorario) campoHorario.style.borderColor = "";
+  if (selectProfissional) selectProfissional.style.borderColor = "";
 
-  if (!data || !horario) {
+  if (!data || !horario || !profissionalId) {
     if (!data && campoData) campoData.style.borderColor = "red";
     if (!horario && campoHorario) campoHorario.style.borderColor = "red";
-    mostrarFeedbackAgendamento("Data e horario sao obrigatorios para confirmar o agendamento.", "erro");
+    if (!profissionalId && selectProfissional) selectProfissional.style.borderColor = "red";
+    mostrarFeedbackAgendamento("Data, profissional e horario sao obrigatorios para confirmar o agendamento.", "erro");
     return;
   }
 
@@ -381,7 +412,7 @@ async function confirmarAgendamento() {
         servicosIds,
         data,
         horario,
-        profissional,
+        profissionalId,
         observacoes
       })
     });
@@ -508,6 +539,34 @@ function abrirModalAgendamento(loja) {
     listaServicosModal.appendChild(item);
   }
 
+  const selectProfissional = document.getElementById("profissionalAgendamento");
+  if (selectProfissional) {
+    selectProfissional.innerHTML = '<option value="">Carregando...</option>';
+    selectProfissional.disabled = true;
+    
+    fetch(`${API_BASE_URL}/estabelecimentos/${loja.id}/profissionais`)
+      .then(res => res.json())
+      .then(dados => {
+        selectProfissional.innerHTML = '<option value="">Selecione o profissional</option>';
+        selectProfissional.innerHTML += '<option value="qualquer">Sem preferência (Qualquer profissional)</option>';
+        
+        const list = dados.profissionais || [];
+        list.forEach(p => {
+          const opt = document.createElement("option");
+          opt.value = p.id;
+          opt.textContent = p.nome + (p.especialidade ? ` - ${p.especialidade}` : "");
+          selectProfissional.appendChild(opt);
+        });
+        selectProfissional.disabled = false;
+      })
+      .catch(err => {
+        console.error("Erro ao carregar profissionais", err);
+        selectProfissional.innerHTML = '<option value="">Erro ao carregar profissionais</option>';
+        selectProfissional.innerHTML += '<option value="qualquer">Sem preferência (Qualquer profissional)</option>';
+        selectProfissional.disabled = false;
+      });
+  }
+
   const campoData = document.getElementById("dataAgendamento");
   const campoHorario = document.getElementById("horarioAgendamento");
   const { min, max } = obterDataMinMaxAgendamento();
@@ -521,9 +580,15 @@ function abrirModalAgendamento(loja) {
   if (campoHorario) {
     campoHorario.value = "";
     campoHorario.style.borderColor = "";
+    campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
+    campoHorario.disabled = true;
   }
-  atualizarHorariosDisponiveis();
-  document.getElementById("profissionalAgendamento").value = "Sem preferência";
+  
+  const notaHorario = document.getElementById("nota-horario");
+  if (notaHorario) {
+    notaHorario.style.display = "block";
+  }
+
   document.getElementById("observacoesAgendamento").value = "";
 
   overlay.style.display = "grid";
@@ -553,10 +618,24 @@ function fecharModalAgendamento() {
 async function atualizarHorariosDisponiveis() {
   const campoData = document.getElementById("dataAgendamento");
   const campoHorario = document.getElementById("horarioAgendamento");
+  const selectProfissional = document.getElementById("profissionalAgendamento");
   
   if (!campoData || !campoHorario) return;
   
   const dataSelecionada = campoData.value;
+  const profissionalId = selectProfissional ? selectProfissional.value : "";
+  const notaHorario = document.getElementById("nota-horario");
+  
+  if (!profissionalId) {
+    campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
+    campoHorario.disabled = true;
+    if (notaHorario) notaHorario.style.display = "block";
+    return;
+  }
+  
+  campoHorario.disabled = false;
+  if (notaHorario) notaHorario.style.display = "none";
+  
   const checkboxes = document.querySelectorAll("#listaServicosModal input[type='checkbox']");
   
   let duracaoTotal = 0;
@@ -577,7 +656,7 @@ async function atualizarHorariosDisponiveis() {
   }
   
   try {
-    const resposta = await chamarApi(`/estabelecimentos/${estadoTela.agendamentoAtual.estabelecimentoId}/horarios-disponiveis?data=${dataSelecionada}&duracao=${duracaoTotal}`, { method: 'GET' });
+    const resposta = await chamarApi(`/estabelecimentos/${estadoTela.agendamentoAtual.estabelecimentoId}/horarios-disponiveis?data=${dataSelecionada}&duracao=${duracaoTotal}&profissionalId=${profissionalId}`, { method: 'GET' });
     const horarios = resposta.horarios || [];
     
     for (const horaStr of horarios) {

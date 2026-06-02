@@ -1,36 +1,26 @@
 const { run, get, all } = require("./src/config/database");
 
-async function cadastrarUsuario() {
-  const nome = "Rodrigo";
-  const email = "rodrigo@agendarosa.com";
-  const senha = "123";
-  const telefone = "(11) 99999-9999";
-  const cidade = "São Paulo";
-  const bairro = "Centro";
+async function checkDatabase() {
+  console.log("--- INICIANDO VERIFICAÇÃO DO BANCO ---");
+  try {
+    const estabelecimentos = await all("SELECT id, nome, cidade, bairro FROM estabelecimentos LIMIT 5");
+    console.log("\n--- ESTABELECIMENTOS ---");
+    console.table(estabelecimentos);
 
-  console.log("--- INICIANDO INTEGRAÇÃO DO BANCO ---");
+    const empresas = await all("SELECT id, nome_responsavel, nome_estabelecimento, email FROM empresas LIMIT 5");
+    console.log("\n--- EMPRESAS ---");
+    console.table(empresas);
 
-  // 1. Verifica se o usuário já existe
-  const usuarioExistente = await get("SELECT * FROM clientes WHERE email = ?", [email]);
+    const servicos = await all("SELECT id, nome, preco, estabelecimento_id, empresa_id FROM servicos LIMIT 5");
+    console.log("\n--- SERVICOS ---");
+    console.table(servicos);
 
-  if (usuarioExistente) {
-    console.log(`⚠️ Usuário já cadastrado! Atualizando dados de: ${email}`);
-    await run(
-      "UPDATE clientes SET nome = ?, senha = ?, telefone = ?, cidade = ?, bairro = ? WHERE email = ?",
-      [nome, senha, telefone, cidade, bairro, email]
-    );
-  } else {
-    console.log(`✨ Cadastrando novo usuário: ${email}`);
-    await run(
-      "INSERT INTO clientes (nome, email, senha, telefone, cidade, bairro) VALUES (?, ?, ?, ?, ?, ?)",
-      [nome, email, senha, telefone, cidade, bairro]
-    );
+    const profissionais = await all("SELECT id, nome, empresa_id, ativo FROM profissionais LIMIT 5");
+    console.log("\n--- PROFISSIONAIS ---");
+    console.table(profissionais);
+  } catch (error) {
+    console.error("Erro na verificação:", error);
   }
-
-  // 2. Imprime todos os usuários cadastrados
-  const usuarios = await all("SELECT id, nome, email, senha, telefone, cidade, bairro FROM clientes");
-  console.log("\n--- CLIENTES ATUALMENTE CADASTRADOS NO BANCO ---");
-  console.table(usuarios);
 }
 
-cadastrarUsuario().catch(console.error);
+checkDatabase().catch(console.error);

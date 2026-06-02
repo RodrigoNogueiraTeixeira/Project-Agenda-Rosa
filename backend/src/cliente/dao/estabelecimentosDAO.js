@@ -108,11 +108,32 @@ async function atualizarCoordenadas(id, latitude, longitude) {
   );
 }
 
+// Busca profissionais ativos da empresa do estabelecimento.
+async function listarProfissionaisPorEstabelecimento(estabelecimentoId) {
+  // Busca o empresa_id associado ao estabelecimento pelos servicos cadastrados
+  const servico = await get(
+    "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+    [estabelecimentoId]
+  );
+  
+  let empresaId = servico ? servico.empresa_id : null;
+  if (!empresaId) {
+    // Fallback: assume que o empresa_id e igual ao estabelecimento_id
+    empresaId = estabelecimentoId;
+  }
+
+  return all(
+    "SELECT id, nome, especialidade FROM profissionais WHERE empresa_id = ? AND ativo = 1 ORDER BY nome",
+    [empresaId]
+  );
+}
+
 module.exports = {
   listarComFiltros,
   buscarPorId,
   listarTiposPorEstabelecimentos,
   listarServicosPorEstabelecimentos,
   listarServicosSelecionados,
-  atualizarCoordenadas
+  atualizarCoordenadas,
+  listarProfissionaisPorEstabelecimento
 };

@@ -12,4 +12,10 @@ router.get("/estabelecimentos/:id", estabelecimentosController.buscarPorId);
 // Busca horarios ocupados de um estabelecimento.
 router.get("/estabelecimentos/:id/horarios-ocupados", estabelecimentosController.horariosOcupados);
 
+// Busca horarios disponiveis de um estabelecimento.
+router.get("/estabelecimentos/:id/horarios-disponiveis", estabelecimentosController.horariosDisponiveis);
+
+// Busca profissionais ativos de um estabelecimento.
+router.get("/estabelecimentos/:id/profissionais", estabelecimentosController.listarProfissionais);
+
 module.exports = router;
