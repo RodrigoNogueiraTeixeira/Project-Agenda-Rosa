@@ -37,7 +37,7 @@ async function criarAgendamento(payload) {
   const estabelecimentoId = Number(payload.estabelecimentoId);
   const data = String(payload.data || "").trim();
   const horario = String(payload.horario || "").trim();
-  const profissional = String(payload.profissional || "Sem preferencia").trim();
+  const profissionalId = payload.profissionalId || null;
   const observacoes = String(payload.observacoes || "").trim();
 
   const ids = Array.isArray(payload.servicosIds)
@@ -78,16 +78,86 @@ async function criarAgendamento(payload) {
   
   const horarioFim = `${String(horaFimNum).padStart(2, '0')}:${String(minFimNum).padStart(2, '0')}`;
 
+  // Buscar profissionais para resolver nomes e IDs e fazer auto-atribuição se "Sem preferência"
+  const estabelecimentosDAO = require("../dao/estabelecimentosDAO");
+  const profissionais = await estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId);
+  
+  let profissionalNome = "Sem preferência";
+  let finalProfissionalId = null;
+
+  if (profissionalId && profissionalId !== "qualquer" && profissionalId !== "") {
+    const { get } = require("../../config/database");
+    const profRow = await get("SELECT nome FROM profissionais WHERE id = ?", [Number(profissionalId)]);
+    if (profRow) {
+      profissionalNome = profRow.nome;
+      finalProfissionalId = Number(profissionalId);
+    } else {
+      throw new Error("Profissional selecionado nao encontrado.");
+    }
+  } else if (profissionais.length > 0) {
+    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre
+    const { get } = require("../../config/database");
+    for (const prof of profissionais) {
+      const conflitoProf = await get(
+        `
+          SELECT id
+          FROM agendamentos
+          WHERE estabelecimento_id = ?
+            AND data = ?
+            AND (
+              status IN ('agendado', 'concluido')
+              OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
+            )
+            AND (
+              profissional_id = ? 
+              OR profissional = ?
+            )
+            AND (
+              (? < horario_fim AND ? > horario)
+              OR (horario_fim IS NULL AND horario = ?)
+            )
+          LIMIT 1
+        `,
+        [
+          estabelecimentoId,
+          data,
+          prof.id,
+          prof.nome,
+          horario,
+          horarioFim,
+          horario
+        ]
+      );
+      if (!conflitoProf) {
+        profissionalNome = prof.nome;
+        finalProfissionalId = prof.id;
+        break;
+      }
+    }
+  }
+
+  // Validar se há conflito para o profissional selecionado (ou se todos estão ocupados se "Sem preferência")
   const temConflito = await agendamentosDAO.existeConflitoDeHorario({
     estabelecimentoId,
     data,
     horario,
-    horarioFim
+    horarioFim,
+    profissionalId: finalProfissionalId || "qualquer"
   });
 
   if (temConflito) {
-    throw new Error("Esse horario ja esta ocupado para este estabelecimento.");
+    throw new Error("Esse horario ja esta ocupado para o profissional selecionado ou a agenda esta lotada.");
   }
+
+  // Buscar o empresa_id associado ao estabelecimento pelos servicos cadastrados
+  const { get } = require("../../config/database");
+  const servicoEmpresa = await get(
+    "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+    [estabelecimentoId]
+  );
+  const empresaId = servicoEmpresa ? servicoEmpresa.empresa_id : estabelecimentoId; // Fallback
+
+  const servicoId = servicosSelecionados.length > 0 ? servicosSelecionados[0].id : null;
 
   const totalCalculado = total;
 
@@ -97,11 +167,20 @@ async function criarAgendamento(payload) {
     estabelecimentoNome: estabelecimento.nome,
     data,
     horario,
-    profissional,
+    profissional: profissionalNome,
     observacoes,
     total: totalCalculado,
     horarioFim,
-    servicos: servicosSelecionados
+    servicos: servicosSelecionados,
+    // Novos campos de compatibilidade com o painel da empresa:
+    empresaId,
+    servicoId,
+    profissionalId: finalProfissionalId,
+    nomeCliente: cliente.nome,
+    telefoneCliente: cliente.telefone,
+    emailCliente: cliente.email,
+    dataAgendamento: data,
+    horarioInicio: horario
   });
 
   return {
@@ -111,7 +190,7 @@ async function criarAgendamento(payload) {
     estabelecimentoNome: estabelecimento.nome,
     data,
     horario,
-    profissional,
+    profissional: profissionalNome,
     observacoes,
     total: totalCalculado,
     status: "pendente",
