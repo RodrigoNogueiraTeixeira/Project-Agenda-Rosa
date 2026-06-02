@@ -11,7 +11,16 @@ async function criarAgendamento({
   observacoes,
   total,
   horarioFim,
-  servicos
+  servicos,
+  // Campos de compatibilidade com o painel da empresa:
+  empresaId = null,
+  servicoId = null,
+  profissionalId = null,
+  nomeCliente = null,
+  telefoneCliente = null,
+  emailCliente = null,
+  dataAgendamento = null,
+  horarioInicio = null
 }) {
   return transaction(async (tx) => {
     const resultadoInsert = await tx.run(
@@ -27,8 +36,16 @@ async function criarAgendamento({
           total,
           horario_fim,
           status,
-          criado_em
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          criado_em,
+          empresa_id,
+          servico_id,
+          profissional_id,
+          nome_cliente,
+          telefone_cliente,
+          email_cliente,
+          data_agendamento,
+          horario_inicio
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         clienteId,
@@ -41,7 +58,15 @@ async function criarAgendamento({
         total,
         horarioFim,
         "pendente",
-        new Date().toISOString()
+        new Date().toISOString(),
+        empresaId,
+        servicoId,
+        profissionalId,
+        nomeCliente,
+        telefoneCliente,
+        emailCliente,
+        dataAgendamento,
+        horarioInicio
       ]
     );
 
@@ -122,51 +147,135 @@ async function buscarPorId(id) {
   );
 }
 
-// Verifica se ja existe agendamento ativo no mesmo horario do estabelecimento.
-async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horarioFim }) {
-  const conflito = await get(
-    `
-      SELECT id
-      FROM agendamentos
-      WHERE estabelecimento_id = ?
-        AND data = ?
-        AND (
-          status IN ('agendado', 'concluido')
-          OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
-        )
-        AND (
-          -- Verifica se existe intersecção de horários: 
-          -- (Novo Início < Existente Fim) E (Novo Fim > Existente Início)
-          -- OR fallback para agendamentos antigos que nao tinham horario_fim
-          (? < horario_fim AND ? > horario)
-          OR (horario_fim IS NULL AND horario = ?)
-        )
-      LIMIT 1
-    `,
-    [estabelecimentoId, data, horario, horarioFim, horario]
-  );
+// Verifica se ja existe agendamento ativo no mesmo horario do estabelecimento (e profissional).
+async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horarioFim, profissionalId = null }) {
+  // Se for um profissional especifico
+  if (profissionalId && profissionalId !== "qualquer" && profissionalId !== "") {
+    const conflito = await get(
+      `
+        SELECT id
+        FROM agendamentos
+        WHERE estabelecimento_id = ?
+          AND data = ?
+          AND (
+            status IN ('agendado', 'concluido')
+            OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
+          )
+          AND (
+            profissional_id = ? 
+            OR profissional = (SELECT nome FROM profissionais WHERE id = ?)
+          )
+          AND (
+            (? < horario_fim AND ? > horario)
+            OR (horario_fim IS NULL AND horario = ?)
+          )
+        LIMIT 1
+      `,
+      [
+        estabelecimentoId,
+        data,
+        Number(profissionalId),
+        Number(profissionalId),
+        horario,
+        horarioFim,
+        horario
+      ]
+    );
+    return Boolean(conflito);
+  }
 
-  return Boolean(conflito);
+  // Se for "Sem preferencia" (qualquer):
+  // Um slot e livre se houver pelo menos um profissional livre.
+  const estabelecimentosDAO = require("./estabelecimentosDAO");
+  const profissionais = await estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId);
+
+  if (profissionais.length === 0) {
+    const conflito = await get(
+      `
+        SELECT id
+        FROM agendamentos
+        WHERE estabelecimento_id = ?
+          AND data = ?
+          AND (
+            status IN ('agendado', 'concluido')
+            OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
+          )
+          AND (
+            (? < horario_fim AND ? > horario)
+            OR (horario_fim IS NULL AND horario = ?)
+          )
+        LIMIT 1
+      `,
+      [estabelecimentoId, data, horario, horarioFim, horario]
+    );
+    return Boolean(conflito);
+  }
+
+  for (const prof of profissionais) {
+    const conflitoProf = await get(
+      `
+        SELECT id
+        FROM agendamentos
+        WHERE estabelecimento_id = ?
+          AND data = ?
+          AND (
+            status IN ('agendado', 'concluido')
+            OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
+          )
+          AND (
+            profissional_id = ? 
+            OR profissional = ?
+          )
+          AND (
+            (? < horario_fim AND ? > horario)
+            OR (horario_fim IS NULL AND horario = ?)
+          )
+        LIMIT 1
+      `,
+      [
+        estabelecimentoId,
+        data,
+        prof.id,
+        prof.nome,
+        horario,
+        horarioFim,
+        horario
+      ]
+    );
+
+    if (!conflitoProf) {
+      return false; // Achamos pelo menos um profissional livre!
+    }
+  }
+
+  return true; // Todos os profissionais ocupados
 }
 
-// Busca todos os horários ocupados para uma data e estabelecimento específicos
-async function listarHorariosOcupados(estabelecimentoId, data) {
-  const rows = await all(
-    `
-      SELECT horario, horario_fim
-      FROM agendamentos
-      WHERE estabelecimento_id = ?
-        AND data = ?
-        AND (
-          status IN ('agendado', 'concluido')
-          OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
-        )
-    `,
-    [estabelecimentoId, data]
-  );
+// Busca todos os horários ocupados para uma data e estabelecimento (e profissional) específicos
+async function listarHorariosOcupados(estabelecimentoId, data, profissionalId = null) {
+  let query = `
+    SELECT horario, horario_fim, profissional_id, profissional
+    FROM agendamentos
+    WHERE estabelecimento_id = ?
+      AND data = ?
+      AND (
+        status IN ('agendado', 'concluido')
+        OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
+      )
+  `;
+  const params = [estabelecimentoId, data];
+
+  if (profissionalId && profissionalId !== "qualquer") {
+    query += " AND (profissional_id = ? OR profissional = (SELECT nome FROM profissionais WHERE id = ?))";
+    params.push(Number(profissionalId), Number(profissionalId));
+  }
+
+  const rows = await all(query, params);
   return rows.map((row) => ({
     horario: row.horario,
-    horario_fim: row.horario_fim
+    horario_fim: row.horario_fim,
+    profissionalId: row.profissional_id,
+    profissional: row.profissional
   }));
 }
 

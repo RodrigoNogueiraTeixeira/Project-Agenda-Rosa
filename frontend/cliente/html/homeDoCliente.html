@@ -109,6 +109,13 @@
               <p id="totalAgendamento">Total: R$ 0,00</p>
             </fieldset>
 
+            <div class="campo-full">
+              <label for="profissionalAgendamento">Profissional</label>
+              <select id="profissionalAgendamento">
+                <option value="">Selecione o profissional</option>
+              </select>
+            </div>
+
             <div class="grid-campos-dupla">
               <div class="campo-metade">
                 <label for="dataAgendamento">Data</label>
@@ -116,26 +123,11 @@
               </div>
               <div class="campo-metade">
                 <label for="horarioAgendamento">Horário disponível</label>
-                <select id="horarioAgendamento">
-                  <option value="">Selecione</option>
-                  <option>09:00</option>
-                  <option>10:00</option>
-                  <option>11:00</option>
-                  <option>14:00</option>
-                  <option>15:00</option>
-                  <option>16:00</option>
+                <select id="horarioAgendamento" disabled>
+                  <option value="">Selecione o profissional primeiro</option>
                 </select>
+                <span id="nota-horario" style="display: block; font-size: 0.75em; color: #c93f7d; margin-top: 4px; font-weight: 500;">* Selecione o profissional para liberar os horários</span>
               </div>
-            </div>
-
-            <div class="campo-full">
-              <label for="profissionalAgendamento">Profissional (opcional)</label>
-              <select id="profissionalAgendamento">
-                <option>Sem preferência</option>
-                <option>Ana</option>
-                <option>Bruna</option>
-                <option>Carlos</option>
-              </select>
             </div>
 
             <div class="campo-full">
