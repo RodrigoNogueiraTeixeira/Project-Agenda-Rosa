@@ -4,6 +4,15 @@ const estabelecimentosRepository = require("./estabelecimentosRepository");
 const pagamentosDAO = require("../dao/pagamentosDAO");
 const pagamentosRepository = require("./pagamentosRepository");
 
+function adicionarMinutos(horarioStr, minutos) {
+  if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
+  const [h, m] = horarioStr.split(":").map(Number);
+  let totalMinutos = h * 60 + m + minutos;
+  const novosH = Math.floor(totalMinutos / 60);
+  const novosM = totalMinutos % 60;
+  return `${String(novosH).padStart(2, '0')}:${String(novosM).padStart(2, '0')}`;
+}
+
 function validarDataAgendamento(dataTexto) {
   const data = String(dataTexto || "").trim();
   const validaFormato = /^\d{4}-\d{2}-\d{2}$/.test(data);
@@ -136,14 +145,17 @@ async function criarAgendamento(payload) {
     }
   }
 
-  // Validar se há conflito para o profissional selecionado (ou se todos estão ocupados se "Sem preferência")
-  const temConflito = await agendamentosDAO.existeConflitoDeHorario({
-    estabelecimentoId,
-    data,
-    horario,
-    horarioFim,
-    profissionalId: finalProfissionalId || "qualquer"
-  });
+  // Validar se há conflito para o profissional selecionado (usando o cálculo em JS para consistência total com a exibição de horários)
+  const ocupados = await agendamentosDAO.listarHorariosOcupados(estabelecimentoId, data, finalProfissionalId);
+  
+  let temConflito = false;
+  for (const o of ocupados) {
+    const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
+    if (horario < oFim && horarioFim > o.horario) {
+      temConflito = true;
+      break;
+    }
+  }
 
   if (temConflito) {
     throw new Error("Esse horario ja esta ocupado para o profissional selecionado ou a agenda esta lotada.");
