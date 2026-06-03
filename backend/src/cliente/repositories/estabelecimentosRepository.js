@@ -1,6 +1,15 @@
 const estabelecimentosDAO = require("../dao/estabelecimentosDAO");
 const { normalizarTexto, obterSinonimosTipo } = require("../../utils/texto");
 
+function adicionarMinutos(horarioStr, minutos) {
+  if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
+  const [h, m] = horarioStr.split(":").map(Number);
+  let totalMinutos = h * 60 + m + minutos;
+  const novosH = Math.floor(totalMinutos / 60);
+  const novosM = totalMinutos % 60;
+  return `${String(novosH).padStart(2, '0')}:${String(novosM).padStart(2, '0')}`;
+}
+
 // Converte lista de linhas em mapa por estabelecimento.
 function agruparPorEstabelecimento(rows, campoId) {
   const mapa = new Map();
@@ -173,7 +182,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
         candidatosMinutosSet.add(minutosInicio);
       }
     }
-    const oFim = o.horario_fim || o.horario;
+    const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
     if (oFim && oFim.includes(":")) {
       const [hF, mF] = oFim.split(":").map(Number);
       const minutosFim = hF * 60 + mF;
@@ -212,7 +221,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
       // Para um profissional específico, o horário está livre se não houver intersecção com nenhum de seus agendamentos ocupados
       let conflito = false;
       for (const o of ocupados) {
-        const oFim = o.horario_fim || o.horario;
+        const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
         if (slotInicioStr < oFim && slotFimStr > o.horario) {
           conflito = true;
           break;
@@ -229,7 +238,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
       if (profissionais.length === 0) {
         let conflitoGlobal = false;
         for (const o of ocupados) {
-          const oFim = o.horario_fim || o.horario;
+          const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
           if (slotInicioStr < oFim && slotFimStr > o.horario) {
             conflitoGlobal = true;
             break;
@@ -252,7 +261,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
             const ehDesteProf = Number(o.profissionalId) === Number(prof.id) || o.profissional === prof.nome;
             if (!ehDesteProf) continue;
             
-            const oFim = o.horario_fim || o.horario;
+            const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
             if (slotInicioStr < oFim && slotFimStr > o.horario) {
               profOcupado = true;
               break;
