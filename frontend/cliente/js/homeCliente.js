@@ -328,6 +328,14 @@ function configurarModalAgendamento() {
           confirmButtonText: 'Entendido'
         });
         selectHorario.value = "";
+      } else if (opcaoSelecionada && opcaoSelecionada.getAttribute("data-passado") === "true") {
+        Swal.fire({
+          title: 'Horário Passado',
+          text: 'Este horário já passou. Por favor, escolha um horário futuro.',
+          icon: 'warning',
+          confirmButtonText: 'Entendido'
+        });
+        selectHorario.value = "";
       }
     };
   }
@@ -389,6 +397,11 @@ async function confirmarAgendamento() {
   if (opcaoSelecionada && opcaoSelecionada.getAttribute("data-ocupado") === "true") {
     if (campoHorario) campoHorario.style.borderColor = "red";
     mostrarFeedbackAgendamento("O horário selecionado está ocupado. Por favor, selecione outro.", "erro");
+    return;
+  }
+  if (opcaoSelecionada && opcaoSelecionada.getAttribute("data-passado") === "true") {
+    if (campoHorario) campoHorario.style.borderColor = "red";
+    mostrarFeedbackAgendamento("O horário selecionado já passou. Por favor, selecione um horário futuro.", "erro");
     return;
   }
 
@@ -685,6 +698,11 @@ async function atualizarHorariosDisponiveis() {
       option.value = slot.hora;
       if (slot.disponivel) {
         option.textContent = slot.hora;
+      } else if (slot.passado) {
+        option.textContent = `🕒 ${slot.hora} (Passou)`;
+        option.style.color = "#71717a";
+        option.style.fontWeight = "bold";
+        option.setAttribute("data-passado", "true");
       } else {
         option.textContent = `🔴 ${slot.hora} (Ocupado)`;
         option.style.color = "#ef4444";
@@ -694,17 +712,18 @@ async function atualizarHorariosDisponiveis() {
       campoHorario.appendChild(option);
     }
     
-    // Tenta recolocar o valor se ele ainda existir e estiver livre
+    // Tenta recolocar o valor se ele ainda existir e estiver livre e não passado
     if (valorAnterior) {
       const opcao = Array.from(campoHorario.options).find(o => o.value === valorAnterior);
-      if (opcao && opcao.getAttribute("data-ocupado") !== "true") {
+      if (opcao && opcao.getAttribute("data-ocupado") !== "true" && opcao.getAttribute("data-passado") !== "true") {
         campoHorario.value = valorAnterior;
       } else {
         campoHorario.value = "";
-        if (opcao && opcao.getAttribute("data-ocupado") === "true") {
+        if (opcao && (opcao.getAttribute("data-ocupado") === "true" || opcao.getAttribute("data-passado") === "true")) {
+          const motivo = opcao.getAttribute("data-passado") === "true" ? "já passou" : "está ocupado";
           Swal.fire({
             title: 'Horário Indisponível',
-            text: 'O horário selecionado anteriormente não está disponível para a nova duração de serviços.',
+            text: `O horário selecionado anteriormente ${motivo} para a nova duração de serviços.`,
             icon: 'warning',
             confirmButtonText: 'Entendido'
           });
