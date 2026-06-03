@@ -211,9 +211,10 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
           break;
         }
       }
-      if (!conflito) {
-        slotsLivres.push(slotInicioStr);
-      }
+      slotsLivres.push({
+        hora: slotInicioStr,
+        disponivel: !conflito
+      });
     } else {
       // Se for "Sem preferência" (Qualquer):
       // O horário está livre se houver pelo menos UM profissional ativo livre.
@@ -227,9 +228,10 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
             break;
           }
         }
-        if (!conflitoGlobal) {
-          slotsLivres.push(slotInicioStr);
-        }
+        slotsLivres.push({
+          hora: slotInicioStr,
+          disponivel: !conflitoGlobal
+        });
       } else {
         // Se houver profissionais cadastrados, verificamos cada um individualmente.
         // O slot de tempo está disponível se pelo menos um profissional estiver livre durante todo o intervalo [slotInicioStr, slotFimStr].
@@ -256,9 +258,10 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
           }
         }
         
-        if (peloMenosUmLivre) {
-          slotsLivres.push(slotInicioStr);
-        }
+        slotsLivres.push({
+          hora: slotInicioStr,
+          disponivel: peloMenosUmLivre
+        });
       }
     }
   }
