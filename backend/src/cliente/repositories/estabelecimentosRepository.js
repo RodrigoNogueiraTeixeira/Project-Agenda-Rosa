@@ -70,7 +70,8 @@ async function listarEstabelecimentosComFiltro({ cidade, bairro, tipo, busca, pa
       id: row.id,
       nome: row.nome,
       preco: Number(row.preco || 0),
-      duracao_minutos: Number(row.duracao_minutos || 30)
+      duracao_minutos: Number(row.duracao_minutos || 30),
+      categoria: row.categoria || ""
     }));
 
     return {
@@ -117,7 +118,8 @@ async function buscarEstabelecimentoPorId(id) {
       id: row.id,
       nome: row.nome,
       preco: Number(row.preco || 0),
-      duracao_minutos: Number(row.duracao_minutos || 30)
+      duracao_minutos: Number(row.duracao_minutos || 30),
+      categoria: row.categoria || ""
     }))
   };
 }
@@ -129,7 +131,8 @@ async function buscarServicosSelecionados(estabelecimentoId, servicosIds) {
     id: Number(item.id),
     nome: item.nome,
     preco: Number(item.preco || 0),
-    duracao_minutos: Number(item.duracao_minutos || 30)
+    duracao_minutos: Number(item.duracao_minutos || 30),
+    categoria: item.categoria || ""
   }));
 }
 
