@@ -164,8 +164,15 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
     candidatosMinutosSet.add(m);
   }
   
-  // Para cada consulta ocupada, adicionamos o horario_fim como um possível candidato de início
+  // Para cada consulta ocupada, adicionamos o horario de inicio e o horario_fim como possiveis candidatos de inicio
   for (const o of ocupados) {
+    if (o.horario && o.horario.includes(":")) {
+      const [hI, mI] = o.horario.split(":").map(Number);
+      const minutosInicio = hI * 60 + mI;
+      if (minutosInicio >= inicioMinutos && minutosInicio <= fimMinutos) {
+        candidatosMinutosSet.add(minutosInicio);
+      }
+    }
     const oFim = o.horario_fim || o.horario;
     if (oFim && oFim.includes(":")) {
       const [hF, mF] = oFim.split(":").map(Number);

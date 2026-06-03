@@ -316,6 +316,22 @@ function configurarModalAgendamento() {
     btnConfirmar.onclick = confirmarAgendamento;
   }
 
+  const selectHorario = document.getElementById("horarioAgendamento");
+  if (selectHorario) {
+    selectHorario.onchange = function onHorarioChange() {
+      const opcaoSelecionada = selectHorario.options[selectHorario.selectedIndex];
+      if (opcaoSelecionada && opcaoSelecionada.getAttribute("data-ocupado") === "true") {
+        Swal.fire({
+          title: 'Horário Ocupado',
+          text: 'Este horário já está agendado para o profissional selecionado. Por favor, escolha outro horário.',
+          icon: 'warning',
+          confirmButtonText: 'Entendido'
+        });
+        selectHorario.value = "";
+      }
+    };
+  }
+
   const selectProfissional = document.getElementById("profissionalAgendamento");
   if (selectProfissional) {
     selectProfissional.onchange = function onProfissionalChange() {
@@ -366,6 +382,13 @@ async function confirmarAgendamento() {
     if (!horario && campoHorario) campoHorario.style.borderColor = "red";
     if (!profissionalId && selectProfissional) selectProfissional.style.borderColor = "red";
     mostrarFeedbackAgendamento("Data, profissional e horario sao obrigatorios para confirmar o agendamento.", "erro");
+    return;
+  }
+
+  const opcaoSelecionada = campoHorario?.options[campoHorario.selectedIndex];
+  if (opcaoSelecionada && opcaoSelecionada.getAttribute("data-ocupado") === "true") {
+    if (campoHorario) campoHorario.style.borderColor = "red";
+    mostrarFeedbackAgendamento("O horário selecionado está ocupado. Por favor, selecione outro.", "erro");
     return;
   }
 
@@ -530,7 +553,7 @@ function abrirModalAgendamento(loja) {
 
     const preco = document.createElement("span");
     preco.className = "preco-servico";
-    preco.textContent = formatarMoeda(servico.preco);
+    preco.textContent = `${servico.duracao_minutos || 30} min • ${formatarMoeda(servico.preco)}`;
 
     label.appendChild(checkbox);
     label.appendChild(nome);
@@ -665,9 +688,10 @@ async function atualizarHorariosDisponiveis() {
       if (slot.disponivel) {
         option.textContent = slot.hora;
       } else {
-        option.textContent = `${slot.hora} (Ocupado)`;
-        option.disabled = true;
-        option.style.color = "red";
+        option.textContent = `🔴 ${slot.hora} (Ocupado)`;
+        option.style.color = "#ef4444";
+        option.style.fontWeight = "bold";
+        option.setAttribute("data-ocupado", "true");
       }
       campoHorario.appendChild(option);
     }
@@ -688,16 +712,22 @@ async function atualizarHorariosDisponiveis() {
 function atualizarTotalAgendamento() {
   const checkboxes = document.querySelectorAll("#listaServicosModal input[type='checkbox']");
   let total = 0;
+  let duracaoTotal = 0;
 
   for (const checkbox of checkboxes) {
     if (checkbox.checked) {
       total += Number(checkbox.getAttribute("data-preco") || 0);
+      duracaoTotal += Number(checkbox.getAttribute("data-duracao") || 30);
     }
   }
 
   const campoTotal = document.getElementById("totalAgendamento");
   if (campoTotal) {
-    campoTotal.textContent = "Total: " + formatarMoeda(total);
+    if (duracaoTotal > 0) {
+      campoTotal.textContent = `Total: ${formatarMoeda(total)} (${duracaoTotal} min)`;
+    } else {
+      campoTotal.textContent = "Total: R$ 0,00";
+    }
   }
 }
 
