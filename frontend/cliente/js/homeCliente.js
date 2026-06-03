@@ -571,7 +571,6 @@ function abrirModalAgendamento(loja) {
       .then(res => res.json())
       .then(dados => {
         selectProfissional.innerHTML = '<option value="">Selecione o profissional</option>';
-        selectProfissional.innerHTML += '<option value="qualquer">Sem preferência (Qualquer profissional)</option>';
         
         const list = dados.profissionais || [];
         list.forEach(p => {
@@ -585,7 +584,6 @@ function abrirModalAgendamento(loja) {
       .catch(err => {
         console.error("Erro ao carregar profissionais", err);
         selectProfissional.innerHTML = '<option value="">Erro ao carregar profissionais</option>';
-        selectProfissional.innerHTML += '<option value="qualquer">Sem preferência (Qualquer profissional)</option>';
         selectProfissional.disabled = false;
       });
   }
