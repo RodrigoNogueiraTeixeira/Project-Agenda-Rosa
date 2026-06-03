@@ -659,10 +659,16 @@ async function atualizarHorariosDisponiveis() {
     const resposta = await chamarApi(`/estabelecimentos/${estadoTela.agendamentoAtual.estabelecimentoId}/horarios-disponiveis?data=${dataSelecionada}&duracao=${duracaoTotal}&profissionalId=${profissionalId}`, { method: 'GET' });
     const horarios = resposta.horarios || [];
     
-    for (const horaStr of horarios) {
+    for (const slot of horarios) {
       const option = document.createElement("option");
-      option.value = horaStr;
-      option.textContent = horaStr;
+      option.value = slot.hora;
+      if (slot.disponivel) {
+        option.textContent = slot.hora;
+      } else {
+        option.textContent = `${slot.hora} (Ocupado)`;
+        option.disabled = true;
+        option.style.color = "red";
+      }
       campoHorario.appendChild(option);
     }
     
