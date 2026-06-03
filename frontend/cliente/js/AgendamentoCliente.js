@@ -59,8 +59,8 @@ function renderizarTela(agendamentos) {
       statusFormatado = 'Aguardando Pagamento';
     }
     
-    // Nome do primeiro serviço ou fallback
-    const nomeServico = a.servicos && a.servicos.length > 0 ? a.servicos[0].nome : "Serviço";
+    // Nome de todos os serviços separados por vírgula ou fallback
+    const nomeServico = a.servicos && a.servicos.length > 0 ? a.servicos.map(s => s.nome).join(', ') : "Serviço";
     
     // Data formato DD/MM/YYYY
     let dataFormatada = a.data;
