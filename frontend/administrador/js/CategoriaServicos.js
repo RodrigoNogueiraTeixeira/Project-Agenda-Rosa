@@ -43,7 +43,8 @@ async function buscarCategorias() {
     } catch (e) {
         let mock = [
             { id: 1, nome: "Cabelo", descricao: "Serviços relacionados a corte e finalização.", status: "Ativa" },
-            { id: 2, nome: "Unhas", descricao: "Serviços de manicure e pedicure.", status: "Ativa" }
+            { id: 2, nome: "Unhas", descricao: "Serviços de manicure e pedicure.", status: "Ativa" },
+            { id: 3, nome: "Estética Feminino", descricao: "Servicos de estetica corporal e facial feminina.", status: "Ativa" }
         ];
         renderizarTabelaCategorias(mock);
     }
