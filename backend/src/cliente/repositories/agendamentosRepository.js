@@ -3,6 +3,40 @@ const clientesDAO = require("../dao/clientesDAO");
 const estabelecimentosRepository = require("./estabelecimentosRepository");
 const pagamentosDAO = require("../dao/pagamentosDAO");
 const pagamentosRepository = require("./pagamentosRepository");
+const { normalizarTexto } = require("../../utils/texto");
+
+function profissionalAtendeCategoria(especialidade, categoria) {
+  if (!especialidade) return true;
+  if (!categoria) return true;
+
+  const espNorm = normalizarTexto(especialidade);
+  const catNorm = normalizarTexto(categoria);
+
+  if (espNorm === catNorm) return true;
+  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
+
+  const sinonimos = {
+    "unha": ["manicure", "pedicure", "unhas"],
+    "unhas": ["manicure", "pedicure", "unha"],
+    "manicure": ["unha", "unhas", "pedicure"],
+    "pedicure": ["unha", "unhas", "manicure"],
+    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
+    "estetica facial": ["estetica", "estetica feminino"],
+    "estetica corporal": ["estetica", "estetica feminino"],
+    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
+    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
+    "cabeleireiro": ["cabelo", "corte"],
+    "cabeleireira": ["cabelo", "corte"]
+  };
+
+  const listaEsp = sinonimos[espNorm] || [];
+  if (listaEsp.includes(catNorm)) return true;
+
+  const listaCat = sinonimos[catNorm] || [];
+  if (listaCat.includes(espNorm)) return true;
+
+  return false;
+}
 
 function adicionarMinutos(horarioStr, minutos) {
   if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
@@ -109,17 +143,33 @@ async function criarAgendamento(payload) {
 
   if (profissionalId && profissionalId !== "qualquer" && profissionalId !== "") {
     const { get } = require("../../config/database");
-    const profRow = await get("SELECT nome FROM profissionais WHERE id = ?", [Number(profissionalId)]);
+    const profRow = await get("SELECT nome, especialidade FROM profissionais WHERE id = ?", [Number(profissionalId)]);
     if (profRow) {
+      // Validar capacitação do profissional para os serviços selecionados
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(profRow.especialidade, servico.categoria)) {
+          throw new Error(`O profissional ${profRow.nome} nao atende a categoria '${servico.categoria}' do servico '${servico.nome}'.`);
+        }
+      }
       profissionalNome = profRow.nome;
       finalProfissionalId = Number(profissionalId);
     } else {
       throw new Error("Profissional selecionado nao encontrado.");
     }
   } else if (profissionais.length > 0) {
-    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre
+    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre E QUE ATENDA TODAS AS CATEGORIAS DOS SERVIÇOS SELECIONADOS
     const { get } = require("../../config/database");
+    let profQualificadoEncontrado = false;
     for (const prof of profissionais) {
+      let atendeTodos = true;
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(prof.especialidade, servico.categoria)) {
+          atendeTodos = false;
+          break;
+        }
+      }
+      if (!atendeTodos) continue;
+
       const conflitoProf = await get(
         `
           SELECT id
@@ -153,7 +203,18 @@ async function criarAgendamento(payload) {
       if (!conflitoProf) {
         profissionalNome = prof.nome;
         finalProfissionalId = prof.id;
+        profQualificadoEncontrado = true;
         break;
+      }
+    }
+    if (!profQualificadoEncontrado) {
+      const algumQualificado = profissionais.some(prof => 
+        servicosSelecionados.every(servico => profissionalAtendeCategoria(prof.especialidade, servico.categoria))
+      );
+      if (!algumQualificado) {
+        throw new Error("Nenhum profissional cadastrado atende a todas as categorias dos servicos selecionados.");
+      } else {
+        throw new Error("Nao ha profissional qualificado disponivel para este horario.");
       }
     }
   }
