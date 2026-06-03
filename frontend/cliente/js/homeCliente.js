@@ -694,11 +694,21 @@ async function atualizarHorariosDisponiveis() {
       campoHorario.appendChild(option);
     }
     
-    // Tenta recolocar o valor se ele ainda existir nas opções
+    // Tenta recolocar o valor se ele ainda existir e estiver livre
     if (valorAnterior) {
-      const opcoesAtualizadas = Array.from(campoHorario.options).map(o => o.value);
-      if (opcoesAtualizadas.includes(valorAnterior)) {
+      const opcao = Array.from(campoHorario.options).find(o => o.value === valorAnterior);
+      if (opcao && opcao.getAttribute("data-ocupado") !== "true") {
         campoHorario.value = valorAnterior;
+      } else {
+        campoHorario.value = "";
+        if (opcao && opcao.getAttribute("data-ocupado") === "true") {
+          Swal.fire({
+            title: 'Horário Indisponível',
+            text: 'O horário selecionado anteriormente não está disponível para a nova duração de serviços.',
+            icon: 'warning',
+            confirmButtonText: 'Entendido'
+          });
+        }
       }
     }
   } catch (e) {
