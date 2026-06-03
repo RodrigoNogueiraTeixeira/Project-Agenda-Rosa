@@ -208,9 +208,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
       continue; // Não cabe dentro do horário de expediente
     }
     
-    if (isHoje && m <= agoraMinutos) {
-      continue; // Já passou desse horário hoje
-    }
+    const passado = isHoje && m <= agoraMinutos;
     
     const slotInicioStr = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const slotFimMinutos = m + duracaoMinutos;
@@ -229,7 +227,8 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
       }
       slotsLivres.push({
         hora: slotInicioStr,
-        disponivel: !conflito
+        disponivel: !passado && !conflito,
+        passado
       });
     } else {
       // Se for "Sem preferência" (Qualquer):
@@ -246,7 +245,8 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
         }
         slotsLivres.push({
           hora: slotInicioStr,
-          disponivel: !conflitoGlobal
+          disponivel: !passado && !conflitoGlobal,
+          passado
         });
       } else {
         // Se houver profissionais cadastrados, verificamos cada um individualmente.
@@ -276,7 +276,8 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
         
         slotsLivres.push({
           hora: slotInicioStr,
-          disponivel: peloMenosUmLivre
+          disponivel: !passado && peloMenosUmLivre,
+          passado
         });
       }
     }
