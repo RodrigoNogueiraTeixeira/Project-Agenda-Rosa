@@ -59,6 +59,19 @@ async function criarAgendamento(payload) {
 
   validarDataAgendamento(data);
 
+  // Impedir agendamento no passado para o dia de hoje
+  const dataHoje = new Date();
+  const dataSelecionadaObj = new Date(`${data}T00:00:00`);
+  const isHoje = dataHoje.toDateString() === dataSelecionadaObj.toDateString();
+  if (isHoje) {
+    const [h, m] = horario.split(":").map(Number);
+    const mSelecionado = h * 60 + m;
+    const mAgora = dataHoje.getHours() * 60 + dataHoje.getMinutes();
+    if (mSelecionado <= mAgora) {
+      throw new Error("Esse horario ja passou. Por favor, escolha um horario futuro.");
+    }
+  }
+
   const cliente = await clientesDAO.buscarPorId(clienteId);
   if (!cliente) {
     throw new Error("Cliente nao encontrado.");
