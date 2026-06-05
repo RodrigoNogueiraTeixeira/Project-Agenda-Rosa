@@ -37,6 +37,7 @@ async function criar(dados) {
   const resultado = await run(
     `INSERT INTO servicos (
       empresa_id,
+      estabelecimento_id,
       nome,
       categoria,
       preco,
@@ -44,8 +45,19 @@ async function criar(dados) {
       duracao_minutos,
       descricao,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (
+      ?,
+      (SELECT id FROM estabelecimentos WHERE empresa_id = ?),
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?,
+      ?
+    )`,
     [
+      dados.empresaId,
       dados.empresaId,
       String(dados.nome).trim(),
       String(dados.categoria).trim(),
