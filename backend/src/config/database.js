@@ -182,6 +182,7 @@ async function criarTabelas() {
   await run(`
     CREATE TABLE IF NOT EXISTS estabelecimentos (
       id SERIAL PRIMARY KEY,
+      empresa_id INTEGER,
       nome TEXT NOT NULL,
       cidade TEXT,
       bairro TEXT,
@@ -446,6 +447,87 @@ async function migrarTabelaServicos() {
   `);
 }
 
+// Relaciona empresas aprovadas aos estabelecimentos exibidos no marketplace.
+async function migrarRelacionamentoEmpresaEstabelecimento() {
+  await run("ALTER TABLE estabelecimentos ADD COLUMN IF NOT EXISTS empresa_id INTEGER");
+  await run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS estabelecimentos_empresa_id_unique
+    ON estabelecimentos (empresa_id)
+  `);
+  await run(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'estabelecimentos_empresa_id_fkey'
+      ) THEN
+        ALTER TABLE estabelecimentos
+        ADD CONSTRAINT estabelecimentos_empresa_id_fkey
+        FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE;
+      END IF;
+    END
+    $$
+  `);
+
+  await run(`
+    INSERT INTO estabelecimentos (
+      empresa_id,
+      nome,
+      cidade,
+      bairro,
+      endereco,
+      cep
+    )
+    SELECT
+      e.id,
+      e.nome_estabelecimento,
+      e.cidade,
+      e.bairro,
+      NULLIF(
+        CONCAT_WS(
+          ', ',
+          NULLIF(TRIM(e.endereco), ''),
+          NULLIF(TRIM(e.numero), ''),
+          NULLIF(TRIM(e.complemento), '')
+        ),
+        ''
+      ),
+      e.cep
+    FROM empresas e
+    WHERE e.status_aprovacao = 'aprovada'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM estabelecimentos est
+        WHERE est.empresa_id = e.id
+      )
+  `);
+
+  await run(`
+    UPDATE servicos s
+    SET estabelecimento_id = est.id
+    FROM estabelecimentos est
+    WHERE est.empresa_id = s.empresa_id
+      AND s.empresa_id IS NOT NULL
+      AND s.estabelecimento_id IS DISTINCT FROM est.id
+  `);
+
+  await run(`
+    INSERT INTO estabelecimento_tipos (estabelecimento_id, tipo)
+    SELECT est.id, e.categoria_principal
+    FROM empresas e
+    INNER JOIN estabelecimentos est ON est.empresa_id = e.id
+    WHERE e.status_aprovacao = 'aprovada'
+      AND NULLIF(TRIM(e.categoria_principal), '') IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM estabelecimento_tipos et
+        WHERE et.estabelecimento_id = est.id
+          AND LOWER(et.tipo) = LOWER(e.categoria_principal)
+      )
+  `);
+}
+
 // ============================================================
 // SEED INICIAL DE DADOS
 // ============================================================
@@ -549,6 +631,7 @@ async function inicializarBanco() {
   console.log("🐘 Conectando ao PostgreSQL via Neon.tech...");
   await criarTabelas();
   await migrarTabelaServicos();
+  await migrarRelacionamentoEmpresaEstabelecimento();
   await popularComSeedSeNecessario();
   await resetarSequences();
   console.log("✅ Banco de dados pronto!");

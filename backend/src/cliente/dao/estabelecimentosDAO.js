@@ -74,6 +74,7 @@ async function listarServicosPorEstabelecimentos(ids) {
       SELECT id, estabelecimento_id, nome, preco, duracao_minutos, categoria
       FROM servicos
       WHERE estabelecimento_id IN (${marcadores})
+        AND (status = 'ativo' OR status IS NULL)
       ORDER BY id ASC
     `,
     ids
@@ -93,6 +94,7 @@ async function listarServicosSelecionados(estabelecimentoId, servicosIds) {
       FROM servicos
       WHERE estabelecimento_id = ?
         AND id IN (${marcadores})
+        AND (status = 'ativo' OR status IS NULL)
       ORDER BY id ASC
     `,
     [estabelecimentoId, ...servicosIds]
@@ -110,16 +112,19 @@ async function atualizarCoordenadas(id, latitude, longitude) {
 
 // Busca profissionais ativos da empresa do estabelecimento.
 async function listarProfissionaisPorEstabelecimento(estabelecimentoId) {
-  // Busca o empresa_id associado ao estabelecimento pelos servicos cadastrados
-  const servico = await get(
-    "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+  const estabelecimento = await get(
+    "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
   );
-  
-  let empresaId = servico ? servico.empresa_id : null;
+
+  let empresaId = estabelecimento ? estabelecimento.empresa_id : null;
+
   if (!empresaId) {
-    // Fallback: assume que o empresa_id e igual ao estabelecimento_id
-    empresaId = estabelecimentoId;
+    const servico = await get(
+      "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+      [estabelecimentoId]
+    );
+    empresaId = servico ? servico.empresa_id : estabelecimentoId;
   }
 
   return all(
