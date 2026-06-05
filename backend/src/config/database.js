@@ -207,7 +207,7 @@ async function criarTabelas() {
   await run(`
     CREATE TABLE IF NOT EXISTS servicos (
       id SERIAL PRIMARY KEY,
-      estabelecimento_id INTEGER NOT NULL,
+      estabelecimento_id INTEGER,
       nome TEXT NOT NULL,
       preco REAL NOT NULL,
       categoria TEXT DEFAULT 'Geral',
@@ -216,6 +216,8 @@ async function criarTabelas() {
       descricao TEXT,
       status TEXT DEFAULT 'ativo',
       empresa_id INTEGER,
+      criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id)
     )
   `);
@@ -414,6 +416,36 @@ async function criarTabelas() {
   }
 }
 
+// Mantem bancos existentes compativeis com o CRUD de servicos da empresa.
+async function migrarTabelaServicos() {
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS empresa_id INTEGER");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'Geral'");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS preco_centavos INTEGER");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS duracao_minutos INTEGER DEFAULT 30");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS descricao TEXT");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'ativo'");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS criado_em TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)");
+  await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS atualizado_em TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)");
+
+  // O vinculo definitivo com estabelecimentos sera tratado em uma etapa propria.
+  await run("ALTER TABLE servicos ALTER COLUMN estabelecimento_id DROP NOT NULL");
+
+  await run(`
+    UPDATE servicos
+    SET preco_centavos = ROUND(preco * 100)::INTEGER
+    WHERE preco_centavos IS NULL AND preco IS NOT NULL
+  `);
+  await run(`
+    UPDATE servicos
+    SET
+      categoria = COALESCE(categoria, 'Geral'),
+      duracao_minutos = COALESCE(duracao_minutos, 30),
+      status = COALESCE(status, 'ativo'),
+      criado_em = COALESCE(criado_em, CURRENT_TIMESTAMP::TEXT),
+      atualizado_em = COALESCE(atualizado_em, CURRENT_TIMESTAMP::TEXT)
+  `);
+}
+
 // ============================================================
 // SEED INICIAL DE DADOS
 // ============================================================
@@ -516,6 +548,7 @@ async function resetarSequences() {
 async function inicializarBanco() {
   console.log("🐘 Conectando ao PostgreSQL via Neon.tech...");
   await criarTabelas();
+  await migrarTabelaServicos();
   await popularComSeedSeNecessario();
   await resetarSequences();
   console.log("✅ Banco de dados pronto!");

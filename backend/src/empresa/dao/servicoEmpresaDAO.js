@@ -6,6 +6,7 @@ function selecionarCamposServico() {
     empresa_id AS empresaId,
     nome,
     categoria,
+    preco,
     preco_centavos AS precoCentavos,
     duracao_minutos AS duracaoMinutos,
     descricao,
@@ -38,15 +39,17 @@ async function criar(dados) {
       empresa_id,
       nome,
       categoria,
+      preco,
       preco_centavos,
       duracao_minutos,
       descricao,
       status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       dados.empresaId,
       String(dados.nome).trim(),
       String(dados.categoria).trim(),
+      dados.precoCentavos / 100,
       dados.precoCentavos,
       dados.duracaoMinutos,
       dados.descricao ? String(dados.descricao).trim() : null,
@@ -63,6 +66,7 @@ async function atualizar(id, dados) {
     SET
       nome = ?,
       categoria = ?,
+      preco = ?,
       preco_centavos = ?,
       duracao_minutos = ?,
       descricao = ?,
@@ -72,6 +76,7 @@ async function atualizar(id, dados) {
     [
       String(dados.nome).trim(),
       String(dados.categoria).trim(),
+      dados.precoCentavos / 100,
       dados.precoCentavos,
       dados.duracaoMinutos,
       dados.descricao ? String(dados.descricao).trim() : null,
