@@ -35,10 +35,25 @@ function atualizarCamposDoPerfil() {
   }
 }
 
+// Marca no cadastro o perfil que foi escolhido na tela de login.
+function carregarPerfilEscolhido() {
+  if (!seletorPerfil) {
+    return;
+  }
+
+  var parametros = new URLSearchParams(window.location.search);
+  var perfilRecebido = parametros.get("perfil");
+
+  if (perfilRecebido === "cliente" || perfilRecebido === "empresa") {
+    seletorPerfil.value = perfilRecebido;
+  }
+}
+
 if (seletorPerfil) {
   seletorPerfil.addEventListener("change", atualizarCamposDoPerfil);
 }
 
+carregarPerfilEscolhido();
 atualizarCamposDoPerfil();
 
 async function realizarCadastro(event) {
