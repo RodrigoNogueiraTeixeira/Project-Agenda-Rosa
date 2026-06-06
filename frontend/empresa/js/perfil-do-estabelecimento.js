@@ -1,9 +1,12 @@
 const API_PERFIL_EMPRESA_URL = "/api/empresa/perfil";
+const API_CATEGORIAS_URL = "/api/categorias";
 
 const formPerfil = document.getElementById("form-perfil-estabelecimento");
 const botaoSalvarPerfil = document.querySelector(".btn-salvar");
 const botaoEditarPerfil = document.querySelector(".btn-editar");
-const camposPerfil = formPerfil?.querySelectorAll("input:not(#foto-logo), textarea") || [];
+const campoCategoria = document.getElementById("categoria-principal");
+const camposPerfil =
+  formPerfil?.querySelectorAll("input:not(#foto-logo), select, textarea") || [];
 
 function obterEmpresaId() {
   return localStorage.getItem("empresaId");
@@ -20,6 +23,31 @@ function definirModoEdicao(editando) {
 
   botaoSalvarPerfil.disabled = !editando;
   botaoEditarPerfil.disabled = editando;
+}
+
+// Carrega as categorias criadas no painel do administrador.
+async function carregarCategorias() {
+  try {
+    const resposta = await fetch(API_CATEGORIAS_URL);
+    const resultado = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok || !resultado.success) {
+      throw new Error(resultado.message || "Nao foi possivel carregar as categorias.");
+    }
+
+    const categoriasAtivas = resultado.data.filter((categoria) => {
+      return String(categoria.status || "").toLowerCase() === "ativa";
+    });
+
+    categoriasAtivas.forEach((categoria) => {
+      const opcao = document.createElement("option");
+      opcao.value = categoria.nome;
+      opcao.textContent = categoria.nome;
+      campoCategoria.appendChild(opcao);
+    });
+  } catch (error) {
+    console.error("Erro ao carregar categorias:", error);
+  }
 }
 
 function preencherPerfil(perfil) {
@@ -40,6 +68,18 @@ function preencherPerfil(perfil) {
   Object.entries(campos).forEach(([id, valor]) => {
     const campo = document.getElementById(id);
     if (campo) {
+      // Mantem categorias antigas que ainda estejam salvas no perfil.
+      if (
+        id === "categoria-principal" &&
+        valor &&
+        !Array.from(campo.options).some((opcao) => opcao.value === valor)
+      ) {
+        const opcao = document.createElement("option");
+        opcao.value = valor;
+        opcao.textContent = valor;
+        campo.appendChild(opcao);
+      }
+
       campo.value = valor || "";
     }
   });
@@ -126,4 +166,6 @@ botaoEditarPerfil?.addEventListener("click", () => definirModoEdicao(true));
 formPerfil?.addEventListener("submit", salvarPerfil);
 
 definirModoEdicao(false);
-carregarPerfil();
+
+// Primeiro carrega as categorias e depois os dados salvos da empresa.
+carregarCategorias().finally(carregarPerfil);
