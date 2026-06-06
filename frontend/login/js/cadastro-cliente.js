@@ -55,6 +55,11 @@ async function realizarCadastro(event) {
     return;
   }
 
+  if (!email.includes("@")) {
+    alert("Informe um e-mail valido.");
+    return;
+  }
+
   if (senha.length < 6) {
     alert("A senha deve conter no mínimo 6 caracteres.");
     return;

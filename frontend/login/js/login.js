@@ -85,7 +85,17 @@ var botaoEntrar = document.getElementById("btn-entrar");
 // Testa opções em sequência: uma variável global, depois o armazenamento local (localStorage).
 // Se o site estiver rodando no seu computador (localhost), usa "http://localhost:3001/api" (porta do Node.js local).
 // Caso contrário (estando online no Render), usa o caminho relativo "/api" (mesmo domínio).
-var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
+var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") ? "http://localhost:3001/api" : "/api");
+
+function limparDadosDeAcesso() {
+  [
+    "clienteId", "clienteNome", "clienteEmail",
+    "empresaId", "empresaNome", "empresaEmail",
+    "adminId", "adminNome", "adminEmail"
+  ].forEach(function (chave) {
+    localStorage.removeItem(chave);
+  });
+}
 
 // Função utilitária (atalho) que realiza chamadas de rede (HTTP) para a API de login.
 // - caminho: o endpoint de destino (ex: "/auth/login")
@@ -154,6 +164,8 @@ async function realizarLogin() {
       body: JSON.stringify({ email: email, senha: senha, perfil: perfil })
     });
 
+    limparDadosDeAcesso();
+
     if (resultado.perfil === "cliente") {
       localStorage.setItem("clienteId", String(resultado.usuario.id));
       localStorage.setItem("clienteNome", resultado.usuario.nome || "");
@@ -191,3 +203,14 @@ async function realizarLogin() {
 if (botaoEntrar) {
   botaoEntrar.addEventListener("click", realizarLogin);
 }
+
+[campoAcesso, campoSenha, seletorPerfil].forEach(function (campo) {
+  if (!campo) return;
+
+  campo.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      realizarLogin();
+    }
+  });
+});
