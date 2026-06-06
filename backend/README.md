@@ -1,87 +1,161 @@
-# Backend do Agenda Rosa (Node + Express + PostgreSQL)
+# Agenda Rosa - Backend
 
-Este backend foi refatorado para usar arquitetura em camadas e banco PostgreSQL (Neon.tech).
+Backend do sistema Agenda Rosa, desenvolvido com JavaScript, Node.js,
+Express e PostgreSQL hospedado no Neon.tech.
 
-## Estrutura de Pastas
+O sistema conecta clientes a empresas de beleza e estetica. Os clientes
+podem encontrar estabelecimentos e realizar agendamentos. As empresas podem
+gerenciar perfil, servicos, profissionais, horarios e agenda.
 
-```text
-backend/
-  server.js             # Ponto de entrada do servidor (Porta 3001)
-  src/
-    config/
-      database.js       # Configuração central do banco (Master) e tradutor de sintaxe
-    routes/
-      index.js          # Roteador Mestre (Unifica Cliente e Empresa)
-    cliente/            # Módulo do App Cliente
-      controllers/
-      dao/
-      routes/
-    empresa/            # Módulo do Painel Empresa
-      controllers/
-      dao/
-      routes/
-    utils/              # Utilitários globais (Senhas, etc.)
-```
+## Tecnologias
+
+- JavaScript
+- Node.js
+- Express
+- PostgreSQL
+- Neon.tech
+- HTML, CSS e JavaScript no frontend
 
 ## Como executar localmente
 
+1. Entre na pasta do backend:
+
 ```bash
 cd backend
+```
+
+2. Instale as dependencias:
+
+```bash
 npm install
+```
+
+3. Crie o arquivo `.env` usando `.env.example` como modelo.
+
+4. Para iniciar o sistema, preencha:
+
+```env
+DATABASE_URL=connection_string_do_neon
+PORT=3001
+```
+
+Para usar o login do administrador, preencha tambem:
+
+```env
+ADMIN_EMAIL=admin@agendarosa.com
+ADMIN_PASSWORD_HASH=hash_da_senha
+```
+
+5. Inicie o servidor:
+
+```bash
 npm start
 ```
 
-Servidor padrao: `http://localhost:3001`
+O sistema estara disponivel em `http://localhost:3001`.
 
-## Fluxo das camadas
+## Senha do administrador
 
-1. `server.js` conecta tudo e registra `app.use("/api", ...)`.
-2. `routes` define endpoints e aponta para controllers.
-3. `controllers` trata HTTP (req/res) e validacao basica.
-4. `repositories` aplica regra de negocio.
-5. `dao` executa SQL no PostgreSQL.
+A senha do administrador nao fica escrita diretamente no codigo. Para gerar
+o valor de `ADMIN_PASSWORD_HASH`, execute dentro da pasta `backend`:
 
-## Rotas principais
+```bash
+node -e "console.log(require('./src/utils/password').hashPassword('sua-senha'))"
+```
 
-- `GET /api/health`
-- `GET /api/estabelecimentos?cidade=&bairro=&tipo=&q=&page=&limit=`
-- `GET /api/estabelecimentos/:id`
+Copie o resultado para o arquivo `.env`.
+
+## Recuperacao de senha
+
+O envio do link de recuperacao utiliza o Brevo. Para ativar essa funcao,
+preencha:
+
+```env
+APP_BASE_URL=http://localhost:3001
+BREVO_API_KEY=sua_chave
+BREVO_SENDER_EMAIL=email_validado_no_brevo
+```
+
+Sem essas configuracoes, login e cadastro continuam funcionando, mas o
+e-mail de recuperacao nao sera enviado.
+
+## Banco de dados
+
+O banco utilizado e PostgreSQL no Neon.tech. A conexao e configurada pela
+variavel `DATABASE_URL`.
+
+Na inicializacao, o backend cria as tabelas necessarias caso elas ainda nao
+existam. Os arquivos DAO possuem os comandos SQL usados para consultar e
+salvar os dados.
+
+## Organizacao do backend
+
+```text
+backend/
+  server.js
+  src/
+    administrador/
+    auth/
+    cliente/
+    empresa/
+    config/
+    routes/
+    utils/
+```
+
+Cada modulo pode possuir:
+
+- `routes`: define as URLs da API.
+- `controllers`: recebe a requisicao e envia a resposta.
+- `repositories`: aplica validacoes e regras do sistema.
+- `dao`: executa os comandos no banco de dados.
+
+## Funcionalidades principais
+
+### Cliente
+
+- Cadastro e login.
+- Edicao do perfil.
+- Busca de estabelecimentos.
+- Consulta de servicos e profissionais.
+- Criacao e cancelamento de agendamentos.
+
+### Empresa
+
+- Cadastro e login.
+- Edicao do perfil do estabelecimento.
+- Cadastro de servicos e profissionais.
+- Configuracao dos horarios de funcionamento.
+- Bloqueio de horarios.
+- Controle da agenda e status dos atendimentos.
+
+### Administrador
+
+- Login configurado pelo servidor.
+- Consulta de dados do painel.
+- Aprovacao ou reprovacao de empresas.
+- Cadastro de categorias.
+- Consulta de relatorios.
+
+## Rotas da API
+
+Todas as rotas comecam com `/api`.
+
+Exemplos:
+
+- `POST /api/auth/login`
+- `POST /api/clientes/cadastro`
+- `GET /api/estabelecimentos`
 - `POST /api/agendamentos`
-- `GET /api/clientes/:id/agendamentos`
-- `PATCH /api/agendamentos/:id/cancelar`
-- `GET /api/clientes/:id/perfil`
-- `PUT /api/clientes/:id/perfil`
-- `POST /api/pagamentos/mercadopago/preference`
-- `POST /api/pagamentos/mercadopago/webhook`
-- `GET /api/pagamentos/:id`
+- `POST /api/empresa/cadastro`
+- `GET /api/empresa/servicos`
+- `GET /api/empresa/profissionais`
+- `GET /api/empresa/agendamentos`
+- `GET /api/empresas/pendentes`
 
-## Mercado Pago (Checkout Pro)
+## Servicos opcionais
 
-1. Copie `backend/.env.example` para `backend/.env`.
-2. Preencha `MP_ACCESS_TOKEN`, `MP_PUBLIC_KEY`, `APP_BASE_URL` e `MP_WEBHOOK_URL`.
-3. Reinicie o backend.
-4. Gere preferencia por `POST /api/pagamentos/mercadopago/preference`.
-5. Redirecione o front para `initPoint` retornado pela API.
-6. Configure webhook para `/api/pagamentos/mercadopago/webhook`.
-
-## OpenRouteService (distancia e raio)
-
-1. Crie conta em `openrouteservice.org` e gere a API key no dashboard.
-2. Preencha `ORS_API_KEY` no `backend/.env`.
-3. Endpoints:
-   - `POST /api/distancia/calcular`
-   - `POST /api/distancia/filtrar-estabelecimentos`
-4. O sistema guarda cache de geocoding em `geocoding_cache` no PostgreSQL para reduzir chamadas.
-
-## Banco de Dados PostgreSQL (Neon.tech)
-
-O projeto foi migrado de SQLite para PostgreSQL para garantir persistência, robustez e escalabilidade em ambientes serverless como o Render.
-
-1. A variável `DATABASE_URL` deve conter a connection string do Neon.tech.
-2. O arquivo `backend/src/config/database.js` possui um tradutor automático que reescreve queries SQLite (`?`) para o padrão posicional do Postgres (`$1, $2, ...`), além de lidar com diferenças de schemas (como `SERIAL PRIMARY KEY` e tabelas de cache), permitindo que o restante da aplicação funcione perfeitamente sem alterações estruturais complexas.
-3. Há um mecanismo de reset automático de sequências (`resetarSequences()`) para evitar colisões de chaves primárias após inserção de seeds estáticos.
-
-## Frontend
-
-A tela `frontend/js/homeCliente.js` foi refatorada para focar em interatividade.
-As regras de filtro e validacao de negocio ficam no backend.
+O Mercado Pago e usado nos pagamentos e o OpenRouteService pode ser usado
+para calcular distancia. As chaves desses servicos ficam no arquivo `.env`.
+Se eles nao forem utilizados durante a demonstracao, as demais partes do
+sistema continuam disponiveis.
