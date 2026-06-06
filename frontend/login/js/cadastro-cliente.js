@@ -1,13 +1,8 @@
-// ============================================================
-// CADASTRO UNIFICADO - CLIENTE OU EMPRESA
-// ============================================================
-
+// Cadastro usado por clientes e empresas.
 var form = document.querySelector("form");
 var botaoCadastrar = document.querySelector("button[type='submit']");
-
 var seletorPerfil = document.getElementById("perfil-cadastro");
 var containerEstabelecimento = document.getElementById("container-estabelecimento");
-
 var campoNome = document.getElementById("nome-completo");
 var campoEmail = document.getElementById("email-cliente");
 var campoTelefone = document.getElementById("telefone-cliente");
@@ -15,18 +10,36 @@ var campoNomeEstabelecimento = document.getElementById("nome-estabelecimento");
 var campoSenha = document.getElementById("senha-cliente");
 var campoConfirmarSenha = document.getElementById("confirmar-senha-cliente");
 
-var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
+// Usa o servidor local no desenvolvimento e /api quando estiver publicado.
+var API_BASE_URL = (
+  window.API_BASE_URL ||
+  localStorage.getItem("apiBaseUrl") ||
+  ((window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.protocol === "file:")
+    ? "http://localhost:3001/api"
+    : "/api")
+).replace(/\/+$/, "");
 
-// Lógica de alternância dos campos
-if (seletorPerfil) {
-  seletorPerfil.addEventListener("change", function () {
-    if (seletorPerfil.value === "empresa") {
-      containerEstabelecimento.style.display = "block";
-    } else {
-      containerEstabelecimento.style.display = "none";
-    }
-  });
+// O nome do estabelecimento aparece somente para empresas.
+function atualizarCamposDoPerfil() {
+  if (!seletorPerfil || !containerEstabelecimento) {
+    return;
+  }
+
+  var cadastroEmpresa = seletorPerfil.value === "empresa";
+  containerEstabelecimento.style.display = cadastroEmpresa ? "block" : "none";
+
+  if (campoNomeEstabelecimento) {
+    campoNomeEstabelecimento.required = cadastroEmpresa;
+  }
 }
+
+if (seletorPerfil) {
+  seletorPerfil.addEventListener("change", atualizarCamposDoPerfil);
+}
+
+atualizarCamposDoPerfil();
 
 async function realizarCadastro(event) {
   event.preventDefault();
@@ -35,23 +48,21 @@ async function realizarCadastro(event) {
   var nome = campoNome ? String(campoNome.value).trim() : "";
   var email = campoEmail ? String(campoEmail.value).trim() : "";
   var telefone = campoTelefone ? String(campoTelefone.value).trim() : "";
-  var nomeEstabelecimento = campoNomeEstabelecimento ? String(campoNomeEstabelecimento.value).trim() : "";
+  var nomeEstabelecimento = campoNomeEstabelecimento
+    ? String(campoNomeEstabelecimento.value).trim()
+    : "";
   var senha = campoSenha ? String(campoSenha.value).trim() : "";
-  var confirmarSenha = campoConfirmarSenha ? String(campoConfirmarSenha.value).trim() : "";
+  var confirmarSenha = campoConfirmarSenha
+    ? String(campoConfirmarSenha.value).trim()
+    : "";
 
-  // Validação básica
-  if (!nome || !email || !senha || !confirmarSenha) {
-    alert("Por favor, preencha todos os campos obrigatórios (*Nome, E-mail, Senha e Confirmação*).");
+  if (!nome || !email || !telefone || !senha || !confirmarSenha) {
+    alert("Preencha nome, e-mail, telefone, senha e confirmacao.");
     return;
   }
 
   if (perfil === "empresa" && !nomeEstabelecimento) {
-    alert("Por favor, preencha o Nome do Negócio.");
-    return;
-  }
-
-  if (senha !== confirmarSenha) {
-    alert("As senhas informadas não coincidem. Por favor, verifique.");
+    alert("Preencha o nome do negocio.");
     return;
   }
 
@@ -61,7 +72,12 @@ async function realizarCadastro(event) {
   }
 
   if (senha.length < 6) {
-    alert("A senha deve conter no mínimo 6 caracteres.");
+    alert("A senha deve conter no minimo 6 caracteres.");
+    return;
+  }
+
+  if (senha !== confirmarSenha) {
+    alert("As senhas informadas nao coincidem.");
     return;
   }
 
@@ -72,34 +88,29 @@ async function realizarCadastro(event) {
   }
 
   try {
-    var endpoint = perfil === "empresa" ? "/empresa/cadastro" : "/clientes/cadastro";
-    
-    var payload = {};
-    if (perfil === "empresa") {
-      payload = {
+    var endpoint = perfil === "empresa"
+      ? "/empresa/cadastro"
+      : "/clientes/cadastro";
+    var dados = perfil === "empresa"
+      ? {
         nomeResponsavel: nome,
         email: email,
         senha: senha,
         telefone: telefone,
-        nomeEstabelecimento: nomeEstabelecimento
-      };
-    } else {
-      payload = {
+        nomeEstabelecimento: nomeEstabelecimento,
+      }
+      : {
         nome: nome,
         email: email,
         senha: senha,
-        telefone: telefone
+        telefone: telefone,
       };
-    }
 
     var resposta = await fetch(API_BASE_URL + endpoint, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados),
     });
-
     var corpo = await resposta.json().catch(function () {
       return {};
     });
@@ -109,20 +120,20 @@ async function realizarCadastro(event) {
     }
 
     if (perfil === "empresa") {
-      alert("Cadastro realizado com sucesso! " + (corpo.message || "Sua conta está aguardando aprovação."));
+      alert(corpo.message || "Cadastro realizado. Aguarde a aprovacao.");
       window.location.href = "./login.html";
-    } else {
-      alert("Cadastro realizado com sucesso! Bem-vinda!");
-      if (corpo.cliente) {
-        localStorage.setItem("clienteId", String(corpo.cliente.id));
-        localStorage.setItem("clienteNome", corpo.cliente.nome || "");
-        localStorage.setItem("clienteEmail", corpo.cliente.email || "");
-      }
-      window.location.href = "../../cliente/html/homeDoCliente.html";
+      return;
     }
 
+    alert("Cadastro realizado com sucesso!");
+    if (corpo.cliente) {
+      localStorage.setItem("clienteId", String(corpo.cliente.id));
+      localStorage.setItem("clienteNome", corpo.cliente.nome || "");
+      localStorage.setItem("clienteEmail", corpo.cliente.email || "");
+    }
+    window.location.href = "../../cliente/html/homeDoCliente.html";
   } catch (error) {
-    alert("Não foi possível cadastrar: " + error.message);
+    alert("Nao foi possivel cadastrar: " + error.message);
   } finally {
     if (botaoCadastrar) {
       botaoCadastrar.disabled = false;
