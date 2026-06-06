@@ -62,6 +62,11 @@ async function horariosDisponiveis(req, res) {
       return;
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || duracaoMinutos <= 0 || duracaoMinutos > 720) {
+      res.status(400).json({ erro: "Data ou duracao invalida." });
+      return;
+    }
+
     const disponiveis = await estabelecimentosRepository.calcularHorariosDisponiveis(
       req.params.id,
       data,

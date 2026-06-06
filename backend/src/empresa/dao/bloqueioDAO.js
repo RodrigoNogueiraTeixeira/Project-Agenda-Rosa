@@ -57,6 +57,37 @@ async function criar(dados) {
   return buscarPorId(resultado.lastID, dados.empresaId);
 }
 
+async function buscarProfissionalDaEmpresa(profissionalId, empresaId) {
+  return get(
+    `SELECT id, nome
+    FROM profissionais
+    WHERE id = ?
+      AND empresa_id = ?
+      AND ativo = 1`,
+    [profissionalId, empresaId]
+  );
+}
+
+async function existeSobreposicao(dados) {
+  return get(
+    `SELECT id
+    FROM bloqueios_horarios
+    WHERE empresa_id = ?
+      AND data_bloqueio = ?
+      AND horario_inicio < ?
+      AND horario_fim > ?
+      AND profissional_id = ?
+    LIMIT 1`,
+    [
+      dados.empresaId,
+      dados.dataBloqueio,
+      dados.horarioFim,
+      dados.horarioInicio,
+      dados.profissionalId,
+    ]
+  );
+}
+
 async function excluir(id, empresaId) {
   const resultado = await run(
     "DELETE FROM bloqueios_horarios WHERE id = ? AND empresa_id = ?",
@@ -69,6 +100,8 @@ async function excluir(id, empresaId) {
 module.exports = {
   listarPorEmpresa,
   buscarId: buscarPorId, // Nota: Usei buscarPorId internamente
+  buscarProfissionalDaEmpresa,
+  existeSobreposicao,
   criar,
   excluir,
 };

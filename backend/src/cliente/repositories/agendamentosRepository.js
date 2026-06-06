@@ -220,6 +220,52 @@ async function criarAgendamento(payload) {
   }
 
   // Validar se há conflito para o profissional selecionado (usando o cálculo em JS para consistência total com a exibição de horários)
+  const diaSemana = new Date(`${data}T00:00:00`).getDay();
+  const horarioFuncionamento = await estabelecimentosDAO.buscarHorarioFuncionamento(
+    estabelecimentoId,
+    diaSemana
+  );
+
+  if (horarioFuncionamento?.empresa_id) {
+    if (!horarioFuncionamento.abre || !horarioFuncionamento.horario_abertura) {
+      throw new Error("O estabelecimento nao abre nesta data.");
+    }
+
+    if (
+      horario < horarioFuncionamento.horario_abertura ||
+      horarioFim > horarioFuncionamento.horario_fechamento
+    ) {
+      throw new Error("O horario escolhido esta fora do funcionamento do estabelecimento.");
+    }
+
+    if (
+      horarioFuncionamento.intervalo_inicio &&
+      horarioFuncionamento.intervalo_fim &&
+      horario < horarioFuncionamento.intervalo_fim &&
+      horarioFim > horarioFuncionamento.intervalo_inicio
+    ) {
+      throw new Error("O horario escolhido coincide com o intervalo do estabelecimento.");
+    }
+  }
+
+  const bloqueios = await estabelecimentosDAO.listarBloqueiosPorData(
+    estabelecimentoId,
+    data
+  );
+  const horarioBloqueado = bloqueios.some((bloqueio) => {
+    const bloqueioGlobal = !bloqueio.profissional_id && !bloqueio.profissional_nome;
+    const bloqueioDoProfissional = finalProfissionalId &&
+      Number(bloqueio.profissional_id) === Number(finalProfissionalId);
+
+    return (bloqueioGlobal || bloqueioDoProfissional)
+      && horario < bloqueio.horario_fim
+      && horarioFim > bloqueio.horario_inicio;
+  });
+
+  if (horarioBloqueado) {
+    throw new Error("O horario escolhido esta bloqueado para o profissional.");
+  }
+
   const ocupados = await agendamentosDAO.listarHorariosOcupados(estabelecimentoId, data, finalProfissionalId);
   
   let temConflito = false;

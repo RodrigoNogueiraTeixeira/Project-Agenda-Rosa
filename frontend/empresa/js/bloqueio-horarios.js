@@ -130,6 +130,10 @@ async function carregarBloqueios() {
     const resposta = await fetch(`${API_BLOQUEIOS_URL}?empresaId=${empresaId}`);
     const bloqueios = await resposta.json();
 
+    if (!resposta.ok) {
+      throw new Error(bloqueios.message || "Nao foi possivel carregar os bloqueios.");
+    }
+
     tabelaBloqueios.innerHTML = "";
 
     if (bloqueios.length === 0) {
@@ -224,6 +228,15 @@ async function excluirBloqueio(id) {
 
 // Liga o submit do formulario a funcao de cadastro de bloqueio.
 formBloqueio?.addEventListener("submit", cadastrarBloqueio);
+
+const campoDataBloqueio = document.getElementById("data-bloqueio");
+if (campoDataBloqueio) {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  campoDataBloqueio.min = `${ano}-${mes}-${dia}`;
+}
 
 // Carrega os bloqueios ja cadastrados quando a pagina abre.
 carregarProfissionais();
