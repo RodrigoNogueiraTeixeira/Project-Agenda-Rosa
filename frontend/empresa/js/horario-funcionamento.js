@@ -4,9 +4,16 @@ const API_HORARIOS_URL = "/api/empresa/horarios-funcionamento";
 const linhasHorarios = document.querySelectorAll("[data-dia-semana]");
 const botaoSalvarHorarios = document.querySelector("[data-salvar-horarios]");
 
-// Busca o ID da empresa salvo no navegador enquanto o login nao esta integrado.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Busca um campo dentro da linha do dia da semana.
