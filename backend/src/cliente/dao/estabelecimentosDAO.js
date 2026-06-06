@@ -133,6 +133,40 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId) {
   );
 }
 
+async function buscarHorarioFuncionamento(estabelecimentoId, diaSemana) {
+  return get(
+    `SELECT
+      e.empresa_id,
+      h.abre,
+      h.horario_abertura,
+      h.horario_fechamento,
+      h.intervalo_inicio,
+      h.intervalo_fim
+    FROM estabelecimentos e
+    LEFT JOIN horarios_funcionamento h
+      ON h.empresa_id = e.empresa_id
+      AND h.dia_semana = ?
+    WHERE e.id = ?`,
+    [diaSemana, estabelecimentoId]
+  );
+}
+
+async function listarBloqueiosPorData(estabelecimentoId, data) {
+  return all(
+    `SELECT
+      bh.profissional_id,
+      bh.profissional_nome,
+      bh.horario_inicio,
+      bh.horario_fim
+    FROM bloqueios_horarios bh
+    INNER JOIN estabelecimentos e ON e.empresa_id = bh.empresa_id
+    WHERE e.id = ?
+      AND bh.data_bloqueio = ?
+    ORDER BY bh.horario_inicio`,
+    [estabelecimentoId, data]
+  );
+}
+
 module.exports = {
   listarComFiltros,
   buscarPorId,
@@ -140,5 +174,7 @@ module.exports = {
   listarServicosPorEstabelecimentos,
   listarServicosSelecionados,
   atualizarCoordenadas,
-  listarProfissionaisPorEstabelecimento
+  listarProfissionaisPorEstabelecimento,
+  buscarHorarioFuncionamento,
+  listarBloqueiosPorData
 };

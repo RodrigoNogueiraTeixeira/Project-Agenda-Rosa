@@ -40,6 +40,10 @@ function validarFormularioProfissional(dados) {
     return "Informe o nome do profissional.";
   }
 
+  if (dados.email && !dados.email.includes("@")) {
+    return "Informe um e-mail valido para o profissional.";
+  }
+
   return null;
 }
 
@@ -107,6 +111,10 @@ async function carregarProfissionais() {
   try {
     const resposta = await fetch(`${API_PROFISSIONAIS_URL}?empresaId=${empresaId}`);
     const profissionais = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(profissionais.message || "Nao foi possivel carregar os profissionais.");
+    }
 
     tabelaProfissionais.innerHTML = "";
 

@@ -77,6 +77,21 @@ function validarHorarios(dados) {
     ) {
       return "O inicio do intervalo deve ser menor que o fim do intervalo.";
     }
+
+    if (Boolean(horario.intervaloInicio) !== Boolean(horario.intervaloFim)) {
+      return "Informe o inicio e o fim do intervalo.";
+    }
+
+    if (
+      horario.abre &&
+      horario.intervaloInicio &&
+      (
+        horario.intervaloInicio < horario.horarioAbertura ||
+        horario.intervaloFim > horario.horarioFechamento
+      )
+    ) {
+      return "O intervalo deve estar dentro do horario de funcionamento.";
+    }
   }
 
   return null;
@@ -110,6 +125,10 @@ async function carregarHorarios() {
   try {
     const resposta = await fetch(`${API_HORARIOS_URL}?empresaId=${empresaId}`);
     const horarios = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(horarios.message || "Nao foi possivel carregar os horarios.");
+    }
 
     horarios.forEach(preencherLinha);
   } catch (error) {
