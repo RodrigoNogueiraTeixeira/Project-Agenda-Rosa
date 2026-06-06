@@ -1,97 +1,138 @@
 const authDAO = require("../dao/authDAO");
 const emailUtils = require("../../utils/emailUtils");
 const passwordUtils = require("../../utils/password");
-const { v4: uuidv4 } = require("uuid");
+const { randomUUID } = require("crypto");
+
+const MENSAGEM_RECUPERACAO =
+  "Se o e-mail existir na nossa base, voce recebera um link de recuperacao.";
 
 async function recuperarSenha(req, res) {
-    try {
-        const { email, perfil } = req.body;
+  try {
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const perfil = String(req.body.perfil || "").trim().toLowerCase();
 
-        if (!email || !perfil) {
-            return res.status(400).json({ success: false, message: "E-mail e perfil são obrigatórios." });
-        }
-
-        let usuario = null;
-        if (perfil.toLowerCase() === "cliente") {
-            usuario = await authDAO.buscarClientePorEmail(email);
-        } else if (perfil.toLowerCase() === "empresa") {
-            usuario = await authDAO.buscarEmpresaPorEmail(email);
-        }
-
-        // Para evitar enumeração de usuários, retornamos sucesso mesmo se o e-mail não existir
-        if (!usuario) {
-            return res.json({ success: true, message: "Se o e-mail existir na nossa base, você receberá um link de recuperação." });
-        }
-
-        const token = uuidv4();
-        const expiracao = new Date(Date.now() + 3600000).toISOString(); // 1 hora a partir de agora
-
-        await authDAO.salvarTokenRecuperacao(email, perfil.toLowerCase(), token, expiracao);
-
-        // Gera a URL do frontend
-        const protocol = req.protocol === 'https' || req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-        const host = req.headers.host;
-        const frontendUrl = `${protocol}://${host}/login/html/RedefinirSenha.html?token=${token}`;
-
-        // Tenta enviar o e-mail, mas não falha a requisição se o envio falhar
-        try {
-            await emailUtils.enviarEmailRecuperacao(email, frontendUrl);
-        } catch (emailError) {
-            console.error("Aviso: Falha ao enviar e-mail de recuperação, mas o token foi salvo:", emailError.message);
-        }
-
-        res.json({ success: true, message: "Se o e-mail existir na nossa base, você receberá um link de recuperação." });
-    } catch (error) {
-        console.error("Erro ao recuperar senha:", error);
-        res.status(500).json({ success: false, message: "Erro interno do servidor." });
+    if (!email || !perfil) {
+      return res.status(400).json({
+        success: false,
+        message: "E-mail e perfil sao obrigatorios.",
+      });
     }
+
+    if (!email.includes("@") || !["cliente", "empresa"].includes(perfil)) {
+      return res.status(400).json({
+        success: false,
+        message: "Informe um e-mail e perfil validos.",
+      });
+    }
+
+    const usuario = perfil === "cliente"
+      ? await authDAO.buscarClientePorEmail(email)
+      : await authDAO.buscarEmpresaPorEmail(email);
+
+    if (!usuario) {
+      return res.json({ success: true, message: MENSAGEM_RECUPERACAO });
+    }
+
+    const token = randomUUID();
+    const expiracao = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    await authDAO.invalidarTokensRecuperacao(email, perfil);
+    await authDAO.salvarTokenRecuperacao(email, perfil, token, expiracao);
+
+    const protocoloEncaminhado = String(req.headers["x-forwarded-proto"] || "")
+      .split(",")[0]
+      .trim();
+    const protocol = protocoloEncaminhado || req.protocol || "http";
+    const host = req.get ? req.get("host") : req.headers.host;
+    const appBaseUrl = String(process.env.APP_BASE_URL || `${protocol}://${host}`)
+      .replace(/\/+$/, "");
+    const frontendUrl =
+      `${appBaseUrl}/login/html/RedefinirSenha.html?token=${token}`;
+
+    try {
+      await emailUtils.enviarEmailRecuperacao(email, frontendUrl);
+    } catch (emailError) {
+      console.error(
+        "Falha ao enviar e-mail de recuperacao:",
+        emailError.message
+      );
+    }
+
+    return res.json({ success: true, message: MENSAGEM_RECUPERACAO });
+  } catch (error) {
+    console.error("Erro ao recuperar senha:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro interno do servidor.",
+    });
+  }
 }
 
 async function redefinirSenha(req, res) {
-    try {
-        const { token, novaSenha } = req.body;
+  try {
+    const token = String(req.body.token || "").trim();
+    const novaSenha = String(req.body.novaSenha || "");
 
-        if (!token || !novaSenha) {
-            return res.status(400).json({ success: false, message: "Token e nova senha são obrigatórios." });
-        }
-
-        const registroToken = await authDAO.buscarTokenRecuperacao(token);
-
-        if (!registroToken) {
-            return res.status(400).json({ success: false, message: "Token inválido." });
-        }
-
-        if (registroToken.utilizado === 1) {
-            return res.status(400).json({ success: false, message: "Este token já foi utilizado." });
-        }
-
-        const agora = new Date();
-        const dataExpiracao = new Date(registroToken.expiracao);
-        if (agora > dataExpiracao) {
-            return res.status(400).json({ success: false, message: "O token expirou. Solicite a recuperação novamente." });
-        }
-
-        if (registroToken.perfil === "cliente") {
-            // Cliente usa senha em texto puro conforme combinado no plano
-            await authDAO.atualizarSenhaCliente(registroToken.email, novaSenha);
-        } else if (registroToken.perfil === "empresa") {
-            // Empresa usa hash
-            const senhaHash = await passwordUtils.hashPassword(novaSenha);
-            await authDAO.atualizarSenhaEmpresa(registroToken.email, senhaHash);
-        } else {
-            return res.status(400).json({ success: false, message: "Perfil inválido associado a este token." });
-        }
-
-        await authDAO.marcarTokenUtilizado(token);
-
-        res.json({ success: true, message: "Senha redefinida com sucesso." });
-    } catch (error) {
-        console.error("Erro ao redefinir senha:", error);
-        res.status(500).json({ success: false, message: "Erro interno do servidor." });
+    if (!token || !novaSenha) {
+      return res.status(400).json({
+        success: false,
+        message: "Token e nova senha sao obrigatorios.",
+      });
     }
+
+    if (novaSenha.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "A nova senha deve ter pelo menos 6 caracteres.",
+      });
+    }
+
+    const registroToken = await authDAO.buscarTokenRecuperacao(token);
+
+    if (!registroToken || Number(registroToken.utilizado) === 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Token invalido ou ja utilizado.",
+      });
+    }
+
+    const expiracao = new Date(registroToken.expiracao);
+    if (Number.isNaN(expiracao.getTime()) || new Date() > expiracao) {
+      return res.status(400).json({
+        success: false,
+        message: "O token expirou. Solicite a recuperacao novamente.",
+      });
+    }
+
+    const senhaHash = passwordUtils.hashPassword(novaSenha);
+
+    if (registroToken.perfil === "cliente") {
+      await authDAO.atualizarSenhaCliente(registroToken.email, senhaHash);
+    } else if (registroToken.perfil === "empresa") {
+      await authDAO.atualizarSenhaEmpresa(registroToken.email, senhaHash);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Perfil invalido associado a este token.",
+      });
+    }
+
+    await authDAO.marcarTokenUtilizado(token);
+
+    return res.json({
+      success: true,
+      message: "Senha redefinida com sucesso.",
+    });
+  } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro interno do servidor.",
+    });
+  }
 }
 
 module.exports = {
-    recuperarSenha,
-    redefinirSenha
+  recuperarSenha,
+  redefinirSenha,
 };
