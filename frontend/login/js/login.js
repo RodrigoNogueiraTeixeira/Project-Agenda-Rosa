@@ -41,6 +41,7 @@ if (botaoSenha) {
 
 var seletorPerfil = document.getElementById("perfil");
 var campoInformacao = document.getElementById("informacao");
+var botaoCriarConta = document.getElementById("btn-criar-conta");
 
 function atualizarInfoPerfil() {
   // Validacao 1: confirma se os elementos necessarios estao disponiveis.
@@ -74,6 +75,29 @@ if (seletorPerfil) {
 
 // Executa uma vez ao carregar a pagina para exibir o texto inicial.
 atualizarInfoPerfil();
+
+// Leva o perfil escolhido para a tela de cadastro.
+function abrirCadastro(event) {
+  event.preventDefault();
+
+  var perfil = seletorPerfil ? seletorPerfil.value : "";
+
+  if (!perfil) {
+    alert("Selecione Cliente ou Empresa antes de criar a conta.");
+    return;
+  }
+
+  if (perfil === "administrador") {
+    alert("O cadastro de administrador nao e feito por esta tela.");
+    return;
+  }
+
+  window.location.href = "./cadastro-cliente.html?perfil=" + perfil;
+}
+
+if (botaoCriarConta) {
+  botaoCriarConta.addEventListener("click", abrirCadastro);
+}
 
 // ============================================================
 // BLOCO 3: LOGIN REAL VIA API
@@ -142,9 +166,9 @@ async function realizarLogin() {
     perfil = String(opcaoSelecionada ? opcaoSelecionada.value || "" : "").trim();
   }
 
-  // Se o perfil vier vazio tratamos automaticamente como "cliente" para nao bloquear o acesso.
   if (!perfil) {
-    perfil = "cliente";
+    alert("Selecione o perfil para entrar.");
+    return;
   }
 
   if (!email || !senha) {
