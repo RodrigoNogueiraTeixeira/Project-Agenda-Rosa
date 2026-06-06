@@ -203,14 +203,24 @@ async function cadastrarAgendamento(req, res) {
 async function atualizarStatus(req, res) {
   try {
     const { empresaId, status } = req.body;
+    const statusCanonicos = {
+      confirmado: "agendado",
+      realizado: "concluido",
+      pendente: "pendente",
+      agendado: "agendado",
+      concluido: "concluido",
+      cancelado: "cancelado",
+    };
 
     if (!empresaId || !status) {
       return res.status(400).json({ message: "Informe empresa e status." });
     }
 
-    if (!["pendente", "confirmado", "cancelado", "realizado", "agendado"].includes(status)) {
+    if (!statusCanonicos[status]) {
       return res.status(400).json({ message: "Status de agendamento invalido." });
     }
+
+    const statusFinal = statusCanonicos[status];
 
     const agendamentoAtual = await agendamentoRepository.buscarPorId(req.params.id, empresaId);
 
@@ -218,7 +228,24 @@ async function atualizarStatus(req, res) {
       return res.status(404).json({ message: "Agendamento nao encontrado." });
     }
 
-    if (status === "cancelado" && !podeCancelar(agendamentoAtual)) {
+    const statusAtual = statusCanonicos[agendamentoAtual.status] || agendamentoAtual.status;
+    const transicoesPermitidas = {
+      pendente: ["agendado", "cancelado"],
+      agendado: ["concluido", "cancelado"],
+      concluido: [],
+      cancelado: [],
+    };
+
+    if (
+      statusFinal !== statusAtual &&
+      !(transicoesPermitidas[statusAtual] || []).includes(statusFinal)
+    ) {
+      return res.status(409).json({
+        message: "Esta alteracao de status nao e permitida para o agendamento.",
+      });
+    }
+
+    if (statusFinal === "cancelado" && !podeCancelar(agendamentoAtual)) {
       return res.status(400).json({
         message: `Cancelamentos so podem ser realizados ate ${PRAZO_CANCELAMENTO_HORAS} horas antes do horario.`,
       });
@@ -227,7 +254,7 @@ async function atualizarStatus(req, res) {
     const agendamento = await agendamentoRepository.atualizarStatus(
       req.params.id,
       empresaId,
-      status
+      statusFinal
     );
 
     return res.json({

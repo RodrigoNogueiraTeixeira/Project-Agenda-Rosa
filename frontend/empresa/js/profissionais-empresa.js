@@ -8,9 +8,16 @@ const botaoSalvarProfissional = formProfissional?.querySelector("button[type='su
 // Guarda o ID em edicao. Quando for null, o formulario cadastra um novo profissional.
 let profissionalEmEdicaoId = null;
 
-// Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Busca o valor de um campo pelo ID.
@@ -38,6 +45,10 @@ function validarFormularioProfissional(dados) {
 
   if (!dados.nome) {
     return "Informe o nome do profissional.";
+  }
+
+  if (dados.email && !dados.email.includes("@")) {
+    return "Informe um e-mail valido para o profissional.";
   }
 
   return null;
@@ -107,6 +118,10 @@ async function carregarProfissionais() {
   try {
     const resposta = await fetch(`${API_PROFISSIONAIS_URL}?empresaId=${empresaId}`);
     const profissionais = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(profissionais.message || "Nao foi possivel carregar os profissionais.");
+    }
 
     tabelaProfissionais.innerHTML = "";
 

@@ -28,8 +28,19 @@ async function atualizarPerfil(req, res) {
 
     res.status(200).json({ mensagem: "Perfil atualizado com sucesso.", cliente: clienteAtualizado });
   } catch (error) {
-    if ((error.message || "").includes("obrigatorios")) {
-      res.status(400).json({ erro: error.message });
+    const mensagem = error.message || "";
+
+    if (mensagem.includes("ja cadastrado")) {
+      res.status(409).json({ erro: mensagem });
+      return;
+    }
+
+    if (
+      mensagem.includes("obrigatorios") ||
+      mensagem.includes("valido") ||
+      mensagem.includes("6 caracteres")
+    ) {
+      res.status(400).json({ erro: mensagem });
       return;
     }
 
@@ -47,7 +58,11 @@ async function cadastrarCliente(req, res) {
     });
   } catch (error) {
     const mensagem = error.message || "Erro ao cadastrar cliente.";
-    const status = mensagem.includes("obrigatorios") ? 400 : (mensagem.includes("ja cadastrado") ? 409 : 500);
+    const status = (
+      mensagem.includes("obrigatorios") ||
+      mensagem.includes("valido") ||
+      mensagem.includes("6 caracteres")
+    ) ? 400 : (mensagem.includes("ja cadastrado") ? 409 : 500);
     res.status(status).json({ erro: mensagem });
   }
 }

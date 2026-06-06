@@ -20,7 +20,11 @@ function erroParaStatus(mensagem) {
   if (
     mensagem.includes("passado") ||
     mensagem.includes("2 meses") ||
-    mensagem.includes("invalida")
+    mensagem.includes("invalida") ||
+    mensagem.includes("nao abre") ||
+    mensagem.includes("fora do funcionamento") ||
+    mensagem.includes("intervalo") ||
+    mensagem.includes("bloqueado")
   ) {
     return 400;
   }
