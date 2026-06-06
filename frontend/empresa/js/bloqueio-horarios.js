@@ -7,9 +7,16 @@ const tabelaBloqueios = document.querySelector("tbody");
 const botaoBloquearHorario = formBloqueio?.querySelector("button[type='submit']");
 const selectProfissional = document.getElementById("bloqueio-profissional");
 
-// Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Busca o valor de um campo pelo ID e remove espacos extras.
