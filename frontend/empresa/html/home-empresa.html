@@ -1,91 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agenda Rosa | Home Empresa</title>
-    <link rel="stylesheet" href="../css/home-empresa.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../css/home-empresa.css" />
+  </head>
+  <body>
     <main id="container">
+      <header class="header card">
+        <div>
+          <span class="tag">PAINEL</span>
+          <h1>Home da Empresa/Profissional</h1>
+          <p>Acesso rapido as funcoes principais do modulo profissional.</p>
+        </div>
+        <a class="btn-sair" id="btn-sair" href="../../login/html/login.html">Sair</a>
+      </header>
 
-  <!-- HEADER -->
-  <header class="header card">
-    <div>
-      <span class="tag">PAINEL</span>
-      <h1>Home da Empresa/Profissional</h1>
-      <p>Acesso rápido às funções principais do módulo profissional.</p>
-    </div>
-    <a class="btn-sair" href="">Sair</a>
-  </header>
+      <section class="grid-main">
+        <div class="card destaque">
+          <div>
+            <span class="tag">ATALHO PRINCIPAL</span>
+            <h2>Abrir agenda</h2>
+            <p>Visualize sua agenda e acompanhe os horarios do dia.</p>
+          </div>
 
-  <!-- GRID PRINCIPAL -->
-  <section class="grid-main">
+          <a class="btn-agenda" href="agenda-empresa.html">Abrir agenda</a>
+        </div>
 
-    <!-- CARD GRANDE -->
-    <div class="card destaque">
-  <div>
-    <span class="tag">ATALHO PRINCIPAL</span>
+        <div class="lateral">
+          <div class="card pequeno item">
+            <span>AGENDAMENTOS DE HOJE</span>
+            <strong id="agendamentos-hoje">00</strong>
+          </div>
 
-    <h2>Abrir agenda</h2>
-    <p>Visualize sua agenda em aberto e acompanhe os horários do dia.</p>
-  </div>
+          <div class="card pequeno item">
+            <span>PROXIMO ATENDIMENTO</span>
+            <strong id="proximo-atendimento">--:--</strong>
+          </div>
 
-  <a class="btn-agenda" href="agenda-empresa.html">Abrir agenda</a>
-</div>
+          <div class="card pequeno item">
+            <span>HORARIOS BLOQUEADOS HOJE</span>
+            <strong id="bloqueios-hoje">00</strong>
+          </div>
+        </div>
+      </section>
 
-    <!-- LATERAL COM INDICADORES DO BANCO -->
-    <div class="lateral">
-      <div class="card pequeno item">
-        <span>AGENDAMENTOS DE HOJE</span>
-        <strong id="agendamentos-hoje">00</strong>
-      </div>
+      <section class="grid-cards">
+        <a href="servicos-empresa.html" class="card item menu-card">
+          <strong>Servicos</strong>
+          <small>Consulte os servicos ofertados</small>
+        </a>
 
-      <div class="card pequeno item">
-        <span>PRÓXIMO ATENDIMENTO</span>
-        <strong id="proximo-atendimento">--:--</strong>
-      </div>
+        <a href="profissionais-empresa.html" class="card item menu-card">
+          <strong>Profissionais</strong>
+          <small>Gerencie a equipe do estabelecimento</small>
+        </a>
 
-      <div class="card pequeno item">
-        <span>HORÁRIOS BLOQUEADOS HOJE</span>
-        <strong id="bloqueios-hoje">00</strong>
-      </div>
-    </div>
+        <a href="horario-de-funcionamento.html" class="card item menu-card">
+          <strong>Horario de funcionamento</strong>
+          <small>Defina a disponibilidade semanal</small>
+        </a>
 
-  </section>
+        <a href="bloqueio-de-horarios.html" class="card item menu-card">
+          <strong>Bloqueio de horarios</strong>
+          <small>Controle as indisponibilidades</small>
+        </a>
 
-  <!-- GRID DE FUNÇÕES -->
-  <section class="grid-cards">
-
-    <a href="servicos-empresa.html" class="card item menu-card">
-      <strong>Serviços</strong>
-      <small>Consulte serviços ofertados</small>
-    </a>
-
-    <a href="profissionais-empresa.html" class="card item menu-card">
-      <strong>Profissionais</strong>
-      <small>Gerencie a equipe do estabelecimento</small>
-    </a>
-
-    <a href="horario-de-funcionamento.html" class="card item menu-card">
-      <strong>Horário de funcionamento</strong>
-      <small>Defina disponibilidade semanal</small>
-    </a>
-
-    <a href="bloqueio-de-horarios.html" class="card item menu-card">
-      <strong>Bloqueio de horários</strong>
-      <small>Controle indisponibilidades</small>
-    </a>
-
-    <a href="perfil-do-estabelecimento.html" class="card item menu-card">
-      <strong>Perfil do estabelecimento</strong>
-      <small>Atualize dados do perfil</small>
-    </a>
-
-  </section>
-
-</main>
+        <a href="perfil-do-estabelecimento.html" class="card item menu-card">
+          <strong>Perfil do estabelecimento</strong>
+          <small>Atualize os dados do perfil</small>
+        </a>
+      </section>
+    </main>
 
     <script src="../js/home-empresa.js"></script>
-</body>
+  </body>
 </html>
