@@ -1,3 +1,24 @@
+// Daniel e Rodrigo: Valida se o administrador está logado
+function verificarAutenticacaoAdmin() {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+        window.location.href = "../../login/html/login.html";
+    }
+}
+
+// Daniel e Rodrigo: Configura o botão de logout e limpa os dados locais de login do admin
+function configurarLogout() {
+    // Procura o link de "Sair" (redireciona para o login)
+    const btnSair = document.querySelector('a[href*="login.html"]');
+    if (btnSair) {
+        btnSair.addEventListener('click', function() {
+            localStorage.removeItem("adminId");
+            localStorage.removeItem("adminNome");
+            localStorage.removeItem("adminEmail");
+        });
+    }
+}
+
 // Daniel e Rodrigo: Função para formatar números
 function formatarNumero(numero) {
     return Number(numero || 0).toLocaleString('pt-BR');
@@ -29,6 +50,7 @@ async function buscarDadosDashboard() {
             renderizarDadosDashboard(json.data);
         }
     } catch (error) {
+        // Fallback mock caso falhe a chamada ao backend
         renderizarDadosDashboard({
             totalClientes: 1248,
             totalEmpresas: 163,
@@ -41,6 +63,8 @@ async function buscarDadosDashboard() {
 
 // Daniel e Rodrigo: Eventos de inicialização
 document.addEventListener('DOMContentLoaded', function() {
+    verificarAutenticacaoAdmin();
+    configurarLogout();
     buscarDadosDashboard();
 
     const botaoPeriodo = document.getElementById("bntAplicarPeriodo");
@@ -76,4 +100,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
