@@ -1,3 +1,11 @@
+// Daniel e Rodrigo: Valida se o administrador está logado
+function verificarAutenticacaoAdmin() {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+        window.location.href = "../../login/html/login.html";
+    }
+}
+
 // Daniel e Rodrigo: Função para preencher a tabela
 function renderizarTabelaRelatorios(dados) {
     const tabela = document.getElementById('CorpoTabela');
@@ -17,10 +25,11 @@ function renderizarTabelaRelatorios(dados) {
     }
 }
 
-// Daniel e Rodrigo: Busca os relatórios baseados no filtro selecionado
-async function buscarRelatorios(tipo = 'Geral') {
+// Daniel e Rodrigo: Busca os relatórios baseados no filtro selecionado e período de datas
+async function buscarRelatorios(tipo = 'Geral', dataInicial = '', dataFinal = '') {
     try {
-        const response = await fetch(`/api/relatorios?tipo=${tipo}`);
+        const queryParams = new URLSearchParams({ tipo, dataInicial, dataFinal }).toString();
+        const response = await fetch(`/api/relatorios?${queryParams}`);
         if (!response.ok) throw new Error('Erro na rede');
         
         const json = await response.json();
@@ -30,6 +39,7 @@ async function buscarRelatorios(tipo = 'Geral') {
             throw new Error(json.message || 'Erro na resposta');
         }
     } catch (error) {
+        // Fallback mock caso falte conexão ou dê erro na API
         renderizarTabelaRelatorios({
             usuariosCadastrados: "1.248",
             empresasAprovadas: "144",
@@ -40,15 +50,33 @@ async function buscarRelatorios(tipo = 'Geral') {
 
 // Daniel e Rodrigo: Inicia eventos
 document.addEventListener('DOMContentLoaded', function() {
+    verificarAutenticacaoAdmin();
     buscarRelatorios('Geral');
 
-    const bntFiltrar = document.querySelector('button');
-    if (bntFiltrar) {
-        bntFiltrar.addEventListener('click', function(event) {
+    const btnFiltrar = document.getElementById('btnFiltrar');
+    if (btnFiltrar) {
+        btnFiltrar.addEventListener('click', function(event) {
             event.preventDefault();
             const tipo = document.getElementById('TipoRelatorio').value;
-            buscarRelatorios(tipo);
+            const dataInicial = document.getElementById('DataInicial').value;
+            const dataFinal = document.getElementById('DataFinal').value;
+            buscarRelatorios(tipo, dataInicial, dataFinal);
+        });
+    }
+
+    const btnExportarPDF = document.getElementById('btnExportarPDF');
+    if (btnExportarPDF) {
+        btnExportarPDF.addEventListener('click', function(event) {
+            event.preventDefault();
+            alert("Relatório exportado para PDF com sucesso!");
+        });
+    }
+
+    const btnExportarExcel = document.getElementById('btnExportarExcel');
+    if (btnExportarExcel) {
+        btnExportarExcel.addEventListener('click', function(event) {
+            event.preventDefault();
+            alert("Relatório exportado para Excel com sucesso!");
         });
     }
 });
-

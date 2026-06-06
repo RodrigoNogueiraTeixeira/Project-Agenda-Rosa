@@ -3,7 +3,9 @@ const relatorioRepository = require("../repositories/relatorioRepository");
 async function getRelatorio(req, res) {
     try {
         const tipo = req.query.tipo || 'geral';
-        const dados = await relatorioRepository.getRelatorio(tipo);
+        const dataInicial = req.query.dataInicial || '';
+        const dataFinal = req.query.dataFinal || '';
+        const dados = await relatorioRepository.getRelatorio(tipo, dataInicial, dataFinal);
         
         res.json({ success: true, data: dados });
     } catch (error) {
