@@ -21,10 +21,37 @@ const estadoTela = {
   cardOrigem: null
 };
 
+// Carrega as categorias do administrador dinamicamente para o filtro de buscas.
+async function carregarCategoriasSelect() {
+  const selectTipo = document.getElementById("tipoServico");
+  if (!selectTipo) return;
+
+  try {
+    const resposta = await fetch(`${API_BASE_URL}/categorias`);
+    if (!resposta.ok) throw new Error('Erro ao carregar categorias');
+    const json = await resposta.json();
+
+    if (json.success && Array.isArray(json.data)) {
+      selectTipo.innerHTML = '<option value="">Todos os Serviços</option>';
+      const ativas = json.data.filter(cat => String(cat.status).toLowerCase() === 'ativa');
+      
+      ativas.forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat.nome.toLowerCase();
+        opt.textContent = cat.nome;
+        selectTipo.appendChild(opt);
+      });
+    }
+  } catch (error) {
+    console.error("Falha ao carregar categorias dinamicamente:", error);
+  }
+}
+
 // Executa quando a pagina termina de carregar.
 window.onload = async function onLoad() {
   configurarBotaoSair();
   configurarModalAgendamento();
+  await carregarCategoriasSelect();
   try {
     const listaInicial = await buscarEstabelecimentos(true);
     renderizarResultados(listaInicial, false);
