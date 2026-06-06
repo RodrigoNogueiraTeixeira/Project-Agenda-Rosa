@@ -35,6 +35,18 @@ async function salvarTokenRecuperacao(email, perfil, token, expiracao) {
   );
 }
 
+async function invalidarTokensRecuperacao(email, perfil) {
+  const { run } = require("../../config/database");
+  return run(
+    `UPDATE tokens_recuperacao
+    SET utilizado = 1
+    WHERE LOWER(email) = LOWER(?)
+      AND perfil = ?
+      AND utilizado = 0`,
+    [email, perfil]
+  );
+}
+
 // Busca um token de recuperação.
 async function buscarTokenRecuperacao(token) {
   return get(
@@ -74,6 +86,7 @@ module.exports = {
   buscarClientePorEmail,
   buscarEmpresaPorEmail,
   salvarTokenRecuperacao,
+  invalidarTokensRecuperacao,
   buscarTokenRecuperacao,
   marcarTokenUtilizado,
   atualizarSenhaCliente,

@@ -13,7 +13,13 @@ async function login(req, res) {
     });
   } catch (error) {
     const mensagem = error.message || "Erro ao realizar login.";
-    const status = (mensagem.includes("obrigatorios") || mensagem.includes("aprovacao") || mensagem.includes("reprovada")) ? 400 : 401;
+    const status = mensagem.includes("nao configurado")
+      ? 503
+      : (
+        mensagem.includes("obrigatorios") ||
+        mensagem.includes("aprovacao") ||
+        mensagem.includes("reprovada")
+      ) ? 400 : 401;
     res.status(status).json({ erro: mensagem });
   }
 }

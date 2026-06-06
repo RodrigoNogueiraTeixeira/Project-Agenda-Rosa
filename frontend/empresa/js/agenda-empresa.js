@@ -7,9 +7,16 @@ const selectProfissional = document.querySelector("#profissional");
 const modalDetalhes = document.querySelector("#abrir-detalhes");
 const detalhesConteudo = document.querySelector("#detalhes-agendamento");
 
-// Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Carrega os profissionais ativos da empresa no filtro da agenda.
@@ -46,8 +53,10 @@ function obterValor(id) {
 function formatarStatus(status) {
   const nomes = {
     pendente: "Pendente",
+    agendado: "Agendado",
     confirmado: "Confirmado",
     cancelado: "Cancelado",
+    concluido: "Concluido",
     realizado: "Realizado",
   };
 
@@ -124,6 +133,27 @@ function abrirDetalhes(agendamento) {
 function criarLinhaAgendamento(agendamento) {
   const linha = document.createElement("tr");
   linha.classList.add("linha-agendamento");
+  const statusAtual = agendamento.status === "confirmado"
+    ? "agendado"
+    : agendamento.status === "realizado"
+      ? "concluido"
+      : agendamento.status;
+
+  let botoesAcao = "";
+
+  if (statusAtual === "pendente") {
+    botoesAcao = `
+      <button type="button" data-status="confirmado">Confirmar agendamento</button>
+      <button type="button" class="btn-outline" data-status="cancelado">Cancelar agendamento</button>
+    `;
+  } else if (statusAtual === "agendado") {
+    botoesAcao = `
+      <button type="button" class="btn-outline" data-status="cancelado">Cancelar agendamento</button>
+      <button type="button" class="btn-outline" data-status="realizado">Marcar como realizado</button>
+    `;
+  } else {
+    botoesAcao = "<span>Sem acoes disponiveis</span>";
+  }
 
   linha.innerHTML = `
     <td>${agendamento.dataAgendamento} ${agendamento.horarioInicio}</td>
@@ -133,9 +163,7 @@ function criarLinhaAgendamento(agendamento) {
     <td>${formatarStatus(agendamento.status)}</td>
     <td>${agendamento.observacoes || "-"}</td>
     <td class="acoes">
-      <button type="button" data-status="confirmado">Confirmar agendamento</button>
-      <button type="button" class="btn-outline" data-status="cancelado">Cancelar agendamento</button>
-      <button type="button" class="btn-outline" data-status="realizado">Marcar como realizado</button>
+      ${botoesAcao}
     </td>
   `;
 

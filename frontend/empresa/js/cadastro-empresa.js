@@ -1,15 +1,25 @@
-const API_URL = "/api/empresa/cadastro";
+// Cadastro exclusivo da empresa.
+var formCadastroEmpresa = document.getElementById("form-cadastro-empresa");
+var botaoCadastrar = formCadastroEmpresa
+  ? formCadastroEmpresa.querySelector("button[type='submit']")
+  : null;
 
-// Captura o formulario de cadastro e o botao de envio da tela.
-const formCadastroEmpresa = document.querySelector("form");
-const botaoCadastrar = formCadastroEmpresa?.querySelector("button[type='submit']");
+// Define o endereco da API conforme o ambiente.
+var API_BASE_URL = (
+  window.API_BASE_URL ||
+  localStorage.getItem("apiBaseUrl") ||
+  ((window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.protocol === "file:")
+    ? "http://localhost:3001/api"
+    : "/api")
+).replace(/\/+$/, "");
 
-// Busca o valor de um campo pelo ID e remove espacos extras.
 function obterValor(id) {
-  return document.getElementById(id)?.value.trim() || "";
+  var campo = document.getElementById(id);
+  return campo ? String(campo.value).trim() : "";
 }
 
-// Monta o objeto que sera enviado para a API.
 function montarDadosEmpresa() {
   return {
     nomeResponsavel: obterValor("nome-completo-profissional"),
@@ -20,7 +30,6 @@ function montarDadosEmpresa() {
   };
 }
 
-// Valida as regras basicas da tela antes de chamar o back-end.
 function validarFormulario(dados, confirmarSenha) {
   if (
     !dados.nomeResponsavel ||
@@ -31,6 +40,10 @@ function validarFormulario(dados, confirmarSenha) {
     !confirmarSenha
   ) {
     return "Preencha todos os campos.";
+  }
+
+  if (!dados.email.includes("@")) {
+    return "Informe um e-mail valido.";
   }
 
   if (dados.senha.length < 6) {
@@ -44,56 +57,49 @@ function validarFormulario(dados, confirmarSenha) {
   return null;
 }
 
-// Envia o cadastro da empresa para a API.
 async function cadastrarEmpresa(event) {
-  // Evita o recarregamento padrao da pagina ao enviar o formulario.
   event.preventDefault();
 
-  const dados = montarDadosEmpresa();
-  const confirmarSenha = obterValor("confirmar-senha-empresa");
-  const erroValidacao = validarFormulario(dados, confirmarSenha);
+  var dados = montarDadosEmpresa();
+  var confirmarSenha = obterValor("confirmar-senha-empresa");
+  var erroValidacao = validarFormulario(dados, confirmarSenha);
 
   if (erroValidacao) {
     alert(erroValidacao);
     return;
   }
 
-  // Desabilita o botao para evitar dois envios seguidos.
+  // Evita que o formulario seja enviado duas vezes.
   botaoCadastrar.disabled = true;
   botaoCadastrar.textContent = "Cadastrando...";
 
   try {
-    // Chamada HTTP para a rota POST /api/empresas.
-    const resposta = await fetch(API_URL, {
+    var resposta = await fetch(API_BASE_URL + "/empresa/cadastro", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dados),
     });
-
-    const resultado = await resposta.json();
+    var resultado = await resposta.json().catch(function () {
+      return {};
+    });
 
     if (!resposta.ok) {
-      alert(resultado.message || "Nao foi possivel cadastrar a empresa.");
-      return;
+      throw new Error(
+        resultado.message || "Nao foi possivel cadastrar a empresa."
+      );
     }
 
-    // Guarda temporariamente o ID da empresa para as proximas telas enquanto o login nao esta integrado.
-    localStorage.setItem("empresaId", resultado.empresa.id);
-
-    alert(resultado.message);
-    formCadastroEmpresa.reset();
+    // A empresa volta ao login porque ainda precisa ser aprovada.
+    alert(resultado.message || "Cadastro realizado. Aguarde a aprovacao.");
+    window.location.href = "../../login/html/login.html";
   } catch (error) {
-    // Mostra uma mensagem amigavel quando a API nao responde.
-    console.error("Erro ao cadastrar empresa:", error);
-    alert("Nao foi possivel conectar ao servidor.");
+    alert("Nao foi possivel cadastrar: " + error.message);
   } finally {
-    // Restaura o botao depois da tentativa de cadastro.
     botaoCadastrar.disabled = false;
     botaoCadastrar.textContent = "Cadastrar";
   }
 }
 
-// Liga a funcao de cadastro ao evento submit do formulario.
-formCadastroEmpresa?.addEventListener("submit", cadastrarEmpresa);
+if (formCadastroEmpresa) {
+  formCadastroEmpresa.addEventListener("submit", cadastrarEmpresa);
+}
