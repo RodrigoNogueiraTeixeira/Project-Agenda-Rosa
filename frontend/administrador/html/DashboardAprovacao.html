@@ -40,12 +40,12 @@
 
         <div class="BlocoDeFiltros2">
             <p>Nome do estabelecimento/profissional</p>
-            <input type="text">
+            <input type="text" id="FiltroNome">
         </div>
 
         <div class="BlocoDeFiltros3">
             <p>Data de cadastro</p>
-            <input type="date">
+            <input type="date" id="FiltroData">
         </div>
     </div>
 
@@ -63,22 +63,22 @@
                 </tr>
             </thead>
             <tbody id="tabela-aprovacao">
-                <tr>
-                    <td>Studio Rosa Bela</td>
-                    <td>Patricia Souza</td>
-                    <td>São Paulo / Vila Mariana</td>
-                    <td>01-03-2026</td>
-                    <td>Pendente</td>
-                    <td class="AcoesTabela">
-                        <div class="AgrupadorBotoes">
-                            <button type="button" class="BntAprovar">Aprovar</button>
-                            <button type="button" class="BntReprovar">Reprovar</button>
-                        </div>
-                        <button type="button" class="BntVerDetalhes">Ver detalhes</button>
-                    </td>
-                </tr>
+                <!-- Linhas geradas dinamicamente -->
             </tbody>
         </table>
+    </div>
+
+    <!-- Modal de Detalhes da Empresa -->
+    <div id="modalDetalhes" class="modal-custom" style="display: none;">
+        <div class="modal-custom-content">
+            <div class="modal-custom-header">
+                <h2>Detalhes do Estabelecimento</h2>
+                <button type="button" class="close-modal-btn" onclick="fecharModal()">&times;</button>
+            </div>
+            <div class="modal-custom-body" id="detalhes-empresa-conteudo">
+                <!-- Injetado via JS -->
+            </div>
+        </div>
     </div>
 
     <script src="../js/DashboardAprovacao.js"></script>

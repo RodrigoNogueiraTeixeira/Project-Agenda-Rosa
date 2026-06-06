@@ -2,11 +2,28 @@ const empresaRepository = require("../repositories/empresaRepository");
 
 async function getEmpresasPendentes(req, res) {
     try {
-        const empresas = await empresaRepository.getEmpresasPendentes();
+        const { status, nome, data } = req.query;
+        const empresas = await empresaRepository.getEmpresasFiltradas({ status, nome, data });
         res.json({ success: true, data: empresas });
     } catch (error) {
         console.error("Erro ao buscar empresas pendentes:", error);
         res.status(500).json({ success: false, message: "Erro ao buscar empresas pendentes." });
+    }
+}
+
+async function getEmpresaDetalhes(req, res) {
+    try {
+        const id = req.params.id;
+        const empresa = await empresaRepository.getEmpresaById(id);
+        
+        if (empresa) {
+            res.json({ success: true, data: empresa });
+        } else {
+            res.status(404).json({ success: false, message: "Empresa não encontrada." });
+        }
+    } catch (error) {
+        console.error("Erro ao buscar detalhes da empresa:", error);
+        res.status(500).json({ success: false, message: "Erro ao buscar detalhes da empresa." });
     }
 }
 
@@ -44,6 +61,7 @@ async function rejectEmpresa(req, res) {
 
 module.exports = {
     getEmpresasPendentes,
+    getEmpresaDetalhes,
     approveEmpresa,
     rejectEmpresa
 };
