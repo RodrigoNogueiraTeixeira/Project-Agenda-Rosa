@@ -126,7 +126,9 @@ function configurarAcoesTabela() {
     if (!tbody) return;
 
     tbody.addEventListener('click', async (evento) => {
-        const botao = evento.target;
+        const botao = evento.target.closest('.BntEditar, .BntExcluirInativa');
+        if (!botao) return;
+
         const id = botao.getAttribute('data-id');
         if (!id) return;
 
@@ -134,9 +136,9 @@ function configurarAcoesTabela() {
             const tr = document.getElementById(`categoria-${id}`);
             if (!tr) return;
             
-            const nome = tr.cells[0].textContent;
-            const descricao = tr.cells[1].textContent;
-            const status = tr.cells[2].textContent;
+            const nome = tr.cells[0].textContent.trim();
+            const descricao = tr.cells[1].textContent.trim();
+            const status = tr.cells[2].textContent.trim();
 
             document.getElementById('NomeCategoria').value = nome;
             document.getElementById('DescricaoBloco').value = descricao;
