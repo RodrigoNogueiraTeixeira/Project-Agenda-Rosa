@@ -17,7 +17,7 @@ async function getStats() {
 
 async function getAgendamentosPeriodo(dataInicial, dataFinal) {
   const resultado = await get(
-    "SELECT COUNT(*) AS total FROM agendamentos WHERE data BETWEEN ? AND ?",
+    "SELECT COUNT(*) AS total FROM agendamentos WHERE data_agendamento BETWEEN ? AND ?",
     [dataInicial, dataFinal]
   );
   return resultado ? resultado.total : 0;

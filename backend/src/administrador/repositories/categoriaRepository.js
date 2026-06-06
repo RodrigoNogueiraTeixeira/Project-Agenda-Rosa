@@ -23,14 +23,14 @@ async function editarCategoria(id, dados) {
       String(dados.nome).trim(),
       String(dados.descricao || "").trim(),
       String(dados.status || "Ativa").trim(),
-      id
+      Number(id)
     ]
   );
-  return { id, ...dados };
+  return { id: Number(id), ...dados };
 }
 
 async function excluirCategoria(id) {
-  const result = await run("DELETE FROM categorias WHERE id = ?", [id]);
+  const result = await run("DELETE FROM categorias WHERE id = ?", [Number(id)]);
   return result.changes > 0;
 }
 

@@ -10,10 +10,10 @@ async function getRelatorio(tipo, dataInicial = '', dataFinal = '') {
   const paramsCancelados = [];
 
   if (dataInicial && dataFinal) {
-    sqlEmpresas += " AND criado_em BETWEEN ? AND ?";
+    sqlEmpresas += " AND criado_em::timestamp BETWEEN ?::timestamp AND ?::timestamp";
     paramsEmpresas.push(dataInicial, `${dataFinal} 23:59:59`);
 
-    sqlCancelados += " AND criado_em BETWEEN ? AND ?";
+    sqlCancelados += " AND criado_em::timestamp BETWEEN ?::timestamp AND ?::timestamp";
     paramsCancelados.push(dataInicial, `${dataFinal} 23:59:59`);
   }
 
