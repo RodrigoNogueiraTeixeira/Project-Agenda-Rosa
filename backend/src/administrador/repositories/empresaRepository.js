@@ -62,10 +62,10 @@ async function getEmpresaById(id) {
       criado_em AS dataCadastro 
     FROM empresas 
     WHERE id = ?`,
-    [id]
+    [Number(id)]
   );
 }
-
+ 
 async function updateEmpresaStatus(id, newStatus) {
   let dbStatus = "pendente";
   if (newStatus.toLowerCase().includes("aprov")) {
@@ -73,7 +73,9 @@ async function updateEmpresaStatus(id, newStatus) {
   } else if (newStatus.toLowerCase().includes("reprov")) {
     dbStatus = "reprovada";
   }
-
+ 
+  const numericId = Number(id);
+ 
   return transaction(async (tx) => {
     const empresa = await tx.get(
       `SELECT
@@ -88,18 +90,18 @@ async function updateEmpresaStatus(id, newStatus) {
         cep
       FROM empresas
       WHERE id = ?`,
-      [id]
+      [numericId]
     );
-
+ 
     if (!empresa) {
       return false;
     }
-
+ 
     await tx.run(
       `UPDATE empresas
       SET status_aprovacao = ?, atualizado_em = CURRENT_TIMESTAMP
       WHERE id = ?`,
-      [dbStatus, id]
+      [dbStatus, numericId]
     );
 
     if (dbStatus !== "aprovada") {

@@ -42,7 +42,15 @@ function renderizarDadosDashboard(dados) {
 // Daniel e Rodrigo: Busca inicial dos dados ao carregar a página
 async function buscarDadosDashboard() {
     try {
-        const response = await fetch('/api/dashboard/stats');
+        const dataInicial = document.getElementById('data-inicial')?.value || '';
+        const dataFinal = document.getElementById('data-final')?.value || '';
+        
+        let url = '/api/dashboard/stats';
+        if (dataInicial && dataFinal) {
+            url += `?dataInicial=${encodeURIComponent(dataInicial)}&dataFinal=${encodeURIComponent(dataFinal)}`;
+        }
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Erro na rede');
         
         const json = await response.json();
@@ -65,6 +73,25 @@ async function buscarDadosDashboard() {
 document.addEventListener('DOMContentLoaded', function() {
     verificarAutenticacaoAdmin();
     configurarLogout();
+
+    // Define datas padrão nos inputs (primeiro dia do mês corrente até hoje)
+    const inputDataInicial = document.getElementById('data-inicial');
+    const inputDataFinal = document.getElementById('data-final');
+    
+    if (inputDataInicial && inputDataFinal) {
+        const hojeObj = new Date();
+        const ano = hojeObj.getFullYear();
+        const mes = String(hojeObj.getMonth() + 1).padStart(2, '0');
+        const dia = String(hojeObj.getDate()).padStart(2, '0');
+        
+        if (!inputDataInicial.value) {
+            inputDataInicial.value = `${ano}-${mes}-01`;
+        }
+        if (!inputDataFinal.value) {
+            inputDataFinal.value = `${ano}-${mes}-${dia}`;
+        }
+    }
+
     buscarDadosDashboard();
 
     const botaoPeriodo = document.getElementById("bntAplicarPeriodo");
