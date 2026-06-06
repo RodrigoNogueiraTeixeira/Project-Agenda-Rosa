@@ -1,7 +1,7 @@
 const bloqueioRepository = require("../repositories/bloqueioRepository");
 
 function horaValida(hora) {
-  return /^\d{2}:\d{2}$/.test(String(hora));
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
 }
 
 function validarBloqueio(dados) {
@@ -11,6 +11,22 @@ function validarBloqueio(dados) {
 
   if (!dados.dataBloqueio || !dados.horarioInicio || !dados.horarioFim) {
     return "Preencha data, horario inicial e horario final.";
+  }
+
+  if (!dados.profissionalId) {
+    return "Selecione um profissional para bloquear o horario.";
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dados.dataBloqueio))) {
+    return "Informe uma data valida para o bloqueio.";
+  }
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const dataBloqueio = new Date(`${dados.dataBloqueio}T00:00:00`);
+
+  if (Number.isNaN(dataBloqueio.getTime()) || dataBloqueio < hoje) {
+    return "Nao e permitido cadastrar bloqueio em data passada.";
   }
 
   if (!horaValida(dados.horarioInicio) || !horaValida(dados.horarioFim)) {
@@ -63,6 +79,13 @@ async function cadastrarBloqueio(req, res) {
       bloqueio,
     });
   } catch (error) {
+    if (
+      error.message.includes("nao pertence") ||
+      error.message.includes("Ja existe")
+    ) {
+      return res.status(409).json({ message: error.message });
+    }
+
     console.error("Erro ao cadastrar bloqueio:", error);
     return res.status(500).json({ message: "Erro interno ao cadastrar bloqueio." });
   }

@@ -11,12 +11,19 @@ async function login(payload) {
     throw new Error("Email e senha sao obrigatorios.");
   }
 
-  // 1. Perfil Administrador (Credenciais estáticas simplificadas)
+  // 1. Perfil Administrador (credenciais configuradas no ambiente)
   if (perfil === "administrador") {
-    const adminEmail = "admin@agendarosa.com";
-    const adminSenha = "admin123";
+    const adminEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+    const adminSenhaHash = String(process.env.ADMIN_PASSWORD_HASH || "").trim();
 
-    if (email.toLowerCase() !== adminEmail || senha !== adminSenha) {
+    if (!adminEmail || !passwordUtils.isPasswordHash(adminSenhaHash)) {
+      throw new Error("Acesso administrativo nao configurado.");
+    }
+
+    if (
+      email.toLowerCase() !== adminEmail ||
+      !passwordUtils.verifyPassword(senha, adminSenhaHash)
+    ) {
       throw new Error("Email ou senha de administrador invalidos.");
     }
 
@@ -60,14 +67,23 @@ async function login(payload) {
     };
   }
 
-  // 3. Perfil Cliente (Senha em texto puro)
+  // 3. Perfil Cliente (PBKDF2, com migracao automatica de senhas antigas)
   const cliente = await authDAO.buscarClientePorEmail(email);
   if (!cliente) {
     throw new Error("Email ou senha invalidos.");
   }
 
-  if (String(cliente.senha || "") !== senha) {
-    throw new Error("Email ou senha invalidos.");
+  if (passwordUtils.isPasswordHash(cliente.senha)) {
+    if (!passwordUtils.verifyPassword(senha, cliente.senha)) {
+      throw new Error("Email ou senha invalidos.");
+    }
+  } else {
+    if (String(cliente.senha || "") !== senha) {
+      throw new Error("Email ou senha invalidos.");
+    }
+
+    const senhaHash = passwordUtils.hashPassword(senha);
+    await authDAO.atualizarSenhaCliente(cliente.email, senhaHash);
   }
 
   return {

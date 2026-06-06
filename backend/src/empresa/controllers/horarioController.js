@@ -1,7 +1,7 @@
 const horarioRepository = require("../repositories/horarioRepository");
 
 function horaValida(hora) {
-  return !hora || /^\d{2}:\d{2}$/.test(String(hora));
+  return !hora || /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
 }
 
 function validarHorario(horario) {
@@ -42,6 +42,21 @@ function validarHorario(horario) {
     return "O inicio do intervalo deve ser menor que o fim do intervalo.";
   }
 
+  if (Boolean(horario.intervaloInicio) !== Boolean(horario.intervaloFim)) {
+    return "Informe o inicio e o fim do intervalo.";
+  }
+
+  if (
+    horario.abre &&
+    horario.intervaloInicio &&
+    (
+      horario.intervaloInicio < horario.horarioAbertura ||
+      horario.intervaloFim > horario.horarioFechamento
+    )
+  ) {
+    return "O intervalo deve estar dentro do horario de funcionamento.";
+  }
+
   return null;
 }
 
@@ -52,6 +67,12 @@ function validarHorarios(dados) {
 
   if (!Array.isArray(dados.horarios) || dados.horarios.length !== 7) {
     return "Informe os horarios dos sete dias da semana.";
+  }
+
+  const diasInformados = new Set(dados.horarios.map((horario) => Number(horario.diaSemana)));
+
+  if (diasInformados.size !== 7 || ![0, 1, 2, 3, 4, 5, 6].every((dia) => diasInformados.has(dia))) {
+    return "Informe cada dia da semana uma unica vez.";
   }
 
   for (const horario of dados.horarios) {

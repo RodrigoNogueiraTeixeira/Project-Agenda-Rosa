@@ -9,6 +9,10 @@ function validarProfissional(dados) {
     return "Informe o nome do profissional.";
   }
 
+  if (dados.email && !String(dados.email).includes("@")) {
+    return "Informe um e-mail valido para o profissional.";
+  }
+
   if (dados.status && !["ativo", "inativo"].includes(dados.status)) {
     return "Status do profissional invalido.";
   }
