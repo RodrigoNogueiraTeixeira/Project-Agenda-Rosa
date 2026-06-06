@@ -1,3 +1,11 @@
+// Daniel e Rodrigo: Valida se o administrador está logado
+function verificarAutenticacaoAdmin() {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+        window.location.href = "../../login/html/login.html";
+    }
+}
+
 // Daniel e Rodrigo: Função que desenha a tabela na tela
 function renderizarTabela(empresas) {
     const tbody = document.getElementById('tabela-aprovacao');
@@ -7,23 +15,39 @@ function renderizarTabela(empresas) {
         return;
     }
 
-    if (empresas.length === 0) {
+    if (!empresas || empresas.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Nenhum cadastro pendente de aprovação.</td></tr>`;
         return;
     }
 
     empresas.forEach(function(empresa) {
+        // Exibição mais amigável do status
+        let statusClass = "status-pendente";
+        let statusTexto = empresa.status || 'Pendente';
+        
+        if (String(empresa.status).toLowerCase().includes("aprov")) {
+            statusClass = "status-aprovado"; // Você pode adicionar estilo para estes no CSS futuramente se desejar
+            statusTexto = "Aprovada";
+        } else if (String(empresa.status).toLowerCase().includes("reprov")) {
+            statusClass = "status-reprovado";
+            statusTexto = "Reprovada";
+        } else {
+            statusTexto = "Pendente";
+        }
+
         const linhaHTML = `
             <tr id="linha-empresa-${empresa.id}">
                 <td>${empresa.nome}</td>
                 <td>${empresa.responsavel}</td>
                 <td>${empresa.cidade}</td>
                 <td>${empresa.datacadastro || empresa.dataCadastro || 'N/A'}</td>
-                <td><span class="status-pendente">${empresa.status}</span></td>
+                <td><span class="${statusClass}">${statusTexto}</span></td>
                 <td class="AcoesTabela">
                     <div class="AgrupadorBotoes"> 
-                        <button type="button" class="BntAprovar" data-id="${empresa.id}">Aprovar</button>
-                        <button type="button" class="BntReprovar" data-id="${empresa.id}">Reprovar</button>
+                        ${statusTexto === "Pendente" ? `
+                            <button type="button" class="BntAprovar" data-id="${empresa.id}">Aprovar</button>
+                            <button type="button" class="BntReprovar" data-id="${empresa.id}">Reprovar</button>
+                        ` : '<span style="color:#777; font-size:0.85rem;">Sem ações pendentes</span>'}
                     </div>
                     <button type="button" class="BntVerDetalhes" data-id="${empresa.id}">Ver detalhes</button>
                 </td>
@@ -33,10 +57,11 @@ function renderizarTabela(empresas) {
     });
 }
 
-// Daniel e Rodrigo: Busca as empresas pendentes do Backend
-async function carregarEmpresasPendentes() {
+// Daniel e Rodrigo: Busca as empresas baseada nos filtros aplicados
+async function carregarEmpresasFiltradas(status = "Todos", nome = "", data = "") {
     try {
-        const response = await fetch('/api/empresas/pendentes');
+        const queryParams = new URLSearchParams({ status, nome, data }).toString();
+        const response = await fetch(`/api/empresas/pendentes?${queryParams}`);
         if (!response.ok) throw new Error('Falha ao obter lista de pendências');
         
         const json = await response.json();
@@ -46,9 +71,10 @@ async function carregarEmpresasPendentes() {
             throw new Error(json.message || 'Erro ao carregar dados');
         }
     } catch (error) {
+        // Fallback de dados mockados caso a API falhe
         renderizarTabela([
-            { id: 1, nome: "Studio Rosa Bela", responsavel: "Patricia", cidade: "SP", dataCadastro: "01-03", status: "Pendente" },
-            { id: 2, nome: "Barbearia do Zé", responsavel: "José", cidade: "RJ", dataCadastro: "05-04", status: "Pendente" }
+            { id: 1, nome: "Studio Rosa Bela", responsavel: "Patricia", cidade: "SP", dataCadastro: "2026-06-01", status: "Pendente" },
+            { id: 2, nome: "Barbearia do Zé", responsavel: "José", cidade: "RJ", dataCadastro: "2026-06-05", status: "Pendente" }
         ]);
     }
 }
@@ -69,6 +95,8 @@ function configurarBotoesTabela() {
         if (botaoClicado.classList.contains('BntReprovar')) acao = 'reprovar';
 
         if (acao) {
+            if (!confirm(`Deseja realmente ${acao} esta empresa?`)) return;
+
             try {
                 const response = await fetch(`/api/empresas/${idDaEmpresa}/${acao}`, {
                     method: 'POST'
@@ -78,13 +106,10 @@ function configurarBotoesTabela() {
                 
                 const json = await response.json();
                 if (json.success) {
-                    alert(json.message || `Empresa ${acao} com sucesso!`);
+                    alert(json.message || `Empresa ${acao}da com sucesso!`);
                     
-                    const linha = document.getElementById(`linha-empresa-${idDaEmpresa}`);
-                    if (linha) {
-                        linha.style.opacity = '0';
-                        setTimeout(() => linha.remove(), 300);
-                    }
+                    // Recarrega a listagem respeitando os filtros atuais
+                    aplicarFiltrosAtuais();
                 }
             } catch (error) {
                 alert(`Empresa ${idDaEmpresa} foi ${acao}da com sucesso (Simulado).`);
@@ -92,14 +117,101 @@ function configurarBotoesTabela() {
                 if (linha) linha.remove();
             }
         } else if (botaoClicado.classList.contains('BntVerDetalhes')) {
-            alert(`Visualizando detalhes da Empresa ID: ${idDaEmpresa}`);
+            abrirModalDetalhes(idDaEmpresa);
         }
     });
 }
 
+// Daniel e Rodrigo: Abre a modal e busca informações completas do backend
+async function abrirModalDetalhes(id) {
+    const modal = document.getElementById('modalDetalhes');
+    const conteudo = document.getElementById('detalhes-empresa-conteudo');
+    if (!modal || !conteudo) return;
+
+    conteudo.innerHTML = `<p style="text-align: center; padding: 20px;">Carregando detalhes...</p>`;
+    modal.style.display = 'flex';
+
+    try {
+        const response = await fetch(`/api/empresas/${id}`);
+        if (!response.ok) throw new Error("Erro de rede");
+        const json = await response.json();
+        
+        if (json.success) {
+            const emp = json.data;
+            conteudo.innerHTML = `
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Nome do Estabelecimento</div>
+                    <div class="detalhe-valor">${emp.nome || 'N/A'}</div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Responsável</div>
+                    <div class="detalhe-valor">${emp.responsavel || 'N/A'}</div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Categoria Principal</div>
+                    <div class="detalhe-valor">${emp.categoria || 'N/A'}</div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Descrição</div>
+                    <div class="detalhe-valor">${emp.descricao || 'Sem descrição cadastrada.'}</div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Contato</div>
+                    <div class="detalhe-valor"><strong>Telefone:</strong> ${emp.telefone || 'N/A'}<br><strong>E-mail:</strong> ${emp.email || 'N/A'}</div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Endereço</div>
+                    <div class="detalhe-valor">
+                        ${emp.endereco || 'N/A'}${emp.numero ? ', ' + emp.numero : ''} ${emp.complemento ? '(' + emp.complemento + ')' : ''}<br>
+                        <strong>Bairro:</strong> ${emp.bairro || 'N/A'} - <strong>Cidade:</strong> ${emp.cidade || 'N/A'}<br>
+                        <strong>CEP:</strong> ${emp.cep || 'N/A'}
+                    </div>
+                </div>
+                <div class="detalhe-item">
+                    <div class="detalhe-rotulo">Status e Cadastro</div>
+                    <div class="detalhe-valor">
+                        <strong>Status Atual:</strong> ${emp.status}<br>
+                        <strong>Data de Cadastro:</strong> ${emp.datacadastro || emp.dataCadastro || 'N/A'}
+                    </div>
+                </div>
+            `;
+        } else {
+            conteudo.innerHTML = `<p style="text-align: center; color: red; padding: 20px;">${json.message || "Erro ao carregar detalhes."}</p>`;
+        }
+    } catch (error) {
+        conteudo.innerHTML = `<p style="text-align: center; color: red; padding: 20px;">Erro de conexão com o servidor.</p>`;
+    }
+}
+
+// Daniel e Rodrigo: Fecha a modal
+function fecharModal() {
+    const modal = document.getElementById('modalDetalhes');
+    if (modal) modal.style.display = 'none';
+}
+
+// Daniel e Rodrigo: Aplica os filtros dos inputs na listagem
+function aplicarFiltrosAtuais() {
+    const status = document.getElementById('SeletorStatus').value;
+    const nome = document.getElementById('FiltroNome').value.trim();
+    const data = document.getElementById('FiltroData').value;
+    carregarEmpresasFiltradas(status, nome, data);
+}
+
+// Daniel e Rodrigo: Configura os eventos dos filtros
+function configurarFiltros() {
+    const btnFiltrar = document.querySelector('.BtnFiltrar');
+    if (btnFiltrar) {
+        btnFiltrar.addEventListener('click', function(e) {
+            e.preventDefault();
+            aplicarFiltrosAtuais();
+        });
+    }
+}
+
 // Daniel e Rodrigo: Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    carregarEmpresasPendentes();
+    verificarAutenticacaoAdmin();
+    carregarEmpresasFiltradas();
     configurarBotoesTabela();
+    configurarFiltros();
 });
-

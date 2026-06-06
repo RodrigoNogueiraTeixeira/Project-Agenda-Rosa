@@ -1,8 +1,8 @@
-const { all, transaction } = require("../../config/database");
+const { all, transaction, get } = require("../../config/database");
 
-async function getEmpresasPendentes() {
-  return all(
-    `SELECT 
+async function getEmpresasFiltradas(filtros = {}) {
+  let sql = `
+    SELECT 
       id, 
       nome_estabelecimento AS nome, 
       nome_responsavel AS responsavel, 
@@ -10,7 +10,59 @@ async function getEmpresasPendentes() {
       criado_em AS dataCadastro, 
       status_aprovacao AS status 
     FROM empresas 
-    WHERE status_aprovacao = 'pendente'`
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (filtros.status && filtros.status !== "Todos") {
+    let val = filtros.status.toLowerCase();
+    if (val === "aprovado") val = "aprovada";
+    if (val === "reprovado") val = "reprovada";
+    sql += " AND status_aprovacao = ?";
+    params.push(val);
+  }
+
+  if (filtros.nome) {
+    // Busca por nome do estabelecimento ou do responsável, insensível a maiúsculas/minúsculas
+    sql += " AND (nome_estabelecimento ILIKE ? OR nome_responsavel ILIKE ?)";
+    params.push(`%${filtros.nome}%`, `%${filtros.nome}%`);
+  }
+
+  if (filtros.data) {
+    sql += " AND criado_em LIKE ?";
+    params.push(`${filtros.data}%`);
+  }
+
+  sql += " ORDER BY criado_em DESC";
+
+  return all(sql, params);
+}
+
+async function getEmpresasPendentes() {
+  return getEmpresasFiltradas({ status: "Pendente" });
+}
+
+async function getEmpresaById(id) {
+  return get(
+    `SELECT 
+      id, 
+      nome_responsavel AS responsavel, 
+      telefone, 
+      email, 
+      nome_estabelecimento AS nome, 
+      categoria_principal AS categoria, 
+      descricao, 
+      cep, 
+      endereco, 
+      numero, 
+      complemento, 
+      bairro, 
+      cidade, 
+      status_aprovacao AS status, 
+      criado_em AS dataCadastro 
+    FROM empresas 
+    WHERE id = ?`,
+    [id]
   );
 }
 
@@ -124,5 +176,7 @@ async function updateEmpresaStatus(id, newStatus) {
 
 module.exports = {
   getEmpresasPendentes,
+  getEmpresasFiltradas,
+  getEmpresaById,
   updateEmpresaStatus
 };
