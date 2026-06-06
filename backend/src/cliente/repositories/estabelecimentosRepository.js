@@ -70,7 +70,8 @@ async function listarEstabelecimentosComFiltro({ cidade, bairro, tipo, busca, pa
       id: row.id,
       nome: row.nome,
       preco: Number(row.preco || 0),
-      duracao_minutos: Number(row.duracao_minutos || 30)
+      duracao_minutos: Number(row.duracao_minutos || 30),
+      categoria: row.categoria || ""
     }));
 
     return {
@@ -117,7 +118,8 @@ async function buscarEstabelecimentoPorId(id) {
       id: row.id,
       nome: row.nome,
       preco: Number(row.preco || 0),
-      duracao_minutos: Number(row.duracao_minutos || 30)
+      duracao_minutos: Number(row.duracao_minutos || 30),
+      categoria: row.categoria || ""
     }))
   };
 }
@@ -129,7 +131,8 @@ async function buscarServicosSelecionados(estabelecimentoId, servicosIds) {
     id: Number(item.id),
     nome: item.nome,
     preco: Number(item.preco || 0),
-    duracao_minutos: Number(item.duracao_minutos || 30)
+    duracao_minutos: Number(item.duracao_minutos || 30),
+    categoria: item.categoria || ""
   }));
 }
 
@@ -144,17 +147,39 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
   // Se o profissionalId estiver selecionado e for um ID válido (não "qualquer", não vazio)
   const temProfissionalEspecifico = profissionalId && profissionalId !== "qualquer" && profissionalId !== "";
 
+  if (
+    temProfissionalEspecifico &&
+    !profissionais.some((profissional) => Number(profissional.id) === Number(profissionalId))
+  ) {
+    return [];
+  }
+
   // 1. Obter os agendamentos ocupados no dia
   // Se for "Sem preferência" (ou não houver profissionalId especificado), buscamos TODOS os agendamentos ocupados do estabelecimento
   // Se for um profissional específico, buscamos apenas os agendamentos daquele profissional
   const ocupados = await agendamentosDAO.listarHorariosOcupados(estabelecimentoId, data, temProfissionalEspecifico ? profissionalId : null);
+  const diaSemana = new Date(`${data}T00:00:00`).getDay();
+  const configuracao = await estabelecimentosDAO.buscarHorarioFuncionamento(
+    estabelecimentoId,
+    diaSemana
+  );
+  const bloqueios = await estabelecimentosDAO.listarBloqueiosPorData(
+    estabelecimentoId,
+    data
+  );
+
+  if (configuracao?.empresa_id && (!configuracao.abre || !configuracao.horario_abertura)) {
+    return [];
+  }
 
   // Idealmente, buscaríamos de horarios_funcionamento para a empresa_id e dia da semana.
   // Por enquanto, vamos adotar um padrão de 09:00 às 19:00 para suportar a lógica, 
   // já que o app de cliente (mockado) não está linkado completamente à tabela horarios_funcionamento.
   
-  const horarioAbertura = "09:00";
-  const horarioFechamento = "19:00";
+  const horarioAbertura = configuracao?.horario_abertura || "09:00";
+  const horarioFechamento = configuracao?.horario_fechamento || "19:00";
+  const intervaloInicio = configuracao?.intervalo_inicio || null;
+  const intervaloFim = configuracao?.intervalo_fim || null;
   
   const [aberturaH, aberturaM] = horarioAbertura.split(":").map(Number);
   const [fechamentoH, fechamentoM] = horarioFechamento.split(":").map(Number);
@@ -202,6 +227,22 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
   
   const isHoje = dataHoje.toDateString() === dataSelecionadaObj.toDateString();
   const agoraMinutos = dataHoje.getHours() * 60 + dataHoje.getMinutes();
+
+  const sobrepoe = (inicioA, fimA, inicioB, fimB) => {
+    return inicioA < fimB && fimA > inicioB;
+  };
+
+  const bloqueioGlobal = (bloqueio) => {
+    return !bloqueio.profissional_id && !bloqueio.profissional_nome;
+  };
+
+  const profissionalBloqueado = (idProfissional, slotInicio, slotFim) => {
+    return bloqueios.some((bloqueio) => {
+      const pertenceAoProfissional = Number(bloqueio.profissional_id) === Number(idProfissional);
+      return (bloqueioGlobal(bloqueio) || pertenceAoProfissional)
+        && sobrepoe(slotInicio, slotFim, bloqueio.horario_inicio, bloqueio.horario_fim);
+    });
+  };
   
   for (const m of candidatosMinutos) {
     if (m + duracaoMinutos > fimMinutos) {
@@ -213,6 +254,15 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
     const slotInicioStr = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const slotFimMinutos = m + duracaoMinutos;
     const slotFimStr = `${String(Math.floor(slotFimMinutos / 60)).padStart(2, '0')}:${String(slotFimMinutos % 60).padStart(2, '0')}`;
+
+    if (
+      intervaloInicio &&
+      intervaloFim &&
+      sobrepoe(slotInicioStr, slotFimStr, intervaloInicio, intervaloFim)
+    ) {
+      slotsLivres.push({ hora: slotInicioStr, disponivel: false, passado });
+      continue;
+    }
     
     // 3. Verificar conflito
     if (temProfissionalEspecifico) {
@@ -225,9 +275,14 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
           break;
         }
       }
+      const bloqueado = profissionalBloqueado(
+        profissionalId,
+        slotInicioStr,
+        slotFimStr
+      );
       slotsLivres.push({
         hora: slotInicioStr,
-        disponivel: !passado && !conflito,
+        disponivel: !passado && !conflito && !bloqueado,
         passado
       });
     } else {
@@ -243,9 +298,18 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
             break;
           }
         }
+        const bloqueadoGlobal = bloqueios.some((bloqueio) => {
+          return bloqueioGlobal(bloqueio)
+            && sobrepoe(
+              slotInicioStr,
+              slotFimStr,
+              bloqueio.horario_inicio,
+              bloqueio.horario_fim
+            );
+        });
         slotsLivres.push({
           hora: slotInicioStr,
-          disponivel: !passado && !conflitoGlobal,
+          disponivel: !passado && !conflitoGlobal && !bloqueadoGlobal,
           passado
         });
       } else {
@@ -266,6 +330,10 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
               profOcupado = true;
               break;
             }
+          }
+
+          if (profissionalBloqueado(prof.id, slotInicioStr, slotFimStr)) {
+            profOcupado = true;
           }
           
           if (!profOcupado) {

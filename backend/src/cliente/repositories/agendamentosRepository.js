@@ -3,6 +3,40 @@ const clientesDAO = require("../dao/clientesDAO");
 const estabelecimentosRepository = require("./estabelecimentosRepository");
 const pagamentosDAO = require("../dao/pagamentosDAO");
 const pagamentosRepository = require("./pagamentosRepository");
+const { normalizarTexto } = require("../../utils/texto");
+
+function profissionalAtendeCategoria(especialidade, categoria) {
+  if (!especialidade) return true;
+  if (!categoria) return true;
+
+  const espNorm = normalizarTexto(especialidade);
+  const catNorm = normalizarTexto(categoria);
+
+  if (espNorm === catNorm) return true;
+  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
+
+  const sinonimos = {
+    "unha": ["manicure", "pedicure", "unhas"],
+    "unhas": ["manicure", "pedicure", "unha"],
+    "manicure": ["unha", "unhas", "pedicure"],
+    "pedicure": ["unha", "unhas", "manicure"],
+    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
+    "estetica facial": ["estetica", "estetica feminino"],
+    "estetica corporal": ["estetica", "estetica feminino"],
+    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
+    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
+    "cabeleireiro": ["cabelo", "corte"],
+    "cabeleireira": ["cabelo", "corte"]
+  };
+
+  const listaEsp = sinonimos[espNorm] || [];
+  if (listaEsp.includes(catNorm)) return true;
+
+  const listaCat = sinonimos[catNorm] || [];
+  if (listaCat.includes(espNorm)) return true;
+
+  return false;
+}
 
 function adicionarMinutos(horarioStr, minutos) {
   if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
@@ -109,17 +143,33 @@ async function criarAgendamento(payload) {
 
   if (profissionalId && profissionalId !== "qualquer" && profissionalId !== "") {
     const { get } = require("../../config/database");
-    const profRow = await get("SELECT nome FROM profissionais WHERE id = ?", [Number(profissionalId)]);
+    const profRow = await get("SELECT nome, especialidade FROM profissionais WHERE id = ?", [Number(profissionalId)]);
     if (profRow) {
+      // Validar capacitação do profissional para os serviços selecionados
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(profRow.especialidade, servico.categoria)) {
+          throw new Error(`O profissional ${profRow.nome} nao atende a categoria '${servico.categoria}' do servico '${servico.nome}'.`);
+        }
+      }
       profissionalNome = profRow.nome;
       finalProfissionalId = Number(profissionalId);
     } else {
       throw new Error("Profissional selecionado nao encontrado.");
     }
   } else if (profissionais.length > 0) {
-    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre
+    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre E QUE ATENDA TODAS AS CATEGORIAS DOS SERVIÇOS SELECIONADOS
     const { get } = require("../../config/database");
+    let profQualificadoEncontrado = false;
     for (const prof of profissionais) {
+      let atendeTodos = true;
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(prof.especialidade, servico.categoria)) {
+          atendeTodos = false;
+          break;
+        }
+      }
+      if (!atendeTodos) continue;
+
       const conflitoProf = await get(
         `
           SELECT id
@@ -127,7 +177,7 @@ async function criarAgendamento(payload) {
           WHERE estabelecimento_id = ?
             AND data = ?
             AND (
-              status IN ('agendado', 'concluido')
+              status IN ('agendado', 'confirmado', 'concluido', 'realizado')
               OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
             )
             AND (
@@ -153,12 +203,69 @@ async function criarAgendamento(payload) {
       if (!conflitoProf) {
         profissionalNome = prof.nome;
         finalProfissionalId = prof.id;
+        profQualificadoEncontrado = true;
         break;
+      }
+    }
+    if (!profQualificadoEncontrado) {
+      const algumQualificado = profissionais.some(prof => 
+        servicosSelecionados.every(servico => profissionalAtendeCategoria(prof.especialidade, servico.categoria))
+      );
+      if (!algumQualificado) {
+        throw new Error("Nenhum profissional cadastrado atende a todas as categorias dos servicos selecionados.");
+      } else {
+        throw new Error("Nao ha profissional qualificado disponivel para este horario.");
       }
     }
   }
 
   // Validar se há conflito para o profissional selecionado (usando o cálculo em JS para consistência total com a exibição de horários)
+  const diaSemana = new Date(`${data}T00:00:00`).getDay();
+  const horarioFuncionamento = await estabelecimentosDAO.buscarHorarioFuncionamento(
+    estabelecimentoId,
+    diaSemana
+  );
+
+  if (horarioFuncionamento?.empresa_id) {
+    if (!horarioFuncionamento.abre || !horarioFuncionamento.horario_abertura) {
+      throw new Error("O estabelecimento nao abre nesta data.");
+    }
+
+    if (
+      horario < horarioFuncionamento.horario_abertura ||
+      horarioFim > horarioFuncionamento.horario_fechamento
+    ) {
+      throw new Error("O horario escolhido esta fora do funcionamento do estabelecimento.");
+    }
+
+    if (
+      horarioFuncionamento.intervalo_inicio &&
+      horarioFuncionamento.intervalo_fim &&
+      horario < horarioFuncionamento.intervalo_fim &&
+      horarioFim > horarioFuncionamento.intervalo_inicio
+    ) {
+      throw new Error("O horario escolhido coincide com o intervalo do estabelecimento.");
+    }
+  }
+
+  const bloqueios = await estabelecimentosDAO.listarBloqueiosPorData(
+    estabelecimentoId,
+    data
+  );
+  const horarioBloqueado = bloqueios.some((bloqueio) => {
+    const bloqueioGlobal = !bloqueio.profissional_id && !bloqueio.profissional_nome;
+    const bloqueioDoProfissional = finalProfissionalId &&
+      Number(bloqueio.profissional_id) === Number(finalProfissionalId);
+
+    return (bloqueioGlobal || bloqueioDoProfissional)
+      && horario < bloqueio.horario_fim
+      && horarioFim > bloqueio.horario_inicio;
+  });
+
+  if (horarioBloqueado) {
+    throw new Error("O horario escolhido esta bloqueado para o profissional.");
+  }
+
   const ocupados = await agendamentosDAO.listarHorariosOcupados(estabelecimentoId, data, finalProfissionalId);
   
   let temConflito = false;
@@ -174,13 +281,27 @@ async function criarAgendamento(payload) {
     throw new Error("Esse horario ja esta ocupado para o profissional selecionado ou a agenda esta lotada.");
   }
 
-  // Buscar o empresa_id associado ao estabelecimento pelos servicos cadastrados
+  // Busca a empresa vinculada diretamente ao estabelecimento.
   const { get } = require("../../config/database");
-  const servicoEmpresa = await get(
-    "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+  const estabelecimentoEmpresa = await get(
+    "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
   );
-  const empresaId = servicoEmpresa ? servicoEmpresa.empresa_id : estabelecimentoId; // Fallback
+  let empresaId = estabelecimentoEmpresa
+    ? estabelecimentoEmpresa.empresa_id
+    : null;
+
+  if (!empresaId) {
+    const servicoEmpresa = await get(
+      `SELECT empresa_id
+      FROM servicos
+      WHERE estabelecimento_id = ?
+        AND empresa_id IS NOT NULL
+      LIMIT 1`,
+      [estabelecimentoId]
+    );
+    empresaId = servicoEmpresa ? servicoEmpresa.empresa_id : null;
+  }
 
   const servicoId = servicosSelecionados.length > 0 ? servicosSelecionados[0].id : null;
 

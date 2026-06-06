@@ -89,10 +89,10 @@ async function inserirEsteticaTeste() {
     await tx.run("DELETE FROM servicos WHERE estabelecimento_id = ?", [estabelecimentoId]);
 
     const servicos = [
-      { nome: "Limpeza de Pele Express (Estética)", preco: 1.00, duracao: 30 },
-      { nome: "Design de Sobrancelhas (Estética)", preco: 1.00, duracao: 40 },
-      { nome: "Massagem Facial Relaxante (Estética)", preco: 1.00, duracao: 30 },
-      { nome: "Drenagem Linfática Localizada (Estética)", preco: 1.00, duracao: 50 }
+      { nome: "Limpeza de Pele Express (Estética)", preco: 1.00, duracao: 30, categoria: "Estética facial" },
+      { nome: "Design de Sobrancelhas (Estética)", preco: 1.00, duracao: 40, categoria: "Estética facial" },
+      { nome: "Massagem Facial Relaxante (Estética)", preco: 1.00, duracao: 30, categoria: "Estética facial" },
+      { nome: "Drenagem Linfática Localizada (Estética)", preco: 1.00, duracao: 50, categoria: "Estética corporal" }
     ];
 
     for (const s of servicos) {
@@ -105,7 +105,7 @@ async function inserirEsteticaTeste() {
         s.nome,
         s.preco,
         100, // 100 centavos = 1 real
-        "Estética Feminino",
+        s.categoria,
         s.duracao,
         "ativo"
       ]);

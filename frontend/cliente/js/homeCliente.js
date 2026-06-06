@@ -357,6 +357,9 @@ function configurarModalAgendamento() {
           notaHorario.style.display = "block";
         }
       } else {
+        if (!verificarCapacitacaoProfissional("profissional")) {
+          return;
+        }
         if (campoHorario) {
           campoHorario.disabled = false;
         }
@@ -408,6 +411,10 @@ async function confirmarAgendamento() {
   if (!validacaoData.ok) {
     if (campoData) campoData.style.borderColor = "red";
     mostrarFeedbackAgendamento(validacaoData.mensagem, "erro");
+    return;
+  }
+
+  if (!verificarCapacitacaoProfissional("profissional")) {
     return;
   }
 
@@ -556,7 +563,12 @@ function abrirModalAgendamento(loja) {
     checkbox.value = String(servico.id);
     checkbox.setAttribute("data-preco", String(servico.preco));
     checkbox.setAttribute("data-duracao", String(servico.duracao_minutos || 30));
+    checkbox.setAttribute("data-categoria", String(servico.categoria || ""));
+    checkbox.setAttribute("data-nome", String(servico.nome || ""));
     checkbox.onchange = () => {
+      if (checkbox.checked && !verificarCapacitacaoProfissional("servico")) {
+        return;
+      }
       atualizarTotalAgendamento();
       atualizarHorariosDisponiveis();
     };
@@ -590,6 +602,8 @@ function abrirModalAgendamento(loja) {
           const opt = document.createElement("option");
           opt.value = p.id;
           opt.textContent = p.nome + (p.especialidade ? ` - ${p.especialidade}` : "");
+          opt.setAttribute("data-especialidade", String(p.especialidade || ""));
+          opt.setAttribute("data-nome", String(p.nome || ""));
           selectProfissional.appendChild(opt);
         });
         selectProfissional.disabled = false;
@@ -762,3 +776,94 @@ function atualizarTotalAgendamento() {
 window.filtrarResultados = filtrarResultados;
 window.mostrarMaisLojas = mostrarMaisLojas;
 window.agendar = agendar;
+
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function profissionalAtendeCategoria(especialidade, categoria) {
+  if (!especialidade) return true;
+  if (!categoria) return true;
+
+  const espNorm = normalizarTexto(especialidade);
+  const catNorm = normalizarTexto(categoria);
+
+  if (espNorm === catNorm) return true;
+  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
+
+  const sinonimos = {
+    "unha": ["manicure", "pedicure", "unhas"],
+    "unhas": ["manicure", "pedicure", "unha"],
+    "manicure": ["unha", "unhas", "pedicure"],
+    "pedicure": ["unha", "unhas", "manicure"],
+    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
+    "estetica facial": ["estetica", "estetica feminino"],
+    "estetica corporal": ["estetica", "estetica feminino"],
+    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
+    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
+    "cabeleireiro": ["cabelo", "corte"],
+    "cabeleireira": ["cabelo", "corte"]
+  };
+
+  const listaEsp = sinonimos[espNorm] || [];
+  if (listaEsp.includes(catNorm)) return true;
+
+  const listaCat = sinonimos[catNorm] || [];
+  if (listaCat.includes(espNorm)) return true;
+
+  return false;
+}
+
+function verificarCapacitacaoProfissional(elementoQueMudou) {
+  const selectProfissional = document.getElementById("profissionalAgendamento");
+  if (!selectProfissional || !selectProfissional.value) return true;
+
+  const optSelecionada = selectProfissional.options[selectProfissional.selectedIndex];
+  const especialidade = optSelecionada.getAttribute("data-especialidade") || "";
+  const nomeProf = optSelecionada.getAttribute("data-nome") || "";
+
+  const checkboxes = document.querySelectorAll("#listaServicosModal input[type='checkbox']");
+  
+  for (const cb of checkboxes) {
+    if (cb.checked) {
+      const categoria = cb.getAttribute("data-categoria") || "";
+      const nomeServico = cb.getAttribute("data-nome") || "";
+
+      if (!profissionalAtendeCategoria(especialidade, categoria)) {
+        Swal.fire({
+          title: "Profissional não capacitado",
+          text: `O profissional ${nomeProf} (${especialidade || 'Sem especialidade'}) não realiza o serviço: ${nomeServico} (${categoria || 'Sem categoria'}).`,
+          icon: "warning",
+          confirmButtonText: "Entendido"
+        });
+
+        // Resetar o que causou o conflito
+        if (elementoQueMudou === "profissional") {
+          selectProfissional.value = "";
+          // Também limpar horários
+          const campoHorario = document.getElementById("horarioAgendamento");
+          if (campoHorario) {
+            campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
+            campoHorario.disabled = true;
+            campoHorario.value = "";
+          }
+          const notaHorario = document.getElementById("nota-horario");
+          if (notaHorario) {
+            notaHorario.style.display = "block";
+          }
+        } else {
+          // Foi o checkbox do serviço
+          cb.checked = false;
+          atualizarTotalAgendamento();
+          atualizarHorariosDisponiveis();
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
