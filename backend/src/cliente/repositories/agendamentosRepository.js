@@ -177,7 +177,7 @@ async function criarAgendamento(payload) {
           WHERE estabelecimento_id = ?
             AND data = ?
             AND (
-              status IN ('agendado', 'concluido')
+              status IN ('agendado', 'confirmado', 'concluido', 'realizado')
               OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
             )
             AND (
@@ -235,13 +235,27 @@ async function criarAgendamento(payload) {
     throw new Error("Esse horario ja esta ocupado para o profissional selecionado ou a agenda esta lotada.");
   }
 
-  // Buscar o empresa_id associado ao estabelecimento pelos servicos cadastrados
+  // Busca a empresa vinculada diretamente ao estabelecimento.
   const { get } = require("../../config/database");
-  const servicoEmpresa = await get(
-    "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+  const estabelecimentoEmpresa = await get(
+    "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
   );
-  const empresaId = servicoEmpresa ? servicoEmpresa.empresa_id : estabelecimentoId; // Fallback
+  let empresaId = estabelecimentoEmpresa
+    ? estabelecimentoEmpresa.empresa_id
+    : null;
+
+  if (!empresaId) {
+    const servicoEmpresa = await get(
+      `SELECT empresa_id
+      FROM servicos
+      WHERE estabelecimento_id = ?
+        AND empresa_id IS NOT NULL
+      LIMIT 1`,
+      [estabelecimentoId]
+    );
+    empresaId = servicoEmpresa ? servicoEmpresa.empresa_id : null;
+  }
 
   const servicoId = servicosSelecionados.length > 0 ? servicosSelecionados[0].id : null;
 

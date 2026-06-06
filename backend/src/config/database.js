@@ -227,16 +227,17 @@ async function criarTabelas() {
   await run(`
     CREATE TABLE IF NOT EXISTS agendamentos (
       id SERIAL PRIMARY KEY,
-      cliente_id INTEGER NOT NULL,
-      estabelecimento_id INTEGER NOT NULL,
-      estabelecimento_nome TEXT NOT NULL,
-      data TEXT NOT NULL,
-      horario TEXT NOT NULL,
+      cliente_id INTEGER,
+      estabelecimento_id INTEGER,
+      estabelecimento_nome TEXT,
+      data TEXT,
+      horario TEXT,
       profissional TEXT,
       observacoes TEXT,
-      total REAL NOT NULL,
-      status TEXT NOT NULL,
-      criado_em TEXT NOT NULL,
+      total REAL,
+      status TEXT NOT NULL DEFAULT 'pendente',
+      criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       cancelado_em TEXT,
       empresa_id INTEGER,
       servico_id INTEGER,
@@ -528,6 +529,76 @@ async function migrarRelacionamentoEmpresaEstabelecimento() {
   `);
 }
 
+// Unifica os campos legados do cliente com os campos usados pelo painel da empresa.
+async function migrarTabelaAgendamentos() {
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS empresa_id INTEGER");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS servico_id INTEGER");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS profissional_id INTEGER");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS nome_cliente TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS telefone_cliente TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS email_cliente TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS data_agendamento TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS horario_inicio TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS horario_fim TEXT");
+  await run("ALTER TABLE agendamentos ADD COLUMN IF NOT EXISTS atualizado_em TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)");
+
+  await run("ALTER TABLE agendamentos ALTER COLUMN cliente_id DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN estabelecimento_id DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN estabelecimento_nome DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN data DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN horario DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN total DROP NOT NULL");
+  await run("ALTER TABLE agendamentos ALTER COLUMN status SET DEFAULT 'pendente'");
+  await run("ALTER TABLE agendamentos ALTER COLUMN criado_em SET DEFAULT (CURRENT_TIMESTAMP::TEXT)");
+
+  await run(`
+    UPDATE agendamentos ag
+    SET
+      empresa_id = COALESCE(ag.empresa_id, est.empresa_id),
+      data_agendamento = COALESCE(ag.data_agendamento, ag.data),
+      horario_inicio = COALESCE(ag.horario_inicio, ag.horario),
+      atualizado_em = COALESCE(ag.atualizado_em, ag.criado_em, CURRENT_TIMESTAMP::TEXT)
+    FROM estabelecimentos est
+    WHERE est.id = ag.estabelecimento_id
+  `);
+
+  await run(`
+    UPDATE agendamentos ag
+    SET
+      nome_cliente = COALESCE(ag.nome_cliente, cli.nome),
+      telefone_cliente = COALESCE(ag.telefone_cliente, cli.telefone),
+      email_cliente = COALESCE(ag.email_cliente, cli.email)
+    FROM clientes cli
+    WHERE cli.id = ag.cliente_id
+  `);
+
+  await run(`
+    UPDATE agendamentos ag
+    SET servico_id = item.servico_id
+    FROM (
+      SELECT DISTINCT ON (agendamento_id)
+        agendamento_id,
+        servico_id
+      FROM agendamento_servicos
+      ORDER BY agendamento_id, id
+    ) item
+    WHERE item.agendamento_id = ag.id
+      AND ag.servico_id IS NULL
+  `);
+
+  await run(`
+    UPDATE agendamentos
+    SET
+      data = COALESCE(data, data_agendamento),
+      horario = COALESCE(horario, horario_inicio),
+      status = CASE
+        WHEN status = 'confirmado' THEN 'agendado'
+        WHEN status = 'realizado' THEN 'concluido'
+        ELSE COALESCE(status, 'pendente')
+      END
+  `);
+}
+
 // ============================================================
 // SEED INICIAL DE DADOS
 // ============================================================
@@ -632,6 +703,7 @@ async function inicializarBanco() {
   await criarTabelas();
   await migrarTabelaServicos();
   await migrarRelacionamentoEmpresaEstabelecimento();
+  await migrarTabelaAgendamentos();
   await popularComSeedSeNecessario();
   await resetarSequences();
   console.log("✅ Banco de dados pronto!");

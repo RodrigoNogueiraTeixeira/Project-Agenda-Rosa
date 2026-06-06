@@ -21,7 +21,7 @@ function selecionarCamposAgendamento() {
     s.duracao_minutos AS duracaoMinutos,
     p.nome AS profissionalNome
   FROM agendamentos ag
-  INNER JOIN servicos s ON s.id = ag.servico_id
+  LEFT JOIN servicos s ON s.id = ag.servico_id
   LEFT JOIN profissionais p ON p.id = ag.profissional_id`;
 }
 
@@ -155,7 +155,7 @@ async function existeAgendamentoNoHorario(dados) {
       AND data_agendamento = ?
       AND horario_inicio < ?
       AND horario_fim > ?
-      AND status IN ('pendente', 'confirmado')
+      AND status IN ('pendente', 'agendado', 'confirmado')
       ${filtroProfissional}
     LIMIT 1`,
     params
