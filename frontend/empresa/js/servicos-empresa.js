@@ -1,21 +1,56 @@
 const API_SERVICOS_URL = "/api/empresa/servicos";
+const API_CATEGORIAS_URL = "/api/categorias";
 
 // Captura os elementos principais da tela de servicos.
 const formServico = document.querySelector(".form-grid");
 const tabelaServicos = document.querySelector("tbody");
 const botaoSalvarServico = formServico?.querySelector("button[type='submit']");
+const campoCategoria = document.getElementById("categoria-servico");
 
 // Guarda o ID do servico em edicao. Quando for null, o formulario cria um novo servico.
 let servicoEmEdicaoId = null;
 
-// Busca o ID da empresa salvo no navegador durante o cadastro.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Busca o valor de um campo pelo ID.
 function obterValor(id) {
   return document.getElementById(id)?.value.trim() || "";
+}
+
+// Carrega as categorias ativas cadastradas pelo administrador.
+async function carregarCategorias() {
+  try {
+    const resposta = await fetch(API_CATEGORIAS_URL);
+    const resultado = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok || !resultado.success) {
+      throw new Error(resultado.message || "Nao foi possivel carregar as categorias.");
+    }
+
+    resultado.data
+      .filter((categoria) => {
+        return String(categoria.status || "").toLowerCase() === "ativa";
+      })
+      .forEach((categoria) => {
+        const opcao = document.createElement("option");
+        opcao.value = categoria.nome;
+        opcao.textContent = categoria.nome;
+        campoCategoria.appendChild(opcao);
+      });
+  } catch (error) {
+    console.error("Erro ao carregar categorias:", error);
+    alert("Nao foi possivel carregar as categorias.");
+  }
 }
 
 // Converte centavos vindos do banco para formato de moeda brasileira.
@@ -62,7 +97,21 @@ function limparFormulario() {
 // Preenche o formulario com os dados escolhidos para edicao.
 function preencherFormularioParaEdicao(servico) {
   document.getElementById("nome-servico").value = servico.nome;
-  document.getElementById("categoria-servico").value = servico.categoria;
+
+  // Mantem uma categoria antiga para permitir a edicao do servico.
+  if (
+    servico.categoria &&
+    !Array.from(campoCategoria.options).some((opcao) => {
+      return opcao.value === servico.categoria;
+    })
+  ) {
+    const opcao = document.createElement("option");
+    opcao.value = servico.categoria;
+    opcao.textContent = servico.categoria;
+    campoCategoria.appendChild(opcao);
+  }
+
+  campoCategoria.value = servico.categoria;
   document.getElementById("preco-servico").value = formatarPreco(servico.precoCentavos);
   document.getElementById("duracao-servico").value = `${servico.duracaoMinutos} min`;
   document.getElementById("descricao-servico").value = servico.descricao || "";
@@ -220,5 +269,5 @@ async function excluirServico(id) {
 // Liga o submit do formulario a funcao de salvar.
 formServico?.addEventListener("submit", salvarServico);
 
-// Carrega os servicos assim que a tela e aberta.
-carregarServicos();
+// Carrega primeiro as categorias e depois os servicos da empresa.
+carregarCategorias().finally(carregarServicos);

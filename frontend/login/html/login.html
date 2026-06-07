@@ -1,61 +1,65 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Agenda Rosa</title>
-    <link rel="stylesheet" href="../../cliente/css/variavies.css" />
-    <link rel="stylesheet" href="../css/login.css" />
-  </head>
-  
-  <body>
 
-    <main id="login-card">
-      
-      <header>
-        <h1 id="login-titulo">Agenda Rosa</h1>
-        <p>Acesse sua conta para continuar</p>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Agenda Rosa</title>
+  <link rel="stylesheet" href="../../cliente/css/variavies.css" />
+  <link rel="stylesheet" href="../css/login.css" />
+</head>
 
-      <div id="campos-formulario">
-        <form>
-          <label for="perfil">Selecione o perfil</label>
+<body>
 
-          <select name="perfil" id="perfil">
-            <option value="" disabled selected>Selecione seu perfil</option>
-            <option value="cliente">Cliente</option>
-            <option value="empresa">Empresa/Profissional</option>
-            <option value="administrador">Administrador</option>
-          </select>
-        </form>
+  <main id="login-card">
+
+    <header>
+      <h1 id="login-titulo">Agenda Rosa</h1>
+      <p>Acesse sua conta para continuar</p>
+    </header>
+
+    <div id="campos-formulario">
+      <form>
+        <label for="perfil">Selecione o perfil</label>
+
+        <select name="perfil" id="perfil">
+          <option value="" disabled selected>Selecione seu perfil</option>
+          <option value="cliente">Cliente</option>
+          <option value="empresa">Empresa</option>
+          <option value="administrador">Administrador</option>
+        </select>
+      </form>
+    </div>
+
+    <div id="informacao-dinamica-intrucacao-campo">
+      <p id="informacao"></p>
+    </div>
+
+    <div id="campos-login">
+      <label for="acesso">Email ou usuario</label>
+      <input type="text" id="acesso" name="acesso" autocomplete="username" />
+
+      <label for="senha">Senha</label>
+      <div id="grupo-senha">
+        <input type="password" id="senha" name="senha" autocomplete="current-password" />
+        <button type="button" id="botao-mostrar-senha" aria-label="Mostrar senha">Mostrar</button>
       </div>
 
-      <div id="informacao-dinamica-intrucacao-campo">
-        <p id="informacao"></p>
-      </div>
 
-      <div id="campos-login">
-        <label for="acesso">Email ou usuario</label>
-        <input type="text" id="acesso" name="acesso" autocomplete="username" />
+      <button type="button" id="btn-entrar">Entrar</button>
 
-        <label for="senha">Senha</label>
-        <div id="grupo-senha">
-          <input type="password" id="senha" name="senha" autocomplete="current-password" />
-          <button type="button" id="botao-mostrar-senha" aria-label="Mostrar senha">Mostrar</button>
-        </div>
+      <nav id="nav-criar-conta-esqueci-senha">
+        <a href="./cadastro-cliente.html" id="btn-criar-conta">Criar Conta</a>
+        <a href="./EsqueciMinhaSenha.html">Esqueci minha senha</a>
+      </nav>
+    </div>
+  </main>
 
+  <footer>
+    <p id="copyright">Agenda Rosa - Sistema de agendamento</p>
+  </footer>
 
-        <button type="button" id="btn-entrar">Entrar</button>
+  <script src="../js/login.js"></script>
+</body>
 
-        <nav id="nav-criar-conta-esqueci-senha">
-          <a href="./cadastro-cliente.html" id="btn-criar-conta">Criar Conta</a>
-          <a href="./EsqueciMinhaSenha.html">Esqueci minha senha</a>
-        </nav>
-      </div>
-    </main>
-
-    <footer><p id="copyright">Agenda Rosa - Sistema de agendamento</p></footer>
-
-    <script src="../js/login.js"></script>
-  </body>
 </html>

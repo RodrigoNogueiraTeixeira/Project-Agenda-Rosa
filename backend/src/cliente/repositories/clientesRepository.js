@@ -1,4 +1,5 @@
 const clientesDAO = require("../dao/clientesDAO");
+const passwordUtils = require("../../utils/password");
 
 // Busca perfil por id.
 async function buscarPerfil(clienteId) {
@@ -39,7 +40,29 @@ async function atualizarPerfil(clienteId, payload) {
     throw new Error("Nome e email sao obrigatorios.");
   }
 
-  await clientesDAO.atualizarPerfil({ id, nome, email, telefone, cidade, bairro, senha });
+  if (!email.includes("@")) {
+    throw new Error("Informe um e-mail valido.");
+  }
+
+  if (senha && senha.length < 6) {
+    throw new Error("A senha deve ter pelo menos 6 caracteres.");
+  }
+
+  const clienteComEmail = await clientesDAO.buscarPorEmail(email);
+  if (clienteComEmail && Number(clienteComEmail.id) !== id) {
+    throw new Error("E-mail ja cadastrado.");
+  }
+
+  const senhaHash = senha ? passwordUtils.hashPassword(senha) : null;
+  await clientesDAO.atualizarPerfil({
+    id,
+    nome,
+    email: email.toLowerCase(),
+    telefone,
+    cidade,
+    bairro,
+    senha: senhaHash,
+  });
 
   return {
     id,
@@ -62,18 +85,33 @@ async function cadastrarCliente(payload) {
     throw new Error("Nome, email e senha sao obrigatorios.");
   }
 
+  if (!email.includes("@")) {
+    throw new Error("Informe um e-mail valido.");
+  }
+
+  if (senha.length < 6) {
+    throw new Error("A senha deve ter pelo menos 6 caracteres.");
+  }
+
   // Verifica se o e-mail já existe
   const clienteExistente = await clientesDAO.buscarPorEmail(email);
   if (clienteExistente) {
     throw new Error("E-mail ja cadastrado.");
   }
 
-  const idCriado = await clientesDAO.cadastrarCliente({ nome, email, senha, telefone });
+  const senhaHash = passwordUtils.hashPassword(senha);
+  const emailNormalizado = email.toLowerCase();
+  const idCriado = await clientesDAO.cadastrarCliente({
+    nome,
+    email: emailNormalizado,
+    senha: senhaHash,
+    telefone,
+  });
 
   return {
     id: idCriado,
     nome,
-    email,
+    email: emailNormalizado,
     telefone
   };
 }

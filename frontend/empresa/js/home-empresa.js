@@ -4,10 +4,20 @@ const API_HOME_EMPRESA_URL = "/api/empresa/home-empresa/resumo";
 const indicadorAgendamentosHoje = document.getElementById("agendamentos-hoje");
 const indicadorProximoAtendimento = document.getElementById("proximo-atendimento");
 const indicadorBloqueiosHoje = document.getElementById("bloqueios-hoje");
+const botaoSair = document.getElementById("btn-sair");
 
-// Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
+// Busca o ID que foi salvo depois do login da empresa.
 function obterEmpresaId() {
   return localStorage.getItem("empresaId");
+}
+
+// Remove os dados da empresa antes de voltar para o login.
+function sairDaConta(event) {
+  event.preventDefault();
+  localStorage.removeItem("empresaId");
+  localStorage.removeItem("empresaNome");
+  localStorage.removeItem("empresaEmail");
+  window.location.href = "../../login/html/login.html";
 }
 
 // Formata numeros pequenos com dois digitos, mantendo o padrao visual que ja existia na home.
@@ -27,17 +37,17 @@ async function carregarResumoHome() {
   const empresaId = obterEmpresaId();
 
   if (!empresaId) {
-    exibirResumoVazio();
+    // Sem o ID do login, a empresa nao pode acessar o painel.
+    window.location.href = "../../login/html/login.html";
     return;
   }
 
   try {
     const resposta = await fetch(`${API_HOME_EMPRESA_URL}?empresaId=${empresaId}`);
-    const resumo = await resposta.json();
+    const resumo = await resposta.json().catch(() => ({}));
 
     if (!resposta.ok) {
-      exibirResumoVazio();
-      return;
+      throw new Error(resumo.message || "Nao foi possivel carregar o resumo.");
     }
 
     indicadorAgendamentosHoje.textContent = formatarContador(
@@ -50,6 +60,10 @@ async function carregarResumoHome() {
     console.error("Erro ao carregar resumo da home:", error);
     exibirResumoVazio();
   }
+}
+
+if (botaoSair) {
+  botaoSair.addEventListener("click", sairDaConta);
 }
 
 // Carrega os indicadores assim que a home abre.

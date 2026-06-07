@@ -7,9 +7,16 @@ const tabelaBloqueios = document.querySelector("tbody");
 const botaoBloquearHorario = formBloqueio?.querySelector("button[type='submit']");
 const selectProfissional = document.getElementById("bloqueio-profissional");
 
-// Busca o ID da empresa salvo no navegador enquanto o login ainda nao esta integrado.
+// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
-  return localStorage.getItem("empresaId");
+  const empresaId = localStorage.getItem("empresaId");
+
+  if (!empresaId) {
+    window.location.href = "../../login/html/login.html";
+    return null;
+  }
+
+  return empresaId;
 }
 
 // Busca o valor de um campo pelo ID e remove espacos extras.
@@ -130,6 +137,10 @@ async function carregarBloqueios() {
     const resposta = await fetch(`${API_BLOQUEIOS_URL}?empresaId=${empresaId}`);
     const bloqueios = await resposta.json();
 
+    if (!resposta.ok) {
+      throw new Error(bloqueios.message || "Nao foi possivel carregar os bloqueios.");
+    }
+
     tabelaBloqueios.innerHTML = "";
 
     if (bloqueios.length === 0) {
@@ -224,6 +235,15 @@ async function excluirBloqueio(id) {
 
 // Liga o submit do formulario a funcao de cadastro de bloqueio.
 formBloqueio?.addEventListener("submit", cadastrarBloqueio);
+
+const campoDataBloqueio = document.getElementById("data-bloqueio");
+if (campoDataBloqueio) {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  campoDataBloqueio.min = `${ano}-${mes}-${dia}`;
+}
 
 // Carrega os bloqueios ja cadastrados quando a pagina abre.
 carregarProfissionais();

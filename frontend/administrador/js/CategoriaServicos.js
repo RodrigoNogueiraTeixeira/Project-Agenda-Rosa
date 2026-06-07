@@ -1,3 +1,14 @@
+// Daniel e Rodrigo: Valida se o administrador está logado
+function verificarAutenticacaoAdmin() {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+        window.location.href = "../../login/html/login.html";
+    }
+}
+
+// Controla se estamos em modo de edição
+let categoriaEmEdicaoId = null;
+
 // Daniel e Rodrigo: Esta função renderiza os dados na tabela
 function renderizarTabelaCategorias(categorias) {
     const tbody = document.getElementById('tabela-categorias');
@@ -43,13 +54,14 @@ async function buscarCategorias() {
     } catch (e) {
         let mock = [
             { id: 1, nome: "Cabelo", descricao: "Serviços relacionados a corte e finalização.", status: "Ativa" },
-            { id: 2, nome: "Unhas", descricao: "Serviços de manicure e pedicure.", status: "Ativa" }
+            { id: 2, nome: "Unhas", descricao: "Serviços de manicure e pedicure.", status: "Ativa" },
+            { id: 3, nome: "Estética Feminino", descricao: "Servicos de estetica corporal e facial feminina.", status: "Ativa" }
         ];
         renderizarTabelaCategorias(mock);
     }
 }
 
-// Daniel e Rodrigo: Esta função cuida do clique no botão de cadastrar
+// Daniel e Rodrigo: Esta função cuida do clique no botão de cadastrar/salvar
 function configurarCadastro() {
     const btnCadastrar = document.getElementById('btnCadastrarCategoria');
     if (!btnCadastrar) return;
@@ -68,36 +80,100 @@ function configurarCadastro() {
             return;
         }
 
+        const url = categoriaEmEdicaoId ? `/api/categorias/${categoriaEmEdicaoId}` : '/api/categorias';
+        const metodo = categoriaEmEdicaoId ? 'PUT' : 'POST';
+
         try {
-            const resposta = await fetch('/api/categorias', {
-                method: 'POST',
+            const resposta = await fetch(url, {
+                method: metodo,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, descricao, status })
             });
 
             if (!resposta.ok) throw new Error('Erro ao salvar categoria no banco');
+            const json = await resposta.json();
 
-            alert('Cadastrado com sucesso!');
+            if (json.success) {
+                alert(categoriaEmEdicaoId ? 'Categoria atualizada com sucesso!' : 'Cadastrado com sucesso!');
+                
+                elNome.value = "";
+                elDescricao.value = "";
+                elStatus.value = "Ativa";
+                categoriaEmEdicaoId = null;
+                btnCadastrar.textContent = "Cadastrar Categoria";
+
+                buscarCategorias();
+            } else {
+                throw new Error(json.message || 'Erro do servidor');
+            }
+        } catch (e) {
+            alert(categoriaEmEdicaoId ? 'Erro ao atualizar (Simulado)' : 'Erro de conexão. Mock: Categoria adicionada.');
             
             elNome.value = "";
             elDescricao.value = "";
             elStatus.value = "Ativa";
-
-            buscarCategorias();
-        } catch (e) {
-            alert('Erro de conexão. Mock: Categoria adicionada.');
-            
-            elNome.value = "";
-            elDescricao.value = "";
+            categoriaEmEdicaoId = null;
+            btnCadastrar.textContent = "Cadastrar Categoria";
             
             buscarCategorias(); 
         }
     });
 }
 
+// Daniel e Rodrigo: Configura os botões de Editar e Excluir na tabela
+function configurarAcoesTabela() {
+    const tbody = document.getElementById('tabela-categorias');
+    if (!tbody) return;
+
+    tbody.addEventListener('click', async (evento) => {
+        const botao = evento.target.closest('.BntEditar, .BntExcluirInativa');
+        if (!botao) return;
+
+        const id = botao.getAttribute('data-id');
+        if (!id) return;
+
+        if (botao.classList.contains('BntEditar')) {
+            const tr = document.getElementById(`categoria-${id}`);
+            if (!tr) return;
+            
+            const nome = tr.cells[0].textContent.trim();
+            const descricao = tr.cells[1].textContent.trim();
+            const status = tr.cells[2].textContent.trim();
+
+            document.getElementById('NomeCategoria').value = nome;
+            document.getElementById('DescricaoBloco').value = descricao;
+            document.getElementById('SeletorAtividade').value = status === "Ativa" ? "Ativa" : "Inativa";
+
+            categoriaEmEdicaoId = id;
+            document.getElementById('btnCadastrarCategoria').textContent = "Salvar Alterações";
+            document.getElementById('NomeCategoria').focus();
+            
+        } else if (botao.classList.contains('BntExcluirInativa')) {
+            if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
+
+            try {
+                const resposta = await fetch(`/api/categorias/${id}`, {
+                    method: 'DELETE'
+                });
+                const json = await resposta.json();
+                
+                if (json.success) {
+                    alert(json.message || "Categoria excluída com sucesso!");
+                    buscarCategorias();
+                } else {
+                    alert(json.message || "Erro ao excluir categoria.");
+                }
+            } catch (e) {
+                alert("Erro ao se conectar com o servidor.");
+            }
+        }
+    });
+}
+
 // Daniel e Rodrigo: Inicializa as funções quando a página carrega
 document.addEventListener('DOMContentLoaded', () => {
+    verificarAutenticacaoAdmin();
     buscarCategorias();
     configurarCadastro();
+    configurarAcoesTabela();
 });
-

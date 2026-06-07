@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        if (novaSenha.length < 6) {
+            msgErro.textContent = "A nova senha deve ter pelo menos 6 caracteres.";
+            msgErro.style.display = 'block';
+            return;
+        }
+
         var API_BASE_URL = (window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api")).replace(/\/+$/, '');
 
         try {

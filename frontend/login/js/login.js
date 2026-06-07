@@ -41,6 +41,7 @@ if (botaoSenha) {
 
 var seletorPerfil = document.getElementById("perfil");
 var campoInformacao = document.getElementById("informacao");
+var botaoCriarConta = document.getElementById("btn-criar-conta");
 
 function atualizarInfoPerfil() {
   // Validacao 1: confirma se os elementos necessarios estao disponiveis.
@@ -75,6 +76,29 @@ if (seletorPerfil) {
 // Executa uma vez ao carregar a pagina para exibir o texto inicial.
 atualizarInfoPerfil();
 
+// Leva o perfil escolhido para a tela de cadastro.
+function abrirCadastro(event) {
+  event.preventDefault();
+
+  var perfil = seletorPerfil ? seletorPerfil.value : "";
+
+  if (!perfil) {
+    alert("Selecione Cliente ou Empresa antes de criar a conta.");
+    return;
+  }
+
+  if (perfil === "administrador") {
+    alert("O cadastro de administrador nao e feito por esta tela.");
+    return;
+  }
+
+  window.location.href = "./cadastro-cliente.html?perfil=" + perfil;
+}
+
+if (botaoCriarConta) {
+  botaoCriarConta.addEventListener("click", abrirCadastro);
+}
+
 // ============================================================
 // BLOCO 3: LOGIN REAL VIA API
 // ============================================================
@@ -85,7 +109,17 @@ var botaoEntrar = document.getElementById("btn-entrar");
 // Testa opções em sequência: uma variável global, depois o armazenamento local (localStorage).
 // Se o site estiver rodando no seu computador (localhost), usa "http://localhost:3001/api" (porta do Node.js local).
 // Caso contrário (estando online no Render), usa o caminho relativo "/api" (mesmo domínio).
-var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
+var API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || ((window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:") ? "http://localhost:3001/api" : "/api");
+
+function limparDadosDeAcesso() {
+  [
+    "clienteId", "clienteNome", "clienteEmail",
+    "empresaId", "empresaNome", "empresaEmail",
+    "adminId", "adminNome", "adminEmail"
+  ].forEach(function (chave) {
+    localStorage.removeItem(chave);
+  });
+}
 
 // Função utilitária (atalho) que realiza chamadas de rede (HTTP) para a API de login.
 // - caminho: o endpoint de destino (ex: "/auth/login")
@@ -133,9 +167,9 @@ async function realizarLogin() {
     perfil = String(opcaoSelecionada ? opcaoSelecionada.value || "" : "").trim();
   }
 
-  // Se o perfil vier vazio tratamos automaticamente como "cliente" para nao bloquear o acesso.
   if (!perfil) {
-    perfil = "cliente";
+    alert("Selecione o perfil para entrar.");
+    return;
   }
 
   if (!email || !senha) {
@@ -157,7 +191,7 @@ async function realizarLogin() {
       body: JSON.stringify({ email: email, senha: senha, perfil: perfil })
     });
 
-  
+    limparDadosDeAcesso();
 
     if (resultado.perfil === "cliente") {
       
@@ -198,3 +232,14 @@ async function realizarLogin() {
 if (botaoEntrar) {
   botaoEntrar.addEventListener("click", realizarLogin);
 }
+
+[campoAcesso, campoSenha, seletorPerfil].forEach(function (campo) {
+  if (!campo) return;
+
+  campo.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      realizarLogin();
+    }
+  });
+});

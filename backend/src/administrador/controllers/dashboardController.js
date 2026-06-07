@@ -2,7 +2,13 @@ const dashboardRepository = require("../repositories/dashboardRepository");
 
 async function getDashboard(req, res) {
     try {
+        const { dataInicial, dataFinal } = req.query;
         const stats = await dashboardRepository.getStats();
+        
+        if (dataInicial && dataFinal) {
+            stats.agendamentosPeriodo = await dashboardRepository.getAgendamentosPeriodo(dataInicial, dataFinal);
+        }
+
         res.json({ success: true, data: stats });
     } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);

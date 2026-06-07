@@ -24,7 +24,39 @@ async function criarCategoria(req, res) {
     }
 }
 
+async function editarCategoria(req, res) {
+    try {
+        const id = req.params.id;
+        const { nome, descricao, status } = req.body;
+        if (!nome) {
+            return res.status(400).json({ success: false, message: "Nome é obrigatório." });
+        }
+        const atualizada = await categoriaRepository.editarCategoria(id, { nome, descricao, status });
+        res.json({ success: true, data: atualizada });
+    } catch (error) {
+        console.error("Erro ao editar categoria:", error);
+        res.status(500).json({ success: false, message: "Erro ao editar categoria." });
+    }
+}
+
+async function excluirCategoria(req, res) {
+    try {
+        const id = req.params.id;
+        const sucesso = await categoriaRepository.excluirCategoria(id);
+        if (sucesso) {
+            res.json({ success: true, message: "Categoria excluída com sucesso." });
+        } else {
+            res.status(404).json({ success: false, message: "Categoria não encontrada." });
+        }
+    } catch (error) {
+        console.error("Erro ao excluir categoria:", error);
+        res.status(500).json({ success: false, message: "Erro ao excluir categoria." });
+    }
+}
+
 module.exports = {
     getCategorias,
-    criarCategoria
+    criarCategoria,
+    editarCategoria,
+    excluirCategoria
 };

@@ -158,7 +158,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         WHERE estabelecimento_id = ?
           AND data = ?
           AND (
-            status IN ('agendado', 'concluido')
+            status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
           )
           AND (
@@ -197,7 +197,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         WHERE estabelecimento_id = ?
           AND data = ?
           AND (
-            status IN ('agendado', 'concluido')
+            status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
           )
           AND (
@@ -219,7 +219,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         WHERE estabelecimento_id = ?
           AND data = ?
           AND (
-            status IN ('agendado', 'concluido')
+            status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
           )
           AND (
@@ -259,7 +259,7 @@ async function listarHorariosOcupados(estabelecimentoId, data, profissionalId = 
     WHERE estabelecimento_id = ?
       AND data = ?
       AND (
-        status IN ('agendado', 'concluido')
+        status IN ('agendado', 'confirmado', 'concluido', 'realizado')
         OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
       )
   `;
@@ -284,10 +284,10 @@ async function cancelarPorId(id) {
   const resultado = await run(
     `
       UPDATE agendamentos
-      SET status = ?, cancelado_em = ?
+      SET status = ?, cancelado_em = ?, atualizado_em = ?
       WHERE id = ?
     `,
-    ["cancelado", new Date().toISOString(), id]
+    ["cancelado", new Date().toISOString(), new Date().toISOString(), id]
   );
 
   return resultado.changes;
@@ -298,10 +298,10 @@ async function atualizarStatus(id, status) {
   const resultado = await run(
     `
       UPDATE agendamentos
-      SET status = ?
+      SET status = ?, atualizado_em = ?
       WHERE id = ?
     `,
-    [status, id]
+    [status, new Date().toISOString(), id]
   );
   return resultado.changes;
 }
