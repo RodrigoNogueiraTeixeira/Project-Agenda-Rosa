@@ -24,15 +24,15 @@
 
     </header>
 
-    <form action="Filtros">
+    <form action="Filtros" onsubmit="return false;">
         <div>
             <h2>Filtros</h2>
             <br>
             <p>Data inicial</p>
-            <input type="date">
+            <input type="date" id="DataInicial">
             <br>
             <p>Data Final</p>
-            <input type="date">
+            <input type="date" id="DataFinal">
             <br>
             <p>Tipo de relatório</p>
             <select name="TipoRelatorio" id="TipoRelatorio">
@@ -41,9 +41,7 @@
                 <option value="Empresas">Empresas</option>
                 <option value="Agendamentos">Agendamentos</option>
             </select>
-            <button>Filtrar</button>
-            <button>Exportar PDF</button>
-            <button>Exportar Excel</button>
+            <button type="button" id="btnFiltrar">Filtrar</button>
 
 
         </div>
@@ -61,10 +59,9 @@
             </thead>
             <tbody id="CorpoTabela">
                 <tr>
-                    <td>1.248</td>
-                    <td>144</td>
-                    <td>5.920</td>
-                    <td>317</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>

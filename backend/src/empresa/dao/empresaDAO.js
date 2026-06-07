@@ -1,4 +1,4 @@
-const { run, get } = require("../../config/database");
+const { run, get, transaction } = require("../../config/database");
 
 /**
  * Busca uma empresa pelo e-mail.
@@ -53,8 +53,138 @@ async function criar(dados) {
   return buscarPorId(resultado.lastID);
 }
 
+async function buscarPerfil(empresaId) {
+  return get(
+    `SELECT
+      e.id AS empresaId,
+      e.nome_estabelecimento AS nomeEstabelecimento,
+      e.categoria_principal AS categoriaPrincipal,
+      e.descricao,
+      e.telefone,
+      e.email,
+      e.cep,
+      e.endereco,
+      e.numero,
+      e.complemento,
+      e.bairro,
+      e.cidade,
+      est.id AS estabelecimentoId,
+      est.logo_url AS logoUrl
+    FROM empresas e
+    LEFT JOIN estabelecimentos est ON est.empresa_id = e.id
+    WHERE e.id = ?`,
+    [empresaId]
+  );
+}
+
+async function atualizarPerfil(dados) {
+  return transaction(async (tx) => {
+    const empresa = await tx.get(
+      "SELECT id FROM empresas WHERE id = ?",
+      [dados.empresaId]
+    );
+
+    if (!empresa) {
+      return false;
+    }
+
+    const valor = (campo) => {
+      const texto = String(campo || "").trim();
+      return texto || null;
+    };
+
+    await tx.run(
+      `UPDATE empresas
+      SET
+        nome_estabelecimento = ?,
+        categoria_principal = ?,
+        descricao = ?,
+        telefone = ?,
+        email = ?,
+        cep = ?,
+        endereco = ?,
+        numero = ?,
+        complemento = ?,
+        bairro = ?,
+        cidade = ?,
+        atualizado_em = CURRENT_TIMESTAMP
+      WHERE id = ?`,
+      [
+        valor(dados.nomeEstabelecimento),
+        valor(dados.categoriaPrincipal),
+        valor(dados.descricao),
+        valor(dados.telefone),
+        valor(dados.email).toLowerCase(),
+        valor(dados.cep),
+        valor(dados.endereco),
+        valor(dados.numero),
+        valor(dados.complemento),
+        valor(dados.bairro),
+        valor(dados.cidade),
+        dados.empresaId,
+      ]
+    );
+
+    const enderecoCompleto = [
+      dados.endereco,
+      dados.numero,
+      dados.complemento,
+    ]
+      .map(valor)
+      .filter(Boolean)
+      .join(", ");
+
+    const resultadoEstabelecimento = await tx.run(
+      `INSERT INTO estabelecimentos (
+        empresa_id,
+        nome,
+        cidade,
+        bairro,
+        endereco,
+        cep
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT (empresa_id)
+      DO UPDATE SET
+        nome = excluded.nome,
+        cidade = excluded.cidade,
+        bairro = excluded.bairro,
+        endereco = excluded.endereco,
+        cep = excluded.cep
+      RETURNING id`,
+      [
+        dados.empresaId,
+        valor(dados.nomeEstabelecimento),
+        valor(dados.cidade),
+        valor(dados.bairro),
+        enderecoCompleto || null,
+        valor(dados.cep),
+      ]
+    );
+
+    const estabelecimentoId = resultadoEstabelecimento.lastID;
+
+    await tx.run(
+      "UPDATE servicos SET estabelecimento_id = ? WHERE empresa_id = ?",
+      [estabelecimentoId, dados.empresaId]
+    );
+    await tx.run(
+      "DELETE FROM estabelecimento_tipos WHERE estabelecimento_id = ?",
+      [estabelecimentoId]
+    );
+    await tx.run(
+      `INSERT INTO estabelecimento_tipos (estabelecimento_id, tipo)
+      VALUES (?, ?)`,
+      [estabelecimentoId, valor(dados.categoriaPrincipal)]
+    );
+
+    return true;
+  });
+}
+
 module.exports = {
   buscarPorEmail,
   buscarPorId,
   criar,
+  buscarPerfil,
+  atualizarPerfil,
 };

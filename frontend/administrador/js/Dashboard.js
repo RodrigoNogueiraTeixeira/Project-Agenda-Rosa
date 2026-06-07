@@ -1,3 +1,24 @@
+// Daniel e Rodrigo: Valida se o administrador está logado
+function verificarAutenticacaoAdmin() {
+    const adminId = localStorage.getItem("adminId");
+    if (!adminId) {
+        window.location.href = "../../login/html/login.html";
+    }
+}
+
+// Daniel e Rodrigo: Configura o botão de logout e limpa os dados locais de login do admin
+function configurarLogout() {
+    // Procura o link de "Sair" (redireciona para o login)
+    const btnSair = document.querySelector('a[href*="login.html"]');
+    if (btnSair) {
+        btnSair.addEventListener('click', function() {
+            localStorage.removeItem("adminId");
+            localStorage.removeItem("adminNome");
+            localStorage.removeItem("adminEmail");
+        });
+    }
+}
+
 // Daniel e Rodrigo: Função para formatar números
 function formatarNumero(numero) {
     return Number(numero || 0).toLocaleString('pt-BR');
@@ -21,7 +42,15 @@ function renderizarDadosDashboard(dados) {
 // Daniel e Rodrigo: Busca inicial dos dados ao carregar a página
 async function buscarDadosDashboard() {
     try {
-        const response = await fetch('/api/dashboard/stats');
+        const dataInicial = document.getElementById('data-inicial')?.value || '';
+        const dataFinal = document.getElementById('data-final')?.value || '';
+        
+        let url = '/api/dashboard/stats';
+        if (dataInicial && dataFinal) {
+            url += `?dataInicial=${encodeURIComponent(dataInicial)}&dataFinal=${encodeURIComponent(dataFinal)}`;
+        }
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Erro na rede');
         
         const json = await response.json();
@@ -29,6 +58,7 @@ async function buscarDadosDashboard() {
             renderizarDadosDashboard(json.data);
         }
     } catch (error) {
+        // Fallback mock caso falhe a chamada ao backend
         renderizarDadosDashboard({
             totalClientes: 1248,
             totalEmpresas: 163,
@@ -41,6 +71,27 @@ async function buscarDadosDashboard() {
 
 // Daniel e Rodrigo: Eventos de inicialização
 document.addEventListener('DOMContentLoaded', function() {
+    verificarAutenticacaoAdmin();
+    configurarLogout();
+
+    // Define datas padrão nos inputs (primeiro dia do mês corrente até hoje)
+    const inputDataInicial = document.getElementById('data-inicial');
+    const inputDataFinal = document.getElementById('data-final');
+    
+    if (inputDataInicial && inputDataFinal) {
+        const hojeObj = new Date();
+        const ano = hojeObj.getFullYear();
+        const mes = String(hojeObj.getMonth() + 1).padStart(2, '0');
+        const dia = String(hojeObj.getDate()).padStart(2, '0');
+        
+        if (!inputDataInicial.value) {
+            inputDataInicial.value = `${ano}-${mes}-01`;
+        }
+        if (!inputDataFinal.value) {
+            inputDataFinal.value = `${ano}-${mes}-${dia}`;
+        }
+    }
+
     buscarDadosDashboard();
 
     const botaoPeriodo = document.getElementById("bntAplicarPeriodo");
@@ -76,4 +127,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-

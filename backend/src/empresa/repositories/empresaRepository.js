@@ -19,6 +19,23 @@ async function cadastrarEmpresa(dados) {
   });
 }
 
+async function buscarPerfil(empresaId) {
+  return empresaDAO.buscarPerfil(empresaId);
+}
+
+async function atualizarPerfil(dados) {
+  const empresaComEmail = await empresaDAO.buscarPorEmail(dados.email);
+
+  if (empresaComEmail && Number(empresaComEmail.id) !== Number(dados.empresaId)) {
+    throw new Error("E-mail ja cadastrado por outra empresa.");
+  }
+
+  await empresaDAO.atualizarPerfil(dados);
+  return empresaDAO.buscarPerfil(dados.empresaId);
+}
+
 module.exports = {
   cadastrarEmpresa,
+  buscarPerfil,
+  atualizarPerfil,
 };

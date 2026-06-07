@@ -12,10 +12,18 @@ function hashPassword(password) {
   return `${salt}:${hash}`;
 }
 
+function isPasswordHash(value) {
+  return /^[a-f0-9]{32}:[a-f0-9]{128}$/i.test(String(value || ""));
+}
+
 /**
  * Verifica se a senha informada corresponde ao hash armazenado.
  */
 function verifyPassword(password, storedHash) {
+  if (!isPasswordHash(storedHash)) {
+    return false;
+  }
+
   const [salt, originalHash] = String(storedHash).split(":");
 
   if (!salt || !originalHash) {
@@ -32,4 +40,5 @@ function verifyPassword(password, storedHash) {
 module.exports = {
   hashPassword,
   verifyPassword,
+  isPasswordHash,
 };

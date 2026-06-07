@@ -17,7 +17,12 @@ async function buscarClientePorEmail(email) {
 async function buscarEmpresaPorEmail(email) {
   return get(
     `
-      SELECT id, nome_responsavel AS nome, email, senha_hash AS senhaHash, status_aprovacao AS statusAprovacao
+      SELECT
+        id,
+        nome_responsavel AS nome,
+        email,
+        senha_hash AS "senhaHash",
+        status_aprovacao AS "statusAprovacao"
       FROM empresas
       WHERE LOWER(email) = LOWER(?)
       LIMIT 1
@@ -32,6 +37,18 @@ async function salvarTokenRecuperacao(email, perfil, token, expiracao) {
   return run(
     `INSERT INTO tokens_recuperacao (email, perfil, token, expiracao) VALUES (?, ?, ?, ?)`,
     [email, perfil, token, expiracao]
+  );
+}
+
+async function invalidarTokensRecuperacao(email, perfil) {
+  const { run } = require("../../config/database");
+  return run(
+    `UPDATE tokens_recuperacao
+    SET utilizado = 1
+    WHERE LOWER(email) = LOWER(?)
+      AND perfil = ?
+      AND utilizado = 0`,
+    [email, perfil]
   );
 }
 
@@ -74,6 +91,7 @@ module.exports = {
   buscarClientePorEmail,
   buscarEmpresaPorEmail,
   salvarTokenRecuperacao,
+  invalidarTokensRecuperacao,
   buscarTokenRecuperacao,
   marcarTokenUtilizado,
   atualizarSenhaCliente,

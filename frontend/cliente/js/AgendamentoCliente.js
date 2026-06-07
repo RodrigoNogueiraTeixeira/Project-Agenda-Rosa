@@ -29,8 +29,8 @@ function renderizarTela(agendamentos) {
   let cancelado = 0;
 
   agendamentos.forEach(a => {
-    if (a.status === 'agendado') agendado++;
-    else if (a.status === 'concluido') concluido++;
+    if (a.status === 'agendado' || a.status === 'confirmado') agendado++;
+    else if (a.status === 'concluido' || a.status === 'realizado') concluido++;
     else if (a.status === 'cancelado') cancelado++;
     // Pendentes apenas somam no Total, sem poluir os status concluídos/agendados
   });
@@ -70,7 +70,7 @@ function renderizarTela(agendamentos) {
     }
 
     // Só exibe botão de cancelar se estiver agendado ou pendente
-    const podeCancelar = (a.status === 'agendado' || a.status === 'pendente');
+    const podeCancelar = (a.status === 'agendado' || a.status === 'confirmado' || a.status === 'pendente');
 
     card.innerHTML = `
       <div class="dados-agendamento">

@@ -1,11 +1,18 @@
 const servicoRepository = require("../repositories/servicoRepository");
 
 function converterPrecoParaCentavos(preco) {
-  const valorNormalizado = String(preco)
+  if (typeof preco === "number") {
+    return Number.isFinite(preco) ? Math.round(preco * 100) : null;
+  }
+
+  let valorNormalizado = String(preco)
     .replace("R$", "")
-    .replace(/\./g, "")
-    .replace(",", ".")
+    .replace(/\s/g, "")
     .trim();
+
+  if (valorNormalizado.includes(",")) {
+    valorNormalizado = valorNormalizado.replace(/\./g, "").replace(",", ".");
+  }
 
   const valorNumerico = Number(valorNormalizado);
 
