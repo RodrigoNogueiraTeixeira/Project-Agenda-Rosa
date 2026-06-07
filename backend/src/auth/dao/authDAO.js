@@ -17,7 +17,12 @@ async function buscarClientePorEmail(email) {
 async function buscarEmpresaPorEmail(email) {
   return get(
     `
-      SELECT id, nome_responsavel AS nome, email, senha_hash AS senhaHash, status_aprovacao AS statusAprovacao
+      SELECT
+        id,
+        nome_responsavel AS nome,
+        email,
+        senha_hash AS "senhaHash",
+        status_aprovacao AS "statusAprovacao"
       FROM empresas
       WHERE LOWER(email) = LOWER(?)
       LIMIT 1
