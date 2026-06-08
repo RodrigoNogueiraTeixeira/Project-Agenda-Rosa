@@ -2,6 +2,9 @@ const { get } = require("../../config/database");
 
 // Busca cliente por email para etapa de login.
 async function buscarClientePorEmail(email) {
+  // A função LOWER(email) = LOWER(?) converte temporariamente tanto o email gravado no banco 
+  // quanto o email digitado pelo usuário para letras minúsculas. Isso evita problemas caso o 
+  // usuário digite letras maiúsculas diferentes de como foi cadastrado (ex: Rodrigo@... vs rodrigo@...).
   return get(
     `
       SELECT id, nome, email, senha
