@@ -45,9 +45,7 @@ async function login(payload) {
     };
   }
 
-  // =========================================================================
-  // 2. Perfil Empresa / Profissional (Autenticação com criptografia e validação de aprovação)
-  // =========================================================================
+  // 2. Perfil Empresa (senha hash PBKDF2 e aprovacao do Admin)
   if (perfil === "empresa") {
     // Busca a empresa cadastrada no banco de dados através do e-mail.
     const empresa = await authDAO.buscarEmpresaPorEmail(email);

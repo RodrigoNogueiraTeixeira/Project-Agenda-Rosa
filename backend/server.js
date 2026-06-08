@@ -20,8 +20,8 @@ const app = express();
 const PORT = Number(process.env.PORT || 3001);
 const FRONTEND_PATH = path.join(__dirname, "..", "frontend");
 
-// Middleware para aceitar JSON no corpo das requisicoes.
-app.use(express.json());
+// Aceita imagens pequenas em Base64 junto com os dados do perfil.
+app.use(express.json({ limit: "2mb" }));
 
 // Middleware CORS para facilitar testes locais (front e back separados).
 app.use(cors());
