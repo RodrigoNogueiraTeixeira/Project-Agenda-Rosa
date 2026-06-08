@@ -1,16 +1,17 @@
 const API_SERVICOS_URL = "/api/empresa/servicos";
 const API_CATEGORIAS_URL = "/api/categorias";
 
-// Captura os elementos principais da tela de servicos.
+// Elementos principais da tela.
 const formServico = document.querySelector(".form-grid");
 const tabelaServicos = document.querySelector("tbody");
-const botaoSalvarServico = formServico?.querySelector("button[type='submit']");
+const botaoSalvarServico = formServico
+  ? formServico.querySelector("button[type='submit']")
+  : null;
 const campoCategoria = document.getElementById("categoria-servico");
 
-// Guarda o ID do servico em edicao. Quando for null, o formulario cria um novo servico.
+// Guarda o servico selecionado para edicao.
 let servicoEmEdicaoId = null;
 
-// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -22,38 +23,47 @@ function obterEmpresaId() {
   return empresaId;
 }
 
-// Busca o valor de um campo pelo ID.
 function obterValor(id) {
-  return document.getElementById(id)?.value.trim() || "";
+  const campo = document.getElementById(id);
+
+  if (!campo) {
+    return "";
+  }
+
+  return campo.value.trim();
 }
 
-// Carrega as categorias ativas cadastradas pelo administrador.
+// Carrega somente as categorias ativas.
 async function carregarCategorias() {
   try {
     const resposta = await fetch(API_CATEGORIAS_URL);
-    const resultado = await resposta.json().catch(() => ({}));
+    const resultado = await resposta.json().catch(function () {
+      return {};
+    });
 
     if (!resposta.ok || !resultado.success) {
-      throw new Error(resultado.message || "Nao foi possivel carregar as categorias.");
+      throw new Error(
+        resultado.message || "Nao foi possivel carregar as categorias."
+      );
     }
 
-    resultado.data
-      .filter((categoria) => {
-        return String(categoria.status || "").toLowerCase() === "ativa";
-      })
-      .forEach((categoria) => {
+    for (const categoria of resultado.data) {
+      const status = String(categoria.status || "").toLowerCase();
+
+      if (status === "ativa") {
         const opcao = document.createElement("option");
         opcao.value = categoria.nome;
         opcao.textContent = categoria.nome;
         campoCategoria.appendChild(opcao);
-      });
+      }
+    }
   } catch (error) {
     console.error("Erro ao carregar categorias:", error);
     alert("Nao foi possivel carregar as categorias.");
   }
 }
 
-// Converte centavos vindos do banco para formato de moeda brasileira.
+// Converte o valor em centavos para moeda brasileira.
 function formatarPreco(precoCentavos) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -61,7 +71,6 @@ function formatarPreco(precoCentavos) {
   }).format(precoCentavos / 100);
 }
 
-// Monta o objeto de servico que sera enviado para a API.
 function montarDadosServico() {
   return {
     empresaId: obterEmpresaId(),
@@ -74,7 +83,7 @@ function montarDadosServico() {
   };
 }
 
-// Valida os campos obrigatorios antes de chamar o back-end.
+// Confere os campos obrigatorios do formulario.
 function validarFormularioServico(dados) {
   if (!dados.empresaId) {
     return "Empresa nao identificada. Cadastre ou acesse a empresa antes de gerenciar servicos.";
@@ -87,41 +96,63 @@ function validarFormularioServico(dados) {
   return null;
 }
 
-// Limpa o formulario e volta para o modo de cadastro.
 function limparFormulario() {
   formServico.reset();
   servicoEmEdicaoId = null;
   botaoSalvarServico.textContent = "Cadastrar serviço";
 }
 
-// Preenche o formulario com os dados escolhidos para edicao.
-function preencherFormularioParaEdicao(servico) {
-  document.getElementById("nome-servico").value = servico.nome;
-
-  // Mantem uma categoria antiga para permitir a edicao do servico.
-  if (
-    servico.categoria &&
-    !Array.from(campoCategoria.options).some((opcao) => {
-      return opcao.value === servico.categoria;
-    })
-  ) {
-    const opcao = document.createElement("option");
-    opcao.value = servico.categoria;
-    opcao.textContent = servico.categoria;
-    campoCategoria.appendChild(opcao);
+// Verifica se a categoria do servico ainda existe na lista.
+function adicionarCategoriaAntiga(categoria) {
+  if (!categoria) {
+    return;
   }
 
+  let categoriaEncontrada = false;
+
+  for (const opcao of campoCategoria.options) {
+    if (opcao.value === categoria) {
+      categoriaEncontrada = true;
+      break;
+    }
+  }
+
+  if (!categoriaEncontrada) {
+    const opcao = document.createElement("option");
+    opcao.value = categoria;
+    opcao.textContent = categoria;
+    campoCategoria.appendChild(opcao);
+  }
+}
+
+// Preenche o formulario para editar um servico.
+function preencherFormularioParaEdicao(servico) {
+  document.getElementById("nome-servico").value = servico.nome;
+  adicionarCategoriaAntiga(servico.categoria);
   campoCategoria.value = servico.categoria;
-  document.getElementById("preco-servico").value = formatarPreco(servico.precoCentavos);
-  document.getElementById("duracao-servico").value = `${servico.duracaoMinutos} min`;
-  document.getElementById("descricao-servico").value = servico.descricao || "";
+  document.getElementById("preco-servico").value = formatarPreco(
+    servico.precoCentavos
+  );
+  document.getElementById(
+    "duracao-servico"
+  ).value = `${servico.duracaoMinutos} min`;
+  document.getElementById("descricao-servico").value =
+    servico.descricao || "";
   document.getElementById("status-servico").value = servico.status;
 
   servicoEmEdicaoId = servico.id;
   botaoSalvarServico.textContent = "Salvar alterações";
 }
 
-// Cria uma linha da tabela para um servico retornado pela API.
+function obterTextoStatus(status) {
+  if (status === "ativo") {
+    return "Ativo";
+  }
+
+  return "Inativo";
+}
+
+// Monta uma linha da tabela com os botoes de acao.
 function criarLinhaServico(servico) {
   const linha = document.createElement("tr");
 
@@ -131,27 +162,28 @@ function criarLinhaServico(servico) {
     <td>${formatarPreco(servico.precoCentavos)}</td>
     <td>${servico.duracaoMinutos} min</td>
     <td>${servico.descricao || "-"}</td>
-    <td>${servico.status === "ativo" ? "Ativo" : "Inativo"}</td>
+    <td>${obterTextoStatus(servico.status)}</td>
     <td class="acoes">
       <button class="btn-outline" type="button" data-acao="editar">Editar</button>
       <button class="btn-outline" type="button" data-acao="excluir">Excluir</button>
     </td>
   `;
 
-  // Liga o botao Editar ao preenchimento do formulario.
-  linha.querySelector("[data-acao='editar']").addEventListener("click", () => {
+  const botaoEditar = linha.querySelector("[data-acao='editar']");
+  const botaoExcluir = linha.querySelector("[data-acao='excluir']");
+
+  botaoEditar.addEventListener("click", function () {
     preencherFormularioParaEdicao(servico);
   });
 
-  // Liga o botao Excluir a chamada DELETE da API.
-  linha.querySelector("[data-acao='excluir']").addEventListener("click", () => {
+  botaoExcluir.addEventListener("click", function () {
     excluirServico(servico.id);
   });
 
   return linha;
 }
 
-// Busca todos os servicos da empresa e atualiza a tabela da tela.
+// Busca os servicos cadastrados pela empresa.
 async function carregarServicos() {
   const empresaId = obterEmpresaId();
 
@@ -165,7 +197,9 @@ async function carregarServicos() {
   }
 
   try {
-    const resposta = await fetch(`${API_SERVICOS_URL}?empresaId=${empresaId}`);
+    const resposta = await fetch(
+      `${API_SERVICOS_URL}?empresaId=${empresaId}`
+    );
     const servicos = await resposta.json();
 
     tabelaServicos.innerHTML = "";
@@ -179,16 +213,32 @@ async function carregarServicos() {
       return;
     }
 
-    servicos.forEach((servico) => {
+    for (const servico of servicos) {
       tabelaServicos.appendChild(criarLinhaServico(servico));
-    });
+    }
   } catch (error) {
     console.error("Erro ao carregar servicos:", error);
     alert("Nao foi possivel carregar os servicos.");
   }
 }
 
-// Cadastra um novo servico ou atualiza um servico existente.
+// Define a rota e o metodo conforme cadastro ou edicao.
+function obterDadosDaRequisicao() {
+  if (servicoEmEdicaoId) {
+    return {
+      url: `${API_SERVICOS_URL}/${servicoEmEdicaoId}`,
+      metodo: "PUT",
+      textoBotao: "Salvando...",
+    };
+  }
+
+  return {
+    url: API_SERVICOS_URL,
+    metodo: "POST",
+    textoBotao: "Cadastrando...",
+  };
+}
+
 async function salvarServico(event) {
   event.preventDefault();
 
@@ -200,18 +250,13 @@ async function salvarServico(event) {
     return;
   }
 
-  const url = servicoEmEdicaoId
-    ? `${API_SERVICOS_URL}/${servicoEmEdicaoId}`
-    : API_SERVICOS_URL;
-
-  const metodo = servicoEmEdicaoId ? "PUT" : "POST";
-
+  const requisicao = obterDadosDaRequisicao();
   botaoSalvarServico.disabled = true;
-  botaoSalvarServico.textContent = servicoEmEdicaoId ? "Salvando..." : "Cadastrando...";
+  botaoSalvarServico.textContent = requisicao.textoBotao;
 
   try {
-    const resposta = await fetch(url, {
-      method: metodo,
+    const resposta = await fetch(requisicao.url, {
+      method: requisicao.metodo,
       headers: {
         "Content-Type": "application/json",
       },
@@ -233,13 +278,20 @@ async function salvarServico(event) {
     alert("Nao foi possivel conectar ao servidor.");
   } finally {
     botaoSalvarServico.disabled = false;
-    botaoSalvarServico.textContent = servicoEmEdicaoId ? "Salvar alterações" : "Cadastrar serviço";
+
+    if (servicoEmEdicaoId) {
+      botaoSalvarServico.textContent = "Salvar alterações";
+    } else {
+      botaoSalvarServico.textContent = "Cadastrar serviço";
+    }
   }
 }
 
-// Exclui um servico depois da confirmacao do usuario.
+// Exclui o servico depois da confirmacao.
 async function excluirServico(id) {
-  const confirmarExclusao = confirm("Deseja realmente excluir este servico?");
+  const confirmarExclusao = confirm(
+    "Deseja realmente excluir este servico?"
+  );
 
   if (!confirmarExclusao) {
     return;
@@ -247,9 +299,12 @@ async function excluirServico(id) {
 
   try {
     const empresaId = obterEmpresaId();
-    const resposta = await fetch(`${API_SERVICOS_URL}/${id}?empresaId=${empresaId}`, {
-      method: "DELETE",
-    });
+    const resposta = await fetch(
+      `${API_SERVICOS_URL}/${id}?empresaId=${empresaId}`,
+      {
+        method: "DELETE",
+      }
+    );
 
     const resultado = await resposta.json();
 
@@ -266,8 +321,9 @@ async function excluirServico(id) {
   }
 }
 
-// Liga o submit do formulario a funcao de salvar.
-formServico?.addEventListener("submit", salvarServico);
+if (formServico) {
+  formServico.addEventListener("submit", salvarServico);
+}
 
-// Carrega primeiro as categorias e depois os servicos da empresa.
+// As categorias devem aparecer antes dos servicos.
 carregarCategorias().finally(carregarServicos);
