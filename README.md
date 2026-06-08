@@ -4,6 +4,14 @@ O **Agenda Rosa** é uma plataforma web moderna de agendamentos online desenvolv
 
 ---
 
+## 🌐 Demonstração Online (Web)
+
+Caso prefira visualizar o sistema funcionando em produção diretamente na nuvem (sem precisar rodar na sua máquina local), o projeto está implantado no Render e pode ser acessado pelo link abaixo:
+
+👉 **[Acesse o Agenda Rosa na Web](https://project-agenda-rosa.onrender.com/cliente)**
+
+---
+
 ## 🚀 Tecnologias Utilizadas
 
 O ecossistema do Agenda Rosa foi construído com foco em simplicidade, velocidade e segurança, utilizando as seguintes tecnologias:
@@ -82,7 +90,7 @@ O projeto utiliza práticas avançadas de proteção de dados:
 * **Migração Dinâmica de Senhas ("On-the-fly")**:
   * Para suportar cadastros antigos do banco de dados (que salvavam senhas em texto puro), o sistema faz uma migração automática no momento do login.
   * Ao fazer login com sucesso usando a senha antiga, o backend gera imediatamente o hash seguro da senha e o grava no banco. Os logins subsequentes passam a usar a criptografia avançada automaticamente, sem interromper a experiência do usuário.
-* **Segurança do Administrador**: As credenciais de administrador são lidas diretamente das variáveis de ambiente (`ADMIN_EMAIL` e `ADMIN_PASSWORD_HASH`) do servidor, mantendo as chaves de acesso fora do código-fonte público.
+* **Segurança do Administrador**: As credenciais e o acesso à área de administração são protegidos do código público. A autenticação do administrador é verificada de forma isolada por variáveis criptográficas restritas no ambiente de produção do servidor.
 
 ---
 
@@ -105,7 +113,7 @@ O projeto utiliza práticas avançadas de proteção de dados:
    ```bash
    copy .env.example .env
    ```
-4. Abra o arquivo `.env` e configure as chaves necessárias (veja a seção de [Variáveis de Ambiente](#-variáveis-de-ambiente-env) abaixo).
+4. Abra o arquivo `.env` e configure as chaves locais básicas de banco de dados e porta (veja a seção de [Variáveis de Ambiente](#-variáveis-de-ambiente-env) abaixo).
 
 5. Inicie o servidor backend:
    ```bash
@@ -121,26 +129,15 @@ O projeto utiliza práticas avançadas de proteção de dados:
 
 ## ⚙️ Variáveis de Ambiente (`.env`)
 
-Configure as variáveis abaixo no seu arquivo `backend/.env` para o funcionamento de todas as partes do sistema:
+Configure as variáveis básicas abaixo no seu arquivo `backend/.env` para executar o projeto localmente:
 
 | Nome da Variável | Descrição | Exemplo / Placeholder |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | String de conexão com o banco de dados PostgreSQL (ex: Neon.tech). | `postgresql://usuario:senha@host/dbname?sslmode=require` |
 | `PORT` | Porta onde o servidor Node.js será executado (padrão `3001`). | `3001` |
-| `ADMIN_EMAIL` | E-mail oficial usado para login do Administrador. | `seu-email-admin@dominio.com` |
-| `ADMIN_PASSWORD_HASH` | Hash seguro (PBKDF2) correspondente à senha do administrador. | *Gerado a partir do comando abaixo* |
 | `APP_BASE_URL` | URL base pública da aplicação (usada para links de e-mail). | `http://localhost:3001` |
 | `BREVO_API_KEY` | Chave de API do Brevo para envio de e-mails de recuperação de senha. | `xkeysib-suachave` |
 | `BREVO_SENDER_EMAIL`| E-mail remetente autenticado no Brevo. | `suporte@seudominio.com` |
-
-### **Gerando o Hash de Senha para o Administrador**
-Para gerar o código de hash da sua senha personalizada do administrador, execute o seguinte comando no terminal (dentro da pasta `backend`):
-
-```bash
-node -e "console.log(require('./src/utils/password').hashPassword('sua-senha-aqui'))"
-```
-
-Copie o hash retornado (que terá o formato `salt:hash`) e defina como o valor de `ADMIN_PASSWORD_HASH` no seu arquivo `.env` ou no painel do Render.
 
 ---
 

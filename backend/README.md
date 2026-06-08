@@ -39,13 +39,6 @@ DATABASE_URL=connection_string_do_neon
 PORT=3001
 ```
 
-Para usar o login do administrador, preencha tambem:
-
-```env
-ADMIN_EMAIL=admin@agendarosa.com
-ADMIN_PASSWORD_HASH=hash_da_senha
-```
-
 5. Inicie o servidor:
 
 ```bash
@@ -53,17 +46,6 @@ npm start
 ```
 
 O sistema estara disponivel em `http://localhost:3001`.
-
-## Senha do administrador
-
-A senha do administrador nao fica escrita diretamente no codigo. Para gerar
-o valor de `ADMIN_PASSWORD_HASH`, execute dentro da pasta `backend`:
-
-```bash
-node -e "console.log(require('./src/utils/password').hashPassword('sua-senha'))"
-```
-
-Copie o resultado para o arquivo `.env`.
 
 ## Recuperacao de senha
 
