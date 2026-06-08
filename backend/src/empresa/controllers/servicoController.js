@@ -1,8 +1,13 @@
 const servicoRepository = require("../repositories/servicoRepository");
 
+// Converte valores como 50,00 ou R$ 50,00 para centavos.
 function converterPrecoParaCentavos(preco) {
   if (typeof preco === "number") {
-    return Number.isFinite(preco) ? Math.round(preco * 100) : null;
+    if (Number.isFinite(preco)) {
+      return Math.round(preco * 100);
+    }
+
+    return null;
   }
 
   let valorNormalizado = String(preco)
@@ -11,7 +16,8 @@ function converterPrecoParaCentavos(preco) {
     .trim();
 
   if (valorNormalizado.includes(",")) {
-    valorNormalizado = valorNormalizado.replace(/\./g, "").replace(",", ".");
+    valorNormalizado = valorNormalizado.replace(/\./g, "");
+    valorNormalizado = valorNormalizado.replace(",", ".");
   }
 
   const valorNumerico = Number(valorNormalizado);
@@ -23,6 +29,7 @@ function converterPrecoParaCentavos(preco) {
   return Math.round(valorNumerico * 100);
 }
 
+// Retira textos como "min" e mantem apenas os minutos.
 function converterDuracaoParaMinutos(duracao) {
   const apenasNumeros = String(duracao).replace(/\D/g, "");
   const minutos = Number(apenasNumeros);
@@ -51,26 +58,47 @@ function validarServico(dados) {
     return "Informe uma duracao valida em minutos.";
   }
 
-  if (dados.status && !["ativo", "inativo"].includes(dados.status)) {
+  if (
+    dados.status &&
+    dados.status !== "ativo" &&
+    dados.status !== "inativo"
+  ) {
     return "Status do servico invalido.";
   }
 
   return null;
 }
 
+// Prepara os dados para salvar no banco.
+function montarDadosServico(dados) {
+  return {
+    empresaId: dados.empresaId,
+    nome: dados.nome,
+    categoria: dados.categoria,
+    precoCentavos: converterPrecoParaCentavos(dados.preco),
+    duracaoMinutos: converterDuracaoParaMinutos(dados.duracao),
+    descricao: dados.descricao,
+    status: dados.status || "ativo",
+  };
+}
+
 async function listarServicos(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
     const servicos = await servicoRepository.listarPorEmpresa(empresaId);
     return res.json(servicos);
   } catch (error) {
     console.error("Erro ao listar servicos:", error);
-    return res.status(500).json({ message: "Erro interno ao listar servicos." });
+    return res.status(500).json({
+      message: "Erro interno ao listar servicos.",
+    });
   }
 }
 
@@ -79,18 +107,13 @@ async function cadastrarServico(req, res) {
     const erroValidacao = validarServico(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
-    const servico = await servicoRepository.criar({
-      empresaId: req.body.empresaId,
-      nome: req.body.nome,
-      categoria: req.body.categoria,
-      precoCentavos: converterPrecoParaCentavos(req.body.preco),
-      duracaoMinutos: converterDuracaoParaMinutos(req.body.duracao),
-      descricao: req.body.descricao,
-      status: req.body.status || "ativo",
-    });
+    const dadosServico = montarDadosServico(req.body);
+    const servico = await servicoRepository.criar(dadosServico);
 
     return res.status(201).json({
       message: "Servico cadastrado com sucesso.",
@@ -98,7 +121,9 @@ async function cadastrarServico(req, res) {
     });
   } catch (error) {
     console.error("Erro ao cadastrar servico:", error);
-    return res.status(500).json({ message: "Erro interno ao cadastrar servico." });
+    return res.status(500).json({
+      message: "Erro interno ao cadastrar servico.",
+    });
   }
 }
 
@@ -107,21 +132,21 @@ async function atualizarServico(req, res) {
     const erroValidacao = validarServico(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
-    const servicoAtualizado = await servicoRepository.atualizar(req.params.id, {
-      empresaId: req.body.empresaId,
-      nome: req.body.nome,
-      categoria: req.body.categoria,
-      precoCentavos: converterPrecoParaCentavos(req.body.preco),
-      duracaoMinutos: converterDuracaoParaMinutos(req.body.duracao),
-      descricao: req.body.descricao,
-      status: req.body.status || "ativo",
-    });
+    const dadosServico = montarDadosServico(req.body);
+    const servicoAtualizado = await servicoRepository.atualizar(
+      req.params.id,
+      dadosServico
+    );
 
     if (!servicoAtualizado) {
-      return res.status(404).json({ message: "Servico nao encontrado." });
+      return res.status(404).json({
+        message: "Servico nao encontrado.",
+      });
     }
 
     return res.json({
@@ -130,28 +155,41 @@ async function atualizarServico(req, res) {
     });
   } catch (error) {
     console.error("Erro ao atualizar servico:", error);
-    return res.status(500).json({ message: "Erro interno ao atualizar servico." });
+    return res.status(500).json({
+      message: "Erro interno ao atualizar servico.",
+    });
   }
 }
 
 async function excluirServico(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const removido = await servicoRepository.excluir(req.params.id, empresaId);
+    const removido = await servicoRepository.excluir(
+      req.params.id,
+      empresaId
+    );
 
     if (!removido) {
-      return res.status(404).json({ message: "Servico nao encontrado." });
+      return res.status(404).json({
+        message: "Servico nao encontrado.",
+      });
     }
 
-    return res.json({ message: "Servico excluido com sucesso." });
+    return res.json({
+      message: "Servico excluido com sucesso.",
+    });
   } catch (error) {
     console.error("Erro ao excluir servico:", error);
-    return res.status(500).json({ message: "Erro interno ao excluir servico." });
+    return res.status(500).json({
+      message: "Erro interno ao excluir servico.",
+    });
   }
 }
 
