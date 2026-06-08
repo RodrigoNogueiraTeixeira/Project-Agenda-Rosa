@@ -37,7 +37,7 @@ async function login(payload) {
     };
   }
 
-  // 2. Perfil Empresa / Profissional (Senha hash PBKDF2 e aprovação do Admin)
+  // 2. Perfil Empresa (senha hash PBKDF2 e aprovacao do Admin)
   if (perfil === "empresa") {
     const empresa = await authDAO.buscarEmpresaPorEmail(email);
     if (!empresa) {
