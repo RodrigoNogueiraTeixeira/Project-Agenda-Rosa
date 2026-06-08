@@ -91,26 +91,33 @@ async function login(payload) {
     throw new Error("Email ou senha invalidos.");
   }
 
-  // EXPLICAÇÃO COMPLEXA: Migração "on-the-fly" (em tempo de execução) de senhas sem hash.
-  // - Clientes novos têm a senha armazenada como hash criptografado seguro PBKDF2 (ex: "salt:hash").
-  // - Clientes antigos do banco de dados podem ter senhas salvas em texto simples (sem segurança).
+  // =========================================================================
+  // MUTAÇÃO/MIGRAÇÃO DE SENHAS DE CLIENTES ANTIGOS (Para maior segurança)
+  // =========================================================================
+  // Como o sistema foi atualizado recentemente para usar criptografia, temos dois tipos de senhas no banco:
+  // - Clientes antigos: têm a senha salva em texto limpo (ex: "minhasenha123").
+  // - Clientes novos (ou atualizados): têm a senha em formato de Hash criptografado (ex: "salt:hash").
+  
+  // O teste abaixo verifica: a senha atual salva no banco de dados tem o formato de Hash criptografado?
   if (passwordUtils.isPasswordHash(cliente.senha)) {
-    // CASO A: A senha já está criptografada de forma segura. Executa a verificação padrão de hash.
+    // CASO A: Se for um Hash criptografado, precisamos usar uma função especial de comparação.
+    // O 'verifyPassword' vai aplicar o algoritmo PBKDF2 na senha digitada e validar se bate com o hash salvo no banco.
     if (!passwordUtils.verifyPassword(senha, cliente.senha)) {
       throw new Error("Email ou senha invalidos.");
     }
   } else {
-    // CASO B: A senha está em texto puro (cadastro antigo).
-    // 1. Faz a comparação direta do texto simples.
+    // CASO B: Se NÃO for um Hash (significa que é uma senha antiga em texto puro/limpo):
+    // 1. Compara a senha digitada pelo usuário diretamente com a senha em texto limpo salva no banco.
     if (String(cliente.senha || "") !== senha) {
       throw new Error("Email ou senha invalidos.");
     }
 
-    // 2. MIGRACAO AUTOMATICA: Como o usuário acabou de informar a senha correta com sucesso,
-    // aproveitamos o momento para gerar o hash seguro (PBKDF2) dessa senha...
+    // 2. MIGRAÇÃO DE SEGURANÇA: Se o login deu certo com a senha antiga, aproveitamos a senha 
+    // digitada neste exato momento (que sabemos ser a correta) para gerar um Hash criptografado seguro (PBKDF2).
     const senhaHash = passwordUtils.hashPassword(senha);
     
-    // ...e atualizamos o banco de dados. Os próximos logins desse cliente usarão a verificação criptográfica do CASO A.
+    // 3. Atualiza o cadastro do cliente no banco de dados, substituindo a senha em texto limpo 
+    // pela nova versão criptografada. No próximo login deste usuário, o sistema entrará direto no CASO A (com hash).
     await authDAO.atualizarSenhaCliente(cliente.email, senhaHash);
   }
 
