@@ -58,13 +58,11 @@ async function buscarDadosDashboard() {
             renderizarDadosDashboard(json.data);
         }
     } catch (error) {
-        // Fallback mock caso falhe a chamada ao backend
-        renderizarDadosDashboard({
-            totalClientes: 1248,
-            totalEmpresas: 163,
-            empresasPendentes: 19,
-            totalAgendamentos: 8402,
-            agendamentosPeriodo: 524
+        console.error("Erro ao buscar dados do dashboard:", error);
+        const ids = ['TClientesCadastrados', 'TotalEmpresasProfissionaisCadastrados', 'AprovacoesPendentesEmpresas', 'AgendamentosTotais', 'AgendamentosPorPeriodo'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = "Indisponível";
         });
     }
 }
@@ -120,9 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderizarDadosDashboard(json.data);
                 }
             } catch (error) {
-                const agendamentosFalsos = Math.floor(Math.random() * 1000);
+                console.error("Erro ao aplicar período no dashboard:", error);
+                alert("Erro ao tentar aplicar o filtro de datas.");
                 const elAgendamentosPeriodo = document.getElementById('AgendamentosPorPeriodo');
-                if (elAgendamentosPeriodo) elAgendamentosPeriodo.textContent = formatarNumero(agendamentosFalsos);
+                if (elAgendamentosPeriodo) elAgendamentosPeriodo.textContent = "Indisponível";
             }
         });
     }
