@@ -1,13 +1,16 @@
 const API_BLOQUEIOS_URL = "/api/empresa/bloqueios-horarios";
 const API_PROFISSIONAIS_URL = "/api/empresa/profissionais";
 
-// Captura os elementos principais da tela de bloqueio de horarios.
+// Elementos principais da tela.
 const formBloqueio = document.querySelector("form");
 const tabelaBloqueios = document.querySelector("tbody");
-const botaoBloquearHorario = formBloqueio?.querySelector("button[type='submit']");
-const selectProfissional = document.getElementById("bloqueio-profissional");
+const botaoBloquearHorario = formBloqueio
+  ? formBloqueio.querySelector("button[type='submit']")
+  : null;
+const selectProfissional = document.getElementById(
+  "bloqueio-profissional"
+);
 
-// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -19,22 +22,37 @@ function obterEmpresaId() {
   return empresaId;
 }
 
-// Busca o valor de um campo pelo ID e remove espacos extras.
 function obterValor(id) {
-  return document.getElementById(id)?.value.trim() || "";
+  const campo = document.getElementById(id);
+
+  if (!campo) {
+    return "";
+  }
+
+  return campo.value.trim();
 }
 
-// Busca o texto visivel da opcao selecionada no campo de profissional.
 function obterNomeProfissionalSelecionado() {
-  return selectProfissional?.options[selectProfissional.selectedIndex]?.textContent.trim() || "";
+  if (!selectProfissional) {
+    return "";
+  }
+
+  const opcao = selectProfissional.options[selectProfissional.selectedIndex];
+
+  if (!opcao) {
+    return "";
+  }
+
+  return opcao.textContent.trim();
 }
 
-// Carrega os profissionais ativos cadastrados na tela de profissionais.
+// Carrega os profissionais ativos da empresa.
 async function carregarProfissionais() {
   const empresaId = obterEmpresaId();
 
   if (!empresaId) {
-    selectProfissional.innerHTML = '<option value="">Empresa nao identificada</option>';
+    selectProfissional.innerHTML =
+      '<option value="">Empresa nao identificada</option>';
     return;
   }
 
@@ -44,26 +62,33 @@ async function carregarProfissionais() {
     );
     const profissionais = await resposta.json();
 
+    if (!resposta.ok) {
+      throw new Error(
+        profissionais.message || "Nao foi possivel carregar os profissionais."
+      );
+    }
+
     selectProfissional.innerHTML = "";
 
     if (profissionais.length === 0) {
-      selectProfissional.innerHTML = '<option value="">Nenhum profissional cadastrado</option>';
+      selectProfissional.innerHTML =
+        '<option value="">Nenhum profissional cadastrado</option>';
       return;
     }
 
-    profissionais.forEach((profissional) => {
+    for (const profissional of profissionais) {
       const opcao = document.createElement("option");
       opcao.value = profissional.id;
       opcao.textContent = profissional.nome;
       selectProfissional.appendChild(opcao);
-    });
+    }
   } catch (error) {
     console.error("Erro ao carregar profissionais:", error);
-    selectProfissional.innerHTML = '<option value="">Erro ao carregar</option>';
+    selectProfissional.innerHTML =
+      '<option value="">Erro ao carregar</option>';
   }
 }
 
-// Monta o objeto de bloqueio que sera enviado para a API.
 function montarDadosBloqueio() {
   return {
     empresaId: obterEmpresaId(),
@@ -76,7 +101,7 @@ function montarDadosBloqueio() {
   };
 }
 
-// Valida os campos obrigatorios antes de chamar o back-end.
+// Confere os campos obrigatorios do bloqueio.
 function validarFormularioBloqueio(dados) {
   if (!dados.empresaId) {
     return "Empresa nao identificada. Cadastre ou acesse a empresa antes de bloquear horarios.";
@@ -97,7 +122,7 @@ function validarFormularioBloqueio(dados) {
   return null;
 }
 
-// Cria uma linha da tabela para um bloqueio retornado pela API.
+// Monta uma linha da tabela para o bloqueio.
 function criarLinhaBloqueio(bloqueio) {
   const linha = document.createElement("tr");
 
@@ -112,15 +137,16 @@ function criarLinhaBloqueio(bloqueio) {
     </td>
   `;
 
-  // Liga o botao da linha a remocao do bloqueio correspondente.
-  linha.querySelector("[data-acao='remover']").addEventListener("click", () => {
+  const botaoRemover = linha.querySelector("[data-acao='remover']");
+
+  botaoRemover.addEventListener("click", function () {
     excluirBloqueio(bloqueio.id);
   });
 
   return linha;
 }
 
-// Busca os bloqueios da empresa e atualiza a tabela.
+// Busca os bloqueios cadastrados pela empresa.
 async function carregarBloqueios() {
   const empresaId = obterEmpresaId();
 
@@ -134,11 +160,15 @@ async function carregarBloqueios() {
   }
 
   try {
-    const resposta = await fetch(`${API_BLOQUEIOS_URL}?empresaId=${empresaId}`);
+    const resposta = await fetch(
+      `${API_BLOQUEIOS_URL}?empresaId=${empresaId}`
+    );
     const bloqueios = await resposta.json();
 
     if (!resposta.ok) {
-      throw new Error(bloqueios.message || "Nao foi possivel carregar os bloqueios.");
+      throw new Error(
+        bloqueios.message || "Nao foi possivel carregar os bloqueios."
+      );
     }
 
     tabelaBloqueios.innerHTML = "";
@@ -152,16 +182,17 @@ async function carregarBloqueios() {
       return;
     }
 
-    bloqueios.forEach((bloqueio) => {
-      tabelaBloqueios.appendChild(criarLinhaBloqueio(bloqueio));
-    });
+    for (const bloqueio of bloqueios) {
+      const linha = criarLinhaBloqueio(bloqueio);
+      tabelaBloqueios.appendChild(linha);
+    }
   } catch (error) {
     console.error("Erro ao carregar bloqueios:", error);
     alert("Nao foi possivel carregar os bloqueios.");
   }
 }
 
-// Envia um novo bloqueio de horario para a API.
+// Envia um novo bloqueio para o backend.
 async function cadastrarBloqueio(event) {
   event.preventDefault();
 
@@ -188,7 +219,9 @@ async function cadastrarBloqueio(event) {
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
-      alert(resultado.message || "Nao foi possivel cadastrar o bloqueio.");
+      alert(
+        resultado.message || "Nao foi possivel cadastrar o bloqueio."
+      );
       return;
     }
 
@@ -204,9 +237,11 @@ async function cadastrarBloqueio(event) {
   }
 }
 
-// Remove um bloqueio depois da confirmacao do usuario.
+// Remove o bloqueio depois da confirmacao.
 async function excluirBloqueio(id) {
-  const confirmarExclusao = confirm("Deseja realmente remover este bloqueio?");
+  const confirmarExclusao = confirm(
+    "Deseja realmente remover este bloqueio?"
+  );
 
   if (!confirmarExclusao) {
     return;
@@ -214,14 +249,19 @@ async function excluirBloqueio(id) {
 
   try {
     const empresaId = obterEmpresaId();
-    const resposta = await fetch(`${API_BLOQUEIOS_URL}/${id}?empresaId=${empresaId}`, {
-      method: "DELETE",
-    });
+    const resposta = await fetch(
+      `${API_BLOQUEIOS_URL}/${id}?empresaId=${empresaId}`,
+      {
+        method: "DELETE",
+      }
+    );
 
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
-      alert(resultado.message || "Nao foi possivel remover o bloqueio.");
+      alert(
+        resultado.message || "Nao foi possivel remover o bloqueio."
+      );
       return;
     }
 
@@ -233,18 +273,21 @@ async function excluirBloqueio(id) {
   }
 }
 
-// Liga o submit do formulario a funcao de cadastro de bloqueio.
-formBloqueio?.addEventListener("submit", cadastrarBloqueio);
+if (formBloqueio) {
+  formBloqueio.addEventListener("submit", cadastrarBloqueio);
+}
 
+// Impede a escolha de uma data passada.
 const campoDataBloqueio = document.getElementById("data-bloqueio");
+
 if (campoDataBloqueio) {
   const hoje = new Date();
   const ano = hoje.getFullYear();
   const mes = String(hoje.getMonth() + 1).padStart(2, "0");
   const dia = String(hoje.getDate()).padStart(2, "0");
+
   campoDataBloqueio.min = `${ano}-${mes}-${dia}`;
 }
 
-// Carrega os bloqueios ja cadastrados quando a pagina abre.
 carregarProfissionais();
 carregarBloqueios();

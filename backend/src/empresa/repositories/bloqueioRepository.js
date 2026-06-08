@@ -4,6 +4,7 @@ async function listarPorEmpresa(empresaId) {
   return bloqueioDAO.listarPorEmpresa(empresaId);
 }
 
+// Confere o profissional e conflitos antes de cadastrar.
 async function criar(dados) {
   const profissional = await bloqueioDAO.buscarProfissionalDaEmpresa(
     dados.profissionalId,
@@ -20,10 +21,17 @@ async function criar(dados) {
     throw new Error("Ja existe um bloqueio neste periodo para o profissional.");
   }
 
-  return bloqueioDAO.criar({
-    ...dados,
+  const dadosDoBloqueio = {
+    empresaId: dados.empresaId,
+    profissionalId: dados.profissionalId,
     profissionalNome: profissional.nome,
-  });
+    dataBloqueio: dados.dataBloqueio,
+    horarioInicio: dados.horarioInicio,
+    horarioFim: dados.horarioFim,
+    motivo: dados.motivo,
+  };
+
+  return bloqueioDAO.criar(dadosDoBloqueio);
 }
 
 async function excluir(id, empresaId) {
