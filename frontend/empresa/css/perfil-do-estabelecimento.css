@@ -103,6 +103,21 @@ input[type="file"] {
   padding: 12px 14px;
 }
 
+.logo-perfil {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+#preview-logo {
+  width: 110px;
+  height: 110px;
+  display: none;
+  object-fit: cover;
+  border: 1px solid #e8ccd8;
+  border-radius: 12px;
+}
+
 textarea {
   min-height: 120px;
   resize: vertical;
@@ -196,6 +211,11 @@ button,
   }
 
   .botoes {
+    flex-direction: column;
+  }
+
+  .logo-perfil {
+    align-items: stretch;
     flex-direction: column;
   }
 
