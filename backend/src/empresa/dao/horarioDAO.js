@@ -3,13 +3,13 @@ const { run, get, all, transaction } = require("../../config/database");
 function selecionarCamposHorario() {
   return `SELECT
     id,
-    empresa_id AS empresaId,
-    dia_semana AS diaSemana,
+    empresa_id AS "empresaId",
+    dia_semana AS "diaSemana",
     abre,
-    horario_abertura AS horarioAbertura,
-    horario_fechamento AS horarioFechamento,
-    intervalo_inicio AS intervaloInicio,
-    intervalo_fim AS intervaloFim
+    horario_abertura AS "horarioAbertura",
+    horario_fechamento AS "horarioFechamento",
+    intervalo_inicio AS "intervaloInicio",
+    intervalo_fim AS "intervaloFim"
   FROM horarios_funcionamento`;
 }
 
@@ -57,13 +57,13 @@ async function salvarTodos(empresaId, horarios) {
     return tx.all(
       `SELECT
         id,
-        empresa_id AS empresaId,
-        dia_semana AS diaSemana,
+        empresa_id AS "empresaId",
+        dia_semana AS "diaSemana",
         abre,
-        horario_abertura AS horarioAbertura,
-        horario_fechamento AS horarioFechamento,
-        intervalo_inicio AS intervaloInicio,
-        intervalo_fim AS intervaloFim
+        horario_abertura AS "horarioAbertura",
+        horario_fechamento AS "horarioFechamento",
+        intervalo_inicio AS "intervaloInicio",
+        intervalo_fim AS "intervaloFim"
       FROM horarios_funcionamento
       WHERE empresa_id = ?
       ORDER BY dia_semana`,
