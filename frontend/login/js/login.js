@@ -132,6 +132,7 @@ async function chamarApiLogin(caminho, opcoes) {
       "Content-Type": "application/json"
     },
     // Junta as opções extras enviadas para a função (ex: método, body com dados, etc.)
+    // post, put.. 
     ...(opcoes || {})
   });
 
@@ -185,12 +186,16 @@ async function realizarLogin() {
   try {
     var resultado = await chamarApiLogin("/auth/login", {
       method: "POST",
+
+      // stringify transformar um objeto JavaScript em um texto simples no formato JSON.
       body: JSON.stringify({ email: email, senha: senha, perfil: perfil })
     });
 
     limparDadosDeAcesso();
 
     if (resultado.perfil === "cliente") {
+      
+      // localStorage é uma pequena memória (banco de dados) que fica dentro do próprio navegador do usuário (como Chrome, Safari ou Firefox).
       localStorage.setItem("clienteId", String(resultado.usuario.id));
       localStorage.setItem("clienteNome", resultado.usuario.nome || "");
       localStorage.setItem("clienteEmail", resultado.usuario.email || "");
