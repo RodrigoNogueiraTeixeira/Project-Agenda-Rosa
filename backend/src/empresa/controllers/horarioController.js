@@ -1,34 +1,59 @@
 const horarioRepository = require("../repositories/horarioRepository");
 
+// Aceita horario vazio ou no formato HH:MM.
 function horaValida(hora) {
-  return !hora || /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
+  if (!hora) {
+    return true;
+  }
+
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
 }
 
+function abreValido(abre) {
+  if (abre === 0 || abre === 1) {
+    return true;
+  }
+
+  if (abre === true || abre === false) {
+    return true;
+  }
+
+  return false;
+}
+
+// Valida os dados de um dia da semana.
 function validarHorario(horario) {
   if (horario.diaSemana < 0 || horario.diaSemana > 6) {
     return "Dia da semana invalido.";
   }
 
-  if (![0, 1, true, false].includes(horario.abre)) {
+  if (!abreValido(horario.abre)) {
     return "Informe se a empresa abre ou nao neste dia.";
   }
 
-  if (!horaValida(horario.horarioAbertura) || !horaValida(horario.horarioFechamento)) {
+  if (
+    !horaValida(horario.horarioAbertura) ||
+    !horaValida(horario.horarioFechamento)
+  ) {
     return "Informe horarios de abertura e fechamento validos.";
   }
 
-  if (!horaValida(horario.intervaloInicio) || !horaValida(horario.intervaloFim)) {
+  if (
+    !horaValida(horario.intervaloInicio) ||
+    !horaValida(horario.intervaloFim)
+  ) {
     return "Informe horarios de intervalo validos.";
   }
 
-  if (horario.abre && (!horario.horarioAbertura || !horario.horarioFechamento)) {
+  if (
+    horario.abre &&
+    (!horario.horarioAbertura || !horario.horarioFechamento)
+  ) {
     return "Dias abertos precisam ter horario de abertura e fechamento.";
   }
 
   if (
     horario.abre &&
-    horario.horarioAbertura &&
-    horario.horarioFechamento &&
     horario.horarioAbertura >= horario.horarioFechamento
   ) {
     return "O horario de abertura deve ser menor que o horario de fechamento.";
@@ -42,22 +67,48 @@ function validarHorario(horario) {
     return "O inicio do intervalo deve ser menor que o fim do intervalo.";
   }
 
-  if (Boolean(horario.intervaloInicio) !== Boolean(horario.intervaloFim)) {
+  const informouInicio = Boolean(horario.intervaloInicio);
+  const informouFim = Boolean(horario.intervaloFim);
+
+  if (informouInicio !== informouFim) {
     return "Informe o inicio e o fim do intervalo.";
   }
 
-  if (
-    horario.abre &&
-    horario.intervaloInicio &&
-    (
-      horario.intervaloInicio < horario.horarioAbertura ||
-      horario.intervaloFim > horario.horarioFechamento
-    )
-  ) {
-    return "O intervalo deve estar dentro do horario de funcionamento.";
+  if (horario.abre && horario.intervaloInicio) {
+    const intervaloAntesDaAbertura =
+      horario.intervaloInicio < horario.horarioAbertura;
+    const intervaloDepoisDoFechamento =
+      horario.intervaloFim > horario.horarioFechamento;
+
+    if (intervaloAntesDaAbertura || intervaloDepoisDoFechamento) {
+      return "O intervalo deve estar dentro do horario de funcionamento.";
+    }
   }
 
   return null;
+}
+
+// Confere se os sete dias foram enviados uma unica vez.
+function diasDaSemanaValidos(horarios) {
+  const diasEncontrados = [];
+
+  for (const horario of horarios) {
+    const dia = Number(horario.diaSemana);
+
+    if (diasEncontrados.includes(dia)) {
+      return false;
+    }
+
+    diasEncontrados.push(dia);
+  }
+
+  for (let dia = 0; dia <= 6; dia += 1) {
+    if (!diasEncontrados.includes(dia)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function validarHorarios(dados) {
@@ -69,9 +120,7 @@ function validarHorarios(dados) {
     return "Informe os horarios dos sete dias da semana.";
   }
 
-  const diasInformados = new Set(dados.horarios.map((horario) => Number(horario.diaSemana)));
-
-  if (diasInformados.size !== 7 || ![0, 1, 2, 3, 4, 5, 6].every((dia) => diasInformados.has(dia))) {
+  if (!diasDaSemanaValidos(dados.horarios)) {
     return "Informe cada dia da semana uma unica vez.";
   }
 
@@ -88,10 +137,12 @@ function validarHorarios(dados) {
 
 async function listarHorarios(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
     const horarios = await horarioRepository.listarPorEmpresa(empresaId);
@@ -109,7 +160,9 @@ async function salvarHorarios(req, res) {
     const erroValidacao = validarHorarios(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
     const horarios = await horarioRepository.salvarTodos(
@@ -119,7 +172,7 @@ async function salvarHorarios(req, res) {
 
     return res.json({
       message: "Horarios de funcionamento salvos com sucesso.",
-      horarios,
+      horarios: horarios,
     });
   } catch (error) {
     console.error("Erro ao salvar horarios de funcionamento:", error);
