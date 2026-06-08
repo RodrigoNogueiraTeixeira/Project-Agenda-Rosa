@@ -12,7 +12,7 @@ Caso prefira visualizar o sistema funcionando em produção diretamente na nuvem
 
 ---
 
-## 🚀 Tecnologias Utilizadas
+##  Tecnologias Utilizadas
 
 O ecossistema do Agenda Rosa foi construído com foco em simplicidade, velocidade e segurança, utilizando as seguintes tecnologias:
 
@@ -71,7 +71,7 @@ agendarosa/
 
 ---
 
-## 🧠 Arquitetura do Backend (Camadas)
+##  Arquitetura do Backend (Camadas)
 
 O backend segue o padrão arquitetural em camadas para garantir a separação de conceitos, facilitar a manutenção e blindar a lógica contra falhas:
 
@@ -82,7 +82,7 @@ O backend segue o padrão arquitetural em camadas para garantir a separação de
 
 ---
 
-## 🔒 Segurança e Criptografia
+##  Segurança e Criptografia
 
 O projeto utiliza práticas avançadas de proteção de dados:
 
@@ -94,7 +94,7 @@ O projeto utiliza práticas avançadas de proteção de dados:
 
 ---
 
-## 💻 Como Executar Localmente
+##  Como Executar Localmente
 
 ### 1. Requisitos Prévios
 * Ter o [Node.js](https://nodejs.org/) instalado na versão LTS recente.
@@ -127,7 +127,7 @@ O projeto utiliza práticas avançadas de proteção de dados:
 
 ---
 
-## ⚙️ Variáveis de Ambiente (`.env`)
+##  Variáveis de Ambiente (`.env`)
 
 Configure as variáveis básicas abaixo no seu arquivo `backend/.env` para executar o projeto localmente:
 
@@ -141,7 +141,7 @@ Configure as variáveis básicas abaixo no seu arquivo `backend/.env` para execu
 
 ---
 
-## 👥 Equipe e Divisão de Responsabilidades
+##  Equipe e Divisão de Responsabilidades
 
 O desenvolvimento do Agenda Rosa foi realizado de forma colaborativa e dividida entre os membros do grupo, garantindo especialização e integração entre as entregas:
 
@@ -156,7 +156,7 @@ Para coordenar as entregas e garantir a qualidade do sistema integrado:
 
 ---
 
-## 🤖 Uso de Inteligência Artificial como Ferramenta
+##  Uso de Inteligência Artificial como Ferramenta
 
 A equipe utilizou ferramentas de Inteligência Artificial de forma estratégica ao longo do ciclo de desenvolvimento, adotando-as como **aceleradores de produtividade e assistentes técnicos**, sem delegar as decisões fundamentais do projeto:
 * **Code Review & Refatoração:** A IA auxiliou na revisão de trechos de código para sugerir melhorias de desempenho, boas práticas e legibilidade.
