@@ -9,7 +9,7 @@ function verificarAutenticacaoAdmin() {
 // Daniel e Rodrigo: Função para preencher a tabela
 function renderizarTabelaRelatorios(dados) {
     const tabela = document.getElementById('CorpoTabela');
-    
+
     if (tabela) {
         tabela.innerHTML = "";
 
@@ -31,7 +31,7 @@ async function buscarRelatorios(tipo = 'Geral', dataInicial = '', dataFinal = ''
         const queryParams = new URLSearchParams({ tipo, dataInicial, dataFinal }).toString();
         const response = await fetch(`/api/relatorios?${queryParams}`);
         if (!response.ok) throw new Error('Erro na rede');
-        
+
         const json = await response.json();
         if (json.success) {
             renderizarTabelaRelatorios(json.data);
@@ -41,21 +41,21 @@ async function buscarRelatorios(tipo = 'Geral', dataInicial = '', dataFinal = ''
     } catch (error) {
         // Fallback mock caso falte conexão ou dê erro na API
         renderizarTabelaRelatorios({
-            usuariosCadastrados: "1.248",
-            empresasAprovadas: "144",
-            cancelamentos: "5.920"
+            usuariosCadastrados: "Indisponível",
+            empresasAprovadas: "Indisponível",
+            cancelamentos: "Indisponível"
         });
     }
 }
 
 // Daniel e Rodrigo: Inicia eventos
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     verificarAutenticacaoAdmin();
     buscarRelatorios('Geral');
 
     const btnFiltrar = document.getElementById('btnFiltrar');
     if (btnFiltrar) {
-        btnFiltrar.addEventListener('click', function(event) {
+        btnFiltrar.addEventListener('click', function (event) {
             event.preventDefault();
             const tipo = document.getElementById('TipoRelatorio').value;
             const dataInicial = document.getElementById('DataInicial').value;
