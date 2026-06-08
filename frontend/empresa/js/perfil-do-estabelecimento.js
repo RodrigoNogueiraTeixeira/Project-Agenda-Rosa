@@ -5,8 +5,11 @@ const formPerfil = document.getElementById("form-perfil-estabelecimento");
 const botaoSalvarPerfil = document.querySelector(".btn-salvar");
 const botaoEditarPerfil = document.querySelector(".btn-editar");
 const campoCategoria = document.getElementById("categoria-principal");
+const campoFotoLogo = document.getElementById("foto-logo");
+const previewLogo = document.getElementById("preview-logo");
 const camposPerfil =
   formPerfil?.querySelectorAll("input:not(#foto-logo), select, textarea") || [];
+let logoUrlAtual = "";
 
 function obterEmpresaId() {
   return localStorage.getItem("empresaId");
@@ -23,6 +26,40 @@ function definirModoEdicao(editando) {
 
   botaoSalvarPerfil.disabled = !editando;
   botaoEditarPerfil.disabled = editando;
+  campoFotoLogo.disabled = !editando;
+}
+
+// Mostra a imagem salva ou selecionada pela empresa.
+function mostrarLogo(logoUrl) {
+  logoUrlAtual = logoUrl || "";
+  previewLogo.src = logoUrlAtual;
+  previewLogo.style.display = logoUrlAtual ? "block" : "none";
+}
+
+// Converte a imagem para texto para que ela possa ser salva no banco.
+function selecionarLogo() {
+  const arquivo = campoFotoLogo.files[0];
+
+  if (!arquivo) {
+    return;
+  }
+
+  const tiposAceitos = ["image/png", "image/jpeg", "image/webp"];
+  if (!tiposAceitos.includes(arquivo.type)) {
+    alert("Selecione uma imagem PNG, JPG ou WEBP.");
+    campoFotoLogo.value = "";
+    return;
+  }
+
+  if (arquivo.size > 1024 * 1024) {
+    alert("A imagem deve ter no maximo 1 MB.");
+    campoFotoLogo.value = "";
+    return;
+  }
+
+  const leitor = new FileReader();
+  leitor.onload = () => mostrarLogo(leitor.result);
+  leitor.readAsDataURL(arquivo);
 }
 
 // Carrega as categorias criadas no painel do administrador.
@@ -51,6 +88,8 @@ async function carregarCategorias() {
 }
 
 function preencherPerfil(perfil) {
+  mostrarLogo(perfil.logoUrl);
+
   const campos = {
     "nome-estabelecimento": perfil.nomeEstabelecimento,
     "categoria-principal": perfil.categoriaPrincipal,
@@ -99,6 +138,7 @@ function montarDadosPerfil() {
     complemento: obterValor("complemento"),
     bairro: obterValor("bairro"),
     cidade: obterValor("cidade"),
+    logoUrl: logoUrlAtual,
   };
 }
 
@@ -163,6 +203,7 @@ async function salvarPerfil(event) {
 }
 
 botaoEditarPerfil?.addEventListener("click", () => definirModoEdicao(true));
+campoFotoLogo?.addEventListener("change", selecionarLogo);
 formPerfil?.addEventListener("submit", salvarPerfil);
 
 definirModoEdicao(false);

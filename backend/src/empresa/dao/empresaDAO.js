@@ -56,9 +56,9 @@ async function criar(dados) {
 async function buscarPerfil(empresaId) {
   return get(
     `SELECT
-      e.id AS empresaId,
-      e.nome_estabelecimento AS nomeEstabelecimento,
-      e.categoria_principal AS categoriaPrincipal,
+      e.id AS "empresaId",
+      e.nome_estabelecimento AS "nomeEstabelecimento",
+      e.categoria_principal AS "categoriaPrincipal",
       e.descricao,
       e.telefone,
       e.email,
@@ -68,8 +68,8 @@ async function buscarPerfil(empresaId) {
       e.complemento,
       e.bairro,
       e.cidade,
-      est.id AS estabelecimentoId,
-      est.logo_url AS logoUrl
+      est.id AS "estabelecimentoId",
+      est.logo_url AS "logoUrl"
     FROM empresas e
     LEFT JOIN estabelecimentos est ON est.empresa_id = e.id
     WHERE e.id = ?`,
@@ -141,15 +141,17 @@ async function atualizarPerfil(dados) {
         cidade,
         bairro,
         endereco,
-        cep
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        cep,
+        logo_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (empresa_id)
       DO UPDATE SET
         nome = excluded.nome,
         cidade = excluded.cidade,
         bairro = excluded.bairro,
         endereco = excluded.endereco,
-        cep = excluded.cep
+        cep = excluded.cep,
+        logo_url = excluded.logo_url
       RETURNING id`,
       [
         dados.empresaId,
@@ -158,6 +160,7 @@ async function atualizarPerfil(dados) {
         valor(dados.bairro),
         enderecoCompleto || null,
         valor(dados.cep),
+        valor(dados.logoUrl),
       ]
     );
 
