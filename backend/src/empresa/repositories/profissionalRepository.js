@@ -1,7 +1,8 @@
 const profissionalDAO = require("../dao/profissionalDAO");
 
-async function listarPorEmpresa(empresaId) {
-  return profissionalDAO.listarPorEmpresa(empresaId);
+// Envia os filtros de empresa e status para o DAO.
+async function listarPorEmpresa(filtros) {
+  return profissionalDAO.listarPorEmpresa(filtros);
 }
 
 async function criar(dados) {

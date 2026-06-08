@@ -1,5 +1,6 @@
 const profissionalRepository = require("../repositories/profissionalRepository");
 
+// Confere os dados recebidos da tela.
 function validarProfissional(dados) {
   if (!dados.empresaId) {
     return "Empresa nao identificada para cadastrar o profissional.";
@@ -13,7 +14,11 @@ function validarProfissional(dados) {
     return "Informe um e-mail valido para o profissional.";
   }
 
-  if (dados.status && !["ativo", "inativo"].includes(dados.status)) {
+  if (
+    dados.status &&
+    dados.status !== "ativo" &&
+    dados.status !== "inativo"
+  ) {
     return "Status do profissional invalido.";
   }
 
@@ -22,21 +27,29 @@ function validarProfissional(dados) {
 
 async function listarProfissionais(req, res) {
   try {
-    const { empresaId, somenteAtivos } = req.query;
+    const empresaId = req.query.empresaId;
+    const somenteAtivos = req.query.somenteAtivos === "true";
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const profissionais = await profissionalRepository.listarPorEmpresa({
-      empresaId,
-      somenteAtivos: somenteAtivos === "true",
-    });
+    const filtros = {
+      empresaId: empresaId,
+      somenteAtivos: somenteAtivos,
+    };
+
+    const profissionais =
+      await profissionalRepository.listarPorEmpresa(filtros);
 
     return res.json(profissionais);
   } catch (error) {
     console.error("Erro ao listar profissionais:", error);
-    return res.status(500).json({ message: "Erro interno ao listar profissionais." });
+    return res.status(500).json({
+      message: "Erro interno ao listar profissionais.",
+    });
   }
 }
 
@@ -45,18 +58,22 @@ async function cadastrarProfissional(req, res) {
     const erroValidacao = validarProfissional(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
     const profissional = await profissionalRepository.criar(req.body);
 
     return res.status(201).json({
       message: "Profissional cadastrado com sucesso.",
-      profissional,
+      profissional: profissional,
     });
   } catch (error) {
     console.error("Erro ao cadastrar profissional:", error);
-    return res.status(500).json({ message: "Erro interno ao cadastrar profissional." });
+    return res.status(500).json({
+      message: "Erro interno ao cadastrar profissional.",
+    });
   }
 }
 
@@ -65,43 +82,63 @@ async function atualizarProfissional(req, res) {
     const erroValidacao = validarProfissional(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
-    const profissional = await profissionalRepository.atualizar(req.params.id, req.body);
+    const profissional = await profissionalRepository.atualizar(
+      req.params.id,
+      req.body
+    );
 
     if (!profissional) {
-      return res.status(404).json({ message: "Profissional nao encontrado." });
+      return res.status(404).json({
+        message: "Profissional nao encontrado.",
+      });
     }
 
     return res.json({
       message: "Profissional atualizado com sucesso.",
-      profissional,
+      profissional: profissional,
     });
   } catch (error) {
     console.error("Erro ao atualizar profissional:", error);
-    return res.status(500).json({ message: "Erro interno ao atualizar profissional." });
+    return res.status(500).json({
+      message: "Erro interno ao atualizar profissional.",
+    });
   }
 }
 
 async function excluirProfissional(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const removido = await profissionalRepository.excluir(req.params.id, empresaId);
+    const removido = await profissionalRepository.excluir(
+      req.params.id,
+      empresaId
+    );
 
     if (!removido) {
-      return res.status(404).json({ message: "Profissional nao encontrado." });
+      return res.status(404).json({
+        message: "Profissional nao encontrado.",
+      });
     }
 
-    return res.json({ message: "Profissional excluido com sucesso." });
+    return res.json({
+      message: "Profissional excluido com sucesso.",
+    });
   } catch (error) {
     console.error("Erro ao excluir profissional:", error);
-    return res.status(500).json({ message: "Erro interno ao excluir profissional." });
+    return res.status(500).json({
+      message: "Erro interno ao excluir profissional.",
+    });
   }
 }
 
