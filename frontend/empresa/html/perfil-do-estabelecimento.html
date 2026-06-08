@@ -24,8 +24,16 @@
 
                 <div class="campo">
                     <label for="foto-logo">Foto/Logo</label>
-                    <input type="file" id="foto-logo" disabled>
-                    <small>O envio de logo sera disponibilizado em uma etapa futura.</small>
+                    <div class="logo-perfil">
+                        <img id="preview-logo" alt="Logo do estabelecimento">
+                        <input
+                            type="file"
+                            id="foto-logo"
+                            accept="image/png,image/jpeg,image/webp"
+                            disabled
+                        >
+                    </div>
+                    <small>Formatos aceitos: PNG, JPG ou WEBP. Tamanho maximo: 1 MB.</small>
                 </div>
 
                 <div class="linha">
@@ -54,7 +62,7 @@
                 <div class="linha">
                     <div class="campo">
                         <label for="telefone">Telefone</label>
-                        <input type="tel" id="telefone" required>
+                        <input type="tel" id="telefone" maxlength="15" required>
                     </div>
 
                     <div class="campo">

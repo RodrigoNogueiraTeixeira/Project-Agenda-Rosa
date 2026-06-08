@@ -57,6 +57,17 @@ function validarPerfilEmpresa(dados) {
     return "Informe um CEP valido.";
   }
 
+  if (
+    dados.logoUrl &&
+    !/^data:image\/(png|jpeg|webp);base64,/i.test(String(dados.logoUrl))
+  ) {
+    return "Selecione uma imagem PNG, JPG ou WEBP.";
+  }
+
+  if (dados.logoUrl && String(dados.logoUrl).length > 1400000) {
+    return "A imagem deve ter no maximo 1 MB.";
+  }
+
   return null;
 }
 
