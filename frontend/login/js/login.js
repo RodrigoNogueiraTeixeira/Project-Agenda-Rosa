@@ -56,7 +56,7 @@ function atualizarInfoPerfil() {
   if (perfil === "cliente") {
     texto = "Cliente: entre com email/usuario e senha cadastrados.";
   } else if (perfil === "empresa") {
-    texto = "Empresa/Profissional: use o acesso da conta profissional.";
+    texto = "Empresa: use o acesso da conta empresarial.";
   } else if (perfil === "administrador") {
     texto = "Administrador: informe as credenciais de administracao.";
   }
