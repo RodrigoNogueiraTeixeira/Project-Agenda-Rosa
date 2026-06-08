@@ -123,15 +123,15 @@ O projeto utiliza práticas avançadas de proteção de dados:
 
 Configure as variáveis abaixo no seu arquivo `backend/.env` para o funcionamento de todas as partes do sistema:
 
-| Nome da Variável | Descrição | Exemplo |
+| Nome da Variável | Descrição | Exemplo / Placeholder |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | String de conexão com o banco de dados PostgreSQL (ex: Neon.tech). | `postgresql://user:pass@host/dbname?sslmode=require` |
+| `DATABASE_URL` | String de conexão com o banco de dados PostgreSQL (ex: Neon.tech). | `postgresql://usuario:senha@host/dbname?sslmode=require` |
 | `PORT` | Porta onde o servidor Node.js será executado (padrão `3001`). | `3001` |
-| `ADMIN_EMAIL` | E-mail oficial usado para login do Administrador. | `admin@agendarosa.com` |
-| `ADMIN_PASSWORD_HASH` | Hash seguro (PBKDF2) correspondente à senha do administrador. | *Ver instruções abaixo* |
+| `ADMIN_EMAIL` | E-mail oficial usado para login do Administrador. | `seu-email-admin@dominio.com` |
+| `ADMIN_PASSWORD_HASH` | Hash seguro (PBKDF2) correspondente à senha do administrador. | *Gerado a partir do comando abaixo* |
 | `APP_BASE_URL` | URL base pública da aplicação (usada para links de e-mail). | `http://localhost:3001` |
-| `BREVO_API_KEY` | Chave de API do Brevo para envio de e-mails de recuperação de senha. | `xkeysib-...` |
-| `BREVO_SENDER_EMAIL`| E-mail remetente autenticado no Brevo. | `suporte@agendarosa.com` |
+| `BREVO_API_KEY` | Chave de API do Brevo para envio de e-mails de recuperação de senha. | `xkeysib-suachave` |
+| `BREVO_SENDER_EMAIL`| E-mail remetente autenticado no Brevo. | `suporte@seudominio.com` |
 
 ### **Gerando o Hash de Senha para o Administrador**
 Para gerar o código de hash da sua senha personalizada do administrador, execute o seguinte comando no terminal (dentro da pasta `backend`):
@@ -144,12 +144,25 @@ Copie o hash retornado (que terá o formato `salt:hash`) e defina como o valor d
 
 ---
 
-## 🌐 Configuração e Deploy na Nuvem (Render)
+## 👥 Equipe e Divisão de Responsabilidades
 
-Quando o projeto é implantado no **Render.com**, os seguintes passos garantem o funcionamento correto:
+O desenvolvimento do Agenda Rosa foi realizado de forma colaborativa e dividida entre os membros do grupo, garantindo especialização e integração entre as entregas:
 
-1. **Deploy Contínuo**: O Render se conecta à branch `main` do seu repositório GitHub e realiza um novo deploy toda vez que uma alteração é empurrada (`git push`).
-2. **Configuração de Variáveis de Ambiente**:
-   * No painel do Render, vá em **Environment** do seu serviço Web.
-   * Cadastre as variáveis de ambiente necessárias (principalmente `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD_HASH`).
-3. **Inicialização**: O Render executa automaticamente `npm install` e inicia o servidor via `npm start`.
+* **Rodrigo Nogueira**: Responsável pela implementação completa da tela de **Login**, fluxo de recuperação de credenciais (**Esqueci minha Senha / Redefinição**) e por toda a jornada e recursos do perfil de **Cliente** (pesquisa de estabelecimentos, visualização de profissionais/serviços, agendamentos de horários e interface do usuário).
+* **Daniel Oliveira**: Responsável pelo desenvolvimento de toda a jornada da **Empresa** (agenda empresarial, cadastro de serviços, cadastro de profissionais, horários de funcionamento, bloqueios) e pelos fluxos de **Cadastro** inicial de novos usuários e empresas.
+* **Maycon Marques**: Responsável pelo desenvolvimento completo da área do **Administrador** (painel de controle, aprovação e reprovação de cadastros de estabelecimentos parceiros, relatórios estatísticos básicos e gerenciamento das categorias de serviços).
+
+### **Metodologia de Trabalho e Gestão do Projeto**
+Para coordenar as entregas e garantir a qualidade do sistema integrado:
+* **Sprints Semanais:** A equipe realizava reuniões de alinhamento técnico e de progresso todo final de semana para integrar os códigos e resolver incompatibilidades.
+* **Gestão de Tarefas (ClickUp):** Utilizamos a plataforma **ClickUp** para listar as atividades pendentes, estimar prazos de entrega e cronometrar o tempo dedicado a cada tarefa. Isso permitiu o controle visual das etapas de desenvolvimento e evitou atrasos.
+
+---
+
+## 🤖 Uso de Inteligência Artificial como Ferramenta
+
+A equipe utilizou ferramentas de Inteligência Artificial de forma estratégica ao longo do ciclo de desenvolvimento, adotando-as como **aceleradores de produtividade e assistentes técnicos**, sem delegar as decisões fundamentais do projeto:
+* **Code Review & Refatoração:** A IA auxiliou na revisão de trechos de código para sugerir melhorias de desempenho, boas práticas e legibilidade.
+* **Documentação & Comentários:** Utilizada para acelerar a escrita de documentações internas detalhadas e comentários didáticos no código (como os contidos no backend e frontend).
+* **Facilitação do Aprendizado:** Utilizada para tirar dúvidas rápidas de sintaxe e conceitos do PostgreSQL e Express.
+* **Diretriz de Desenvolvimento:** Todas as escolhas arquiteturais, modelagem de banco de dados e lógica final foram planejadas, programadas e validadas pela equipe de engenharia do projeto.
