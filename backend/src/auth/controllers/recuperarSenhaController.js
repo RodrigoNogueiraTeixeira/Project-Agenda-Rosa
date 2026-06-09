@@ -43,7 +43,11 @@ function montarUrlDoFrontend(req, token) {
     process.env.APP_BASE_URL || enderecoPadrao
   ).replace(/\/+$/, "");
 
-  return `${appBaseUrl}/login/html/redefinir-senha.html?token=${token}`;
+  // Remove o sufixo /cliente do final da URL, caso exista, pois a pasta de login
+  // fica na raiz (/login/html) e não dentro da pasta cliente.
+  const cleanBaseUrl = appBaseUrl.replace(/\/cliente\/?$/i, "");
+
+  return `${cleanBaseUrl}/login/html/redefinir-senha.html?token=${token}`;
 }
 
 // Cria um token e envia o link sem informar se o e-mail existe.
