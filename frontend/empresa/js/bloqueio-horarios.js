@@ -122,14 +122,34 @@ function validarFormularioBloqueio(dados) {
   return null;
 }
 
+function formatarData(data) {
+  const partes = String(data || "").split("-");
+
+  if (partes.length !== 3) {
+    return "-";
+  }
+
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function formatarHorario(horario) {
+  const valor = String(horario || "");
+
+  if (!valor) {
+    return "-";
+  }
+
+  return valor.slice(0, 5);
+}
+
 // Monta uma linha da tabela para o bloqueio.
 function criarLinhaBloqueio(bloqueio) {
   const linha = document.createElement("tr");
 
   linha.innerHTML = `
-    <td>${bloqueio.dataBloqueio}</td>
-    <td>${bloqueio.horarioInicio}</td>
-    <td>${bloqueio.horarioFim}</td>
+    <td>${formatarData(bloqueio.dataBloqueio)}</td>
+    <td>${formatarHorario(bloqueio.horarioInicio)}</td>
+    <td>${formatarHorario(bloqueio.horarioFim)}</td>
     <td>${bloqueio.motivo || "-"}</td>
     <td>${bloqueio.profissionalNome || "Todos"}</td>
     <td>
