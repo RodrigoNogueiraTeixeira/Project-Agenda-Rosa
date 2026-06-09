@@ -45,11 +45,13 @@ async function inserirEsteticaTeste() {
     if (est) {
       estabelecimentoId = est.id;
       console.log(`⚠️ Estabelecimento de testes já existente com ID: ${estabelecimentoId}`);
+      await tx.run("UPDATE estabelecimentos SET empresa_id = ? WHERE id = ?", [empresaId, estabelecimentoId]);
     } else {
       const resultadoEst = await tx.run(`
-        INSERT INTO estabelecimentos (nome, cidade, bairro, endereco, cep, logo_url, latitude, longitude)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO estabelecimentos (empresa_id, nome, cidade, bairro, endereco, cep, logo_url, latitude, longitude)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
+        empresaId,
         "Clínica Estética Feminina (Testes)",
         "São Paulo",
         "Bela Vista",
@@ -76,11 +78,13 @@ async function inserirEsteticaTeste() {
       { nome: "Patrícia Fisioterapeuta", especialidade: "Estética Corporal" }
     ];
     
+    const profIds = {};
     for (const p of profs) {
-      await tx.run(`
+      const resProf = await tx.run(`
         INSERT INTO profissionais (empresa_id, nome, especialidade, ativo)
         VALUES (?, ?, ?, 1)
       `, [empresaId, p.nome, p.especialidade]);
+      profIds[p.nome] = resProf.lastID;
     }
     console.log(`✅ Profissionais de testes criados!`);
 
@@ -96,7 +100,7 @@ async function inserirEsteticaTeste() {
     ];
 
     for (const s of servicos) {
-      await tx.run(`
+      const resServ = await tx.run(`
         INSERT INTO servicos (estabelecimento_id, empresa_id, nome, preco, preco_centavos, categoria, duracao_minutos, status) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
@@ -109,8 +113,22 @@ async function inserirEsteticaTeste() {
         s.duracao,
         "ativo"
       ]);
+      const servicoId = resServ.lastID;
+
+      // Vincula o profissional apropriado no profissional_servicos
+      if (s.categoria === "Estética facial" && profIds["Juliana Esteticista"]) {
+        await tx.run(`
+          INSERT INTO profissional_servicos (profissional_id, servico_id)
+          VALUES (?, ?)
+        `, [profIds["Juliana Esteticista"], servicoId]);
+      } else if (s.categoria === "Estética corporal" && profIds["Patrícia Fisioterapeuta"]) {
+        await tx.run(`
+          INSERT INTO profissional_servicos (profissional_id, servico_id)
+          VALUES (?, ?)
+        `, [profIds["Patrícia Fisioterapeuta"], servicoId]);
+      }
     }
-    console.log(`✅ ${servicos.length} serviços de R$ 1,00 cadastrados sob a categoria 'Estética Feminino'!`);
+    console.log(`✅ ${servicos.length} serviços de R$ 1,00 cadastrados e vinculados aos profissionais!`);
   });
 
   console.log("🎉 Clínica de Estética Feminina para testes cadastrada com sucesso!");
