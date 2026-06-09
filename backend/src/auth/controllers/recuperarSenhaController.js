@@ -47,7 +47,7 @@ async function recuperarSenha(req, res) {
     const appBaseUrl = String(process.env.APP_BASE_URL || `${protocol}://${host}`)
       .replace(/\/+$/, "");
     const frontendUrl =
-      `${appBaseUrl}/login/html/RedefinirSenha.html?token=${token}`;
+      `${appBaseUrl}/login/html/redefinir-senha.html?token=${token}`;
 
     try {
       await emailUtils.enviarEmailRecuperacao(email, frontendUrl);
