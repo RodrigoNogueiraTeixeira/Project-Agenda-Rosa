@@ -180,6 +180,21 @@ async function buscarHorarioFuncionamento(estabelecimentoId, diaSemana) {
 }
 
 async function listarBloqueiosPorData(estabelecimentoId, data) {
+  const estabelecimento = await get(
+    "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
+    [estabelecimentoId]
+  );
+
+  let empresaId = estabelecimento ? estabelecimento.empresa_id : null;
+
+  if (!empresaId) {
+    const servico = await get(
+      "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
+      [estabelecimentoId]
+    );
+    empresaId = servico ? servico.empresa_id : estabelecimentoId;
+  }
+
   return all(
     `SELECT
       bh.profissional_id,
@@ -187,11 +202,10 @@ async function listarBloqueiosPorData(estabelecimentoId, data) {
       bh.horario_inicio,
       bh.horario_fim
     FROM bloqueios_horarios bh
-    INNER JOIN estabelecimentos e ON e.empresa_id = bh.empresa_id
-    WHERE e.id = ?
+    WHERE bh.empresa_id = ?
       AND bh.data_bloqueio = ?
     ORDER BY bh.horario_inicio`,
-    [estabelecimentoId, data]
+    [empresaId, data]
   );
 }
 

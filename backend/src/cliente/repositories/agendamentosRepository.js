@@ -183,7 +183,7 @@ async function criarAgendamento(payload) {
           SELECT id
           FROM agendamentos
           WHERE estabelecimento_id = ?
-            AND data = ?
+            AND COALESCE(data, data_agendamento) = ?
             AND (
               status IN ('agendado', 'confirmado', 'concluido', 'realizado')
               OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
@@ -193,8 +193,8 @@ async function criarAgendamento(payload) {
               OR profissional = ?
             )
             AND (
-              (? < horario_fim AND ? > horario)
-              OR (horario_fim IS NULL AND horario = ?)
+              (? < horario_fim AND ? > COALESCE(horario, horario_inicio))
+              OR (horario_fim IS NULL AND COALESCE(horario, horario_inicio) = ?)
             )
           LIMIT 1
         `,
