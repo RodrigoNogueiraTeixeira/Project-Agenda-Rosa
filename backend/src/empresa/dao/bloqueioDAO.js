@@ -3,14 +3,14 @@ const { run, get, all } = require("../../config/database");
 function selecionarCamposBloqueio() {
   return `SELECT
     bh.id,
-    bh.empresa_id AS empresaId,
-    bh.profissional_id AS profissionalId,
-    COALESCE(p.nome, bh.profissional_nome) AS profissionalNome,
-    bh.data_bloqueio AS dataBloqueio,
-    bh.horario_inicio AS horarioInicio,
-    bh.horario_fim AS horarioFim,
+    bh.empresa_id AS "empresaId",
+    bh.profissional_id AS "profissionalId",
+    COALESCE(p.nome, bh.profissional_nome) AS "profissionalNome",
+    bh.data_bloqueio AS "dataBloqueio",
+    bh.horario_inicio AS "horarioInicio",
+    bh.horario_fim AS "horarioFim",
     bh.motivo,
-    bh.criado_em AS criadoEm
+    bh.criado_em AS "criadoEm"
   FROM bloqueios_horarios bh
   LEFT JOIN profissionais p ON p.id = bh.profissional_id`;
 }
