@@ -133,7 +133,7 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
     // O profissional precisa estar vinculado a todos os servicos selecionados.
     const resultado = await all(
       `
-        SELECT p.id, p.nome
+        SELECT p.id, p.nome, p.especialidade
         FROM profissionais p
         INNER JOIN profissional_servicos ps ON ps.profissional_id = p.id
         INNER JOIN servicos s ON s.id = ps.servico_id
@@ -141,7 +141,7 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
           AND p.ativo = 1
           AND s.estabelecimento_id = ?
           AND ps.servico_id IN (${marcadores})
-        GROUP BY p.id, p.nome
+        GROUP BY p.id, p.nome, p.especialidade
         HAVING COUNT(DISTINCT ps.servico_id) = ?
         ORDER BY p.nome
       `,

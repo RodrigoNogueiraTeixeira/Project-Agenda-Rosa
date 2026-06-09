@@ -3,6 +3,40 @@ const clientesDAO = require("../dao/clientesDAO");
 const estabelecimentosRepository = require("./estabelecimentosRepository");
 const pagamentosDAO = require("../dao/pagamentosDAO");
 const pagamentosRepository = require("./pagamentosRepository");
+const { normalizarTexto } = require("../../utils/texto");
+
+function profissionalAtendeCategoria(especialidade, categoria) {
+  if (!especialidade) return true;
+  if (!categoria) return true;
+
+  const espNorm = normalizarTexto(especialidade);
+  const catNorm = normalizarTexto(categoria);
+
+  if (espNorm === catNorm) return true;
+  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
+
+  const sinonimos = {
+    "unha": ["manicure", "pedicure", "unhas"],
+    "unhas": ["manicure", "pedicure", "unha"],
+    "manicure": ["unha", "unhas", "pedicure"],
+    "pedicure": ["unha", "unhas", "manicure"],
+    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
+    "estetica facial": ["estetica", "estetica feminino"],
+    "estetica corporal": ["estetica", "estetica feminino"],
+    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
+    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
+    "cabeleireiro": ["cabelo", "corte"],
+    "cabeleireira": ["cabelo", "corte"]
+  };
+
+  const listaEsp = sinonimos[espNorm] || [];
+  if (listaEsp.includes(catNorm)) return true;
+
+  const listaCat = sinonimos[catNorm] || [];
+  if (listaCat.includes(espNorm)) return true;
+
+  return false;
+}
 function adicionarMinutos(horarioStr, minutos) {
   if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
   const [h, m] = horarioStr.split(":").map(Number);
@@ -116,17 +150,34 @@ async function criarAgendamento(payload) {
     );
 
     if (profRow) {
+      // Validar capacitação do profissional para os serviços selecionados
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(profRow.especialidade, servico.categoria)) {
+          throw new Error(`O profissional ${profRow.nome} nao atende a categoria '${servico.categoria}' do servico '${servico.nome}'.`);
+        }
+      }
       profissionalNome = profRow.nome;
       finalProfissionalId = Number(profissionalId);
     } else {
       throw new Error("O profissional selecionado nao atende a todos os servicos escolhidos.");
     }
   } else if (profissionais.length > 0) {
-    // Sem preferencia: escolhe o primeiro profissional vinculado que estiver livre.
+    // Sem preferencia: escolhe o primeiro profissional que atenda a todas as categorias E que esteja livre.
     const { get } = require("../../config/database");
     let profissionalLivreEncontrado = false;
 
     for (const prof of profissionais) {
+      // 1. Verificar se atende todas as categorias
+      let atendeTodos = true;
+      for (const servico of servicosSelecionados) {
+        if (!profissionalAtendeCategoria(prof.especialidade, servico.categoria)) {
+          atendeTodos = false;
+          break;
+        }
+      }
+      if (!atendeTodos) continue;
+
+      // 2. Verificar conflito
       const conflitoProf = await get(
         `
           SELECT id
@@ -166,7 +217,15 @@ async function criarAgendamento(payload) {
     }
 
     if (!profissionalLivreEncontrado) {
-      throw new Error("Nao ha profissional disponivel para este horario.");
+      // Verificar se há algum profissional capacitado, mesmo que ocupado
+      const algumQualificado = profissionais.some(prof => 
+        servicosSelecionados.every(servico => profissionalAtendeCategoria(prof.especialidade, servico.categoria))
+      );
+      if (!algumQualificado) {
+        throw new Error("Nenhum profissional cadastrado atende a todas as categorias dos servicos selecionados.");
+      } else {
+        throw new Error("Nao ha profissional qualificado disponivel para este horario.");
+      }
     }
   } else {
     throw new Error("Nenhum profissional cadastrado atende a todos os servicos selecionados.");
