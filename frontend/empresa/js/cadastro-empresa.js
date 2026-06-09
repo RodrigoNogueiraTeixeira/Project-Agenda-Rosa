@@ -20,6 +20,7 @@ function obterValor(id) {
   return campo ? String(campo.value).trim() : "";
 }
 
+// Reune os valores preenchidos no formulario.
 function montarDadosEmpresa() {
   return {
     nomeResponsavel: obterValor("nome-completo-profissional"),
@@ -31,6 +32,7 @@ function montarDadosEmpresa() {
 }
 
 function validarFormulario(dados, confirmarSenha) {
+  // Confere os campos antes de enviar para o backend.
   if (
     !dados.nomeResponsavel ||
     !dados.telefone ||
@@ -69,7 +71,7 @@ async function cadastrarEmpresa(event) {
     return;
   }
 
-  // Evita que o formulario seja enviado duas vezes.
+  // Evita o envio repetido enquanto o cadastro esta sendo salvo.
   botaoCadastrar.disabled = true;
   botaoCadastrar.textContent = "Cadastrando...";
 

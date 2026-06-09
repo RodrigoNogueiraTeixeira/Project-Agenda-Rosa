@@ -1,17 +1,51 @@
-const { run, get, all } = require("../../config/database");
+const { run, get, all, transaction } = require("../../config/database");
 
 function selecionarCamposProfissional() {
   return `SELECT
     id,
-    empresa_id AS empresaId,
+    empresa_id AS "empresaId",
     nome,
     telefone,
     email,
-    especialidade,
     ativo,
-    criado_em AS criadoEm,
-    atualizado_em AS atualizadoEm
+    criado_em AS "criadoEm",
+    atualizado_em AS "atualizadoEm"
   FROM profissionais`;
+}
+
+// Adiciona os servicos atendidos em cada profissional.
+async function adicionarServicos(profissionais, empresaId) {
+  if (profissionais.length === 0) {
+    return profissionais;
+  }
+
+  const vinculos = await all(
+    `SELECT
+      ps.profissional_id AS "profissionalId",
+      s.id,
+      s.nome
+    FROM profissional_servicos ps
+    INNER JOIN profissionais p ON p.id = ps.profissional_id
+    INNER JOIN servicos s ON s.id = ps.servico_id
+    WHERE p.empresa_id = ?
+    ORDER BY s.nome`,
+    [empresaId]
+  );
+
+  for (const profissional of profissionais) {
+    profissional.servicos = [];
+
+    for (const vinculo of vinculos) {
+      if (Number(vinculo.profissionalId) === Number(profissional.id)) {
+        profissional.servicos.push({
+          id: Number(vinculo.id),
+          nome: vinculo.nome,
+        });
+      }
+    }
+  }
+
+  return profissionais;
 }
 
 async function listarPorEmpresa(filtros) {
@@ -22,69 +56,146 @@ async function listarPorEmpresa(filtros) {
     filtroAtivo = "AND ativo = 1";
   }
 
-  return all(
+  const profissionais = await all(
     `${selecionarCamposProfissional()}
     WHERE empresa_id = ?
     ${filtroAtivo}
     ORDER BY nome`,
     params
   );
+
+  return adicionarServicos(profissionais, filtros.empresaId);
 }
 
 async function buscarPorId(id, empresaId) {
-  return get(
+  const profissional = await get(
     `${selecionarCamposProfissional()}
     WHERE id = ? AND empresa_id = ?`,
     [id, empresaId]
   );
+
+  if (!profissional) {
+    return null;
+  }
+
+  const profissionais = await adicionarServicos(
+    [profissional],
+    empresaId
+  );
+
+  return profissionais[0];
+}
+
+function montarMarcadores(quantidade) {
+  const marcadores = [];
+
+  for (let indice = 0; indice < quantidade; indice += 1) {
+    marcadores.push("?");
+  }
+
+  return marcadores.join(", ");
+}
+
+// Confere se todos os servicos pertencem a empresa.
+async function validarServicos(tx, empresaId, servicosIds) {
+  const marcadores = montarMarcadores(servicosIds.length);
+  const servicos = await tx.all(
+    `SELECT id
+    FROM servicos
+    WHERE empresa_id = ?
+      AND id IN (${marcadores})`,
+    [empresaId, ...servicosIds]
+  );
+
+  if (servicos.length !== servicosIds.length) {
+    throw new Error("Selecione somente servicos cadastrados pela empresa.");
+  }
+}
+
+async function salvarVinculos(tx, profissionalId, servicosIds) {
+  for (const servicoId of servicosIds) {
+    await tx.run(
+      `INSERT INTO profissional_servicos (profissional_id, servico_id)
+      VALUES (?, ?)`,
+      [profissionalId, servicoId]
+    );
+  }
 }
 
 async function criar(dados) {
-  const resultado = await run(
-    `INSERT INTO profissionais (
-      empresa_id,
-      nome,
-      telefone,
-      email,
-      especialidade,
-      ativo
-    ) VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      dados.empresaId,
-      String(dados.nome).trim(),
-      dados.telefone ? String(dados.telefone).trim() : null,
-      dados.email ? String(dados.email).trim() : null,
-      dados.especialidade ? String(dados.especialidade).trim() : null,
-      dados.status === "inativo" ? 0 : 1,
-    ]
-  );
+  const profissionalId = await transaction(async function (tx) {
+    await validarServicos(tx, dados.empresaId, dados.servicosIds);
 
-  return buscarPorId(resultado.lastID, dados.empresaId);
+    const resultado = await tx.run(
+      `INSERT INTO profissionais (
+        empresa_id,
+        nome,
+        telefone,
+        email,
+        especialidade,
+        ativo
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        dados.empresaId,
+        String(dados.nome).trim(),
+        dados.telefone ? String(dados.telefone).trim() : null,
+        dados.email ? String(dados.email).trim() : null,
+        null,
+        dados.status === "inativo" ? 0 : 1,
+      ]
+    );
+
+    await salvarVinculos(tx, resultado.lastID, dados.servicosIds);
+    return resultado.lastID;
+  });
+
+  return buscarPorId(profissionalId, dados.empresaId);
 }
 
 async function atualizar(id, dados) {
-  const resultado = await run(
-    `UPDATE profissionais
-    SET
-      nome = ?,
-      telefone = ?,
-      email = ?,
-      especialidade = ?,
-      ativo = ?,
-      atualizado_em = CURRENT_TIMESTAMP
-    WHERE id = ? AND empresa_id = ?`,
-    [
-      String(dados.nome).trim(),
-      dados.telefone ? String(dados.telefone).trim() : null,
-      dados.email ? String(dados.email).trim() : null,
-      dados.especialidade ? String(dados.especialidade).trim() : null,
-      dados.status === "inativo" ? 0 : 1,
-      id,
-      dados.empresaId,
-    ]
-  );
+  const atualizado = await transaction(async function (tx) {
+    const profissional = await tx.get(
+      "SELECT id FROM profissionais WHERE id = ? AND empresa_id = ?",
+      [id, dados.empresaId]
+    );
 
-  if (resultado.changes === 0) {
+    if (!profissional) {
+      return false;
+    }
+
+    await validarServicos(tx, dados.empresaId, dados.servicosIds);
+
+    await tx.run(
+      `UPDATE profissionais
+      SET
+        nome = ?,
+        telefone = ?,
+        email = ?,
+        especialidade = ?,
+        ativo = ?,
+        atualizado_em = CURRENT_TIMESTAMP
+      WHERE id = ? AND empresa_id = ?`,
+      [
+        String(dados.nome).trim(),
+        dados.telefone ? String(dados.telefone).trim() : null,
+        dados.email ? String(dados.email).trim() : null,
+        null,
+        dados.status === "inativo" ? 0 : 1,
+        id,
+        dados.empresaId,
+      ]
+    );
+
+    await tx.run(
+      "DELETE FROM profissional_servicos WHERE profissional_id = ?",
+      [id]
+    );
+    await salvarVinculos(tx, id, dados.servicosIds);
+
+    return true;
+  });
+
+  if (!atualizado) {
     return null;
   }
 

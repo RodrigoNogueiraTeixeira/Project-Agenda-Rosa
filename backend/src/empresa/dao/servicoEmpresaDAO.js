@@ -3,16 +3,16 @@ const { run, get, all } = require("../../config/database");
 function selecionarCamposServico() {
   return `SELECT
     id,
-    empresa_id AS empresaId,
+    empresa_id AS "empresaId",
     nome,
     categoria,
     preco,
-    preco_centavos AS precoCentavos,
-    duracao_minutos AS duracaoMinutos,
+    preco_centavos AS "precoCentavos",
+    duracao_minutos AS "duracaoMinutos",
     descricao,
     status,
-    criado_em AS criadoEm,
-    atualizado_em AS atualizadoEm
+    criado_em AS "criadoEm",
+    atualizado_em AS "atualizadoEm"
   FROM servicos`;
 }
 

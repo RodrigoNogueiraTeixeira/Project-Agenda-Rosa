@@ -7,12 +7,17 @@ function horaValida(hora) {
 }
 
 function converterHoraParaMinutos(hora) {
-  const [horas, minutos] = String(hora).split(":").map(Number);
+  const partes = String(hora).split(":");
+  const horas = Number(partes[0]);
+  const minutos = Number(partes[1]);
+
   return horas * 60 + minutos;
 }
 
+// Soma a duracao do servico ao horario inicial.
 function calcularHorarioFim(horarioInicio, duracaoMinutos) {
-  const totalMinutos = converterHoraParaMinutos(horarioInicio) + duracaoMinutos;
+  const inicioEmMinutos = converterHoraParaMinutos(horarioInicio);
+  const totalMinutos = inicioEmMinutos + duracaoMinutos;
   const horas = String(Math.floor(totalMinutos / 60)).padStart(2, "0");
   const minutos = String(totalMinutos % 60).padStart(2, "0");
 
@@ -20,11 +25,16 @@ function calcularHorarioFim(horarioInicio, duracaoMinutos) {
 }
 
 function obterDiaSemana(data) {
-  return new Date(`${data}T00:00:00`).getDay();
+  const dataAgendamento = new Date(`${data}T00:00:00`);
+  return dataAgendamento.getDay();
 }
 
 function horariosSobrepostos(inicioA, fimA, inicioB, fimB) {
-  return inicioA < fimB && fimA > inicioB;
+  if (inicioA < fimB && fimA > inicioB) {
+    return true;
+  }
+
+  return false;
 }
 
 function validarDadosCadastro(dados) {
@@ -43,56 +53,61 @@ function validarDadosCadastro(dados) {
   return null;
 }
 
+// Confere funcionamento, intervalo, bloqueios e conflitos.
 async function validarRegrasAgendamento(dados, servico, horarioFim) {
   const diaSemana = obterDiaSemana(dados.dataAgendamento);
-  const horarioFuncionamento = await agendamentoRepository.buscarHorarioFuncionamento(
-    dados.empresaId,
-    diaSemana
-  );
+  const horarioFuncionamento =
+    await agendamentoRepository.buscarHorarioFuncionamento(
+      dados.empresaId,
+      diaSemana
+    );
 
   if (!horarioFuncionamento || !horarioFuncionamento.abre) {
     return "O estabelecimento nao abre neste dia.";
   }
 
-  if (
-    dados.horarioInicio < horarioFuncionamento.horarioAbertura ||
-    horarioFim > horarioFuncionamento.horarioFechamento
-  ) {
+  const antesDaAbertura =
+    dados.horarioInicio < horarioFuncionamento.horarioAbertura;
+  const depoisDoFechamento =
+    horarioFim > horarioFuncionamento.horarioFechamento;
+
+  if (antesDaAbertura || depoisDoFechamento) {
     return "O agendamento esta fora do horario de funcionamento.";
   }
 
   if (
     horarioFuncionamento.intervaloInicio &&
-    horarioFuncionamento.intervaloFim &&
-    horariosSobrepostos(
+    horarioFuncionamento.intervaloFim
+  ) {
+    const coincideComIntervalo = horariosSobrepostos(
       dados.horarioInicio,
       horarioFim,
       horarioFuncionamento.intervaloInicio,
       horarioFuncionamento.intervaloFim
-    )
-  ) {
-    return "O agendamento coincide com o intervalo do estabelecimento.";
+    );
+
+    if (coincideComIntervalo) {
+      return "O agendamento coincide com o intervalo do estabelecimento.";
+    }
   }
 
-  const existeBloqueio = await agendamentoRepository.existeBloqueioNoHorario({
+  const dadosDoHorario = {
     empresaId: dados.empresaId,
     profissionalId: dados.profissionalId,
     dataAgendamento: dados.dataAgendamento,
     horarioInicio: dados.horarioInicio,
-    horarioFim,
-  });
+    horarioFim: horarioFim,
+  };
+
+  const existeBloqueio =
+    await agendamentoRepository.existeBloqueioNoHorario(dadosDoHorario);
 
   if (existeBloqueio) {
     return "Este horario esta bloqueado para o profissional.";
   }
 
-  const existeConflito = await agendamentoRepository.existeAgendamentoNoHorario({
-    empresaId: dados.empresaId,
-    profissionalId: dados.profissionalId,
-    dataAgendamento: dados.dataAgendamento,
-    horarioInicio: dados.horarioInicio,
-    horarioFim,
-  });
+  const existeConflito =
+    await agendamentoRepository.existeAgendamentoNoHorario(dadosDoHorario);
 
   if (existeConflito) {
     return "Este horario ja possui agendamento.";
@@ -105,42 +120,109 @@ async function validarRegrasAgendamento(dados, servico, horarioFim) {
   return null;
 }
 
+// Converte nomes antigos para o status salvo atualmente.
+function obterStatusFinal(status) {
+  if (status === "confirmado") {
+    return "agendado";
+  }
+
+  if (status === "realizado") {
+    return "concluido";
+  }
+
+  if (
+    status === "pendente" ||
+    status === "agendado" ||
+    status === "concluido" ||
+    status === "cancelado"
+  ) {
+    return status;
+  }
+
+  return null;
+}
+
+function transicaoPermitida(statusAtual, statusNovo) {
+  if (statusNovo === statusAtual) {
+    return true;
+  }
+
+  if (statusAtual === "pendente") {
+    return statusNovo === "agendado" || statusNovo === "cancelado";
+  }
+
+  if (statusAtual === "agendado") {
+    return statusNovo === "concluido" || statusNovo === "cancelado";
+  }
+
+  return false;
+}
+
 function podeCancelar(agendamento) {
   const dataHoraAgendamento = new Date(
     `${agendamento.dataAgendamento}T${agendamento.horarioInicio}:00`
   );
+  const prazoEmMilissegundos =
+    PRAZO_CANCELAMENTO_HORAS * 60 * 60 * 1000;
   const limiteCancelamento = new Date(
-    dataHoraAgendamento.getTime() - PRAZO_CANCELAMENTO_HORAS * 60 * 60 * 1000
+    dataHoraAgendamento.getTime() - prazoEmMilissegundos
   );
 
   return new Date() <= limiteCancelamento;
 }
 
+// Prepara os dados usados no cadastro.
+function montarDadosAgendamento(dados, horarioFim) {
+  return {
+    empresaId: dados.empresaId,
+    servicoId: dados.servicoId,
+    profissionalId: dados.profissionalId || null,
+    clienteId: dados.clienteId || null,
+    nomeCliente: dados.nomeCliente,
+    telefoneCliente: dados.telefoneCliente,
+    emailCliente: dados.emailCliente,
+    dataAgendamento: dados.dataAgendamento,
+    horarioInicio: dados.horarioInicio,
+    horarioFim: horarioFim,
+    observacoes: dados.observacoes,
+  };
+}
+
 async function listarAgendamentos(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const agendamentos = await agendamentoRepository.listarPorEmpresa(req.query);
+    const agendamentos =
+      await agendamentoRepository.listarPorEmpresa(req.query);
+
     return res.json(agendamentos);
   } catch (error) {
     console.error("Erro ao listar agendamentos:", error);
-    return res.status(500).json({ message: "Erro interno ao listar agendamentos." });
+    return res.status(500).json({
+      message: "Erro interno ao listar agendamentos.",
+    });
   }
 }
 
 async function listarProfissionais(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const profissionais = await agendamentoRepository.listarProfissionaisAtivos(empresaId);
+    const profissionais =
+      await agendamentoRepository.listarProfissionaisAtivos(empresaId);
+
     return res.json(profissionais);
   } catch (error) {
     console.error("Erro ao listar profissionais da agenda:", error);
@@ -155,7 +237,9 @@ async function cadastrarAgendamento(req, res) {
     const erroValidacao = validarDadosCadastro(req.body);
 
     if (erroValidacao) {
-      return res.status(400).json({ message: erroValidacao });
+      return res.status(400).json({
+        message: erroValidacao,
+      });
     }
 
     const servico = await agendamentoRepository.buscarServicoDaEmpresa(
@@ -165,83 +249,82 @@ async function cadastrarAgendamento(req, res) {
 
     if (!servico) {
       return res.status(400).json({
-        message: "O cliente so pode agendar servicos disponiveis no estabelecimento.",
+        message:
+          "O cliente so pode agendar servicos disponiveis no estabelecimento.",
       });
     }
 
-    const horarioFim = calcularHorarioFim(req.body.horarioInicio, servico.duracaoMinutos);
-    const erroRegra = await validarRegrasAgendamento(req.body, servico, horarioFim);
+    const horarioFim = calcularHorarioFim(
+      req.body.horarioInicio,
+      servico.duracaoMinutos
+    );
+    const erroRegra = await validarRegrasAgendamento(
+      req.body,
+      servico,
+      horarioFim
+    );
 
     if (erroRegra) {
-      return res.status(400).json({ message: erroRegra });
+      return res.status(400).json({
+        message: erroRegra,
+      });
     }
 
-    const agendamento = await agendamentoRepository.criar({
-      empresaId: req.body.empresaId,
-      servicoId: req.body.servicoId,
-      profissionalId: req.body.profissionalId || null,
-      clienteId: req.body.clienteId || null,
-      nomeCliente: req.body.nomeCliente,
-      telefoneCliente: req.body.telefoneCliente,
-      emailCliente: req.body.emailCliente,
-      dataAgendamento: req.body.dataAgendamento,
-      horarioInicio: req.body.horarioInicio,
-      horarioFim,
-      observacoes: req.body.observacoes,
-    });
+    const dadosAgendamento = montarDadosAgendamento(
+      req.body,
+      horarioFim
+    );
+    const agendamento =
+      await agendamentoRepository.criar(dadosAgendamento);
 
     return res.status(201).json({
       message: "Agendamento cadastrado com sucesso.",
-      agendamento,
+      agendamento: agendamento,
     });
   } catch (error) {
     console.error("Erro ao cadastrar agendamento:", error);
-    return res.status(500).json({ message: "Erro interno ao cadastrar agendamento." });
+    return res.status(500).json({
+      message: "Erro interno ao cadastrar agendamento.",
+    });
   }
 }
 
 async function atualizarStatus(req, res) {
   try {
-    const { empresaId, status } = req.body;
-    const statusCanonicos = {
-      confirmado: "agendado",
-      realizado: "concluido",
-      pendente: "pendente",
-      agendado: "agendado",
-      concluido: "concluido",
-      cancelado: "cancelado",
-    };
+    const empresaId = req.body.empresaId;
+    const statusRecebido = req.body.status;
 
-    if (!empresaId || !status) {
-      return res.status(400).json({ message: "Informe empresa e status." });
+    if (!empresaId || !statusRecebido) {
+      return res.status(400).json({
+        message: "Informe empresa e status.",
+      });
     }
 
-    if (!statusCanonicos[status]) {
-      return res.status(400).json({ message: "Status de agendamento invalido." });
+    const statusFinal = obterStatusFinal(statusRecebido);
+
+    if (!statusFinal) {
+      return res.status(400).json({
+        message: "Status de agendamento invalido.",
+      });
     }
 
-    const statusFinal = statusCanonicos[status];
-
-    const agendamentoAtual = await agendamentoRepository.buscarPorId(req.params.id, empresaId);
+    const agendamentoAtual = await agendamentoRepository.buscarPorId(
+      req.params.id,
+      empresaId
+    );
 
     if (!agendamentoAtual) {
-      return res.status(404).json({ message: "Agendamento nao encontrado." });
+      return res.status(404).json({
+        message: "Agendamento nao encontrado.",
+      });
     }
 
-    const statusAtual = statusCanonicos[agendamentoAtual.status] || agendamentoAtual.status;
-    const transicoesPermitidas = {
-      pendente: ["agendado", "cancelado"],
-      agendado: ["concluido", "cancelado"],
-      concluido: [],
-      cancelado: [],
-    };
+    const statusAtual = obterStatusFinal(agendamentoAtual.status);
 
-    if (
-      statusFinal !== statusAtual &&
-      !(transicoesPermitidas[statusAtual] || []).includes(statusFinal)
-    ) {
+    if (!transicaoPermitida(statusAtual, statusFinal)) {
       return res.status(409).json({
-        message: "Esta alteracao de status nao e permitida para o agendamento.",
+        message:
+          "Esta alteracao de status nao e permitida para o agendamento.",
       });
     }
 
@@ -259,7 +342,7 @@ async function atualizarStatus(req, res) {
 
     return res.json({
       message: "Status do agendamento atualizado com sucesso.",
-      agendamento,
+      agendamento: agendamento,
     });
   } catch (error) {
     console.error("Erro ao atualizar status do agendamento:", error);

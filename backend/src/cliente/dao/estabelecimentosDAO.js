@@ -111,7 +111,7 @@ async function atualizarCoordenadas(id, latitude, longitude) {
 }
 
 // Busca profissionais ativos da empresa do estabelecimento.
-async function listarProfissionaisPorEstabelecimento(estabelecimentoId) {
+async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicosIds = []) {
   const estabelecimento = await get(
     "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
@@ -125,6 +125,28 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId) {
       [estabelecimentoId]
     );
     empresaId = servico ? servico.empresa_id : estabelecimentoId;
+  }
+
+  if (servicosIds.length > 0) {
+    const marcadores = servicosIds.map(() => "?").join(", ");
+
+    // O profissional precisa estar vinculado a todos os servicos selecionados.
+    return all(
+      `
+        SELECT p.id, p.nome
+        FROM profissionais p
+        INNER JOIN profissional_servicos ps ON ps.profissional_id = p.id
+        INNER JOIN servicos s ON s.id = ps.servico_id
+        WHERE p.empresa_id = ?
+          AND p.ativo = 1
+          AND s.estabelecimento_id = ?
+          AND ps.servico_id IN (${marcadores})
+        GROUP BY p.id, p.nome
+        HAVING COUNT(DISTINCT ps.servico_id) = ?
+        ORDER BY p.nome
+      `,
+      [empresaId, estabelecimentoId, ...servicosIds, servicosIds.length]
+    );
   }
 
   return all(

@@ -1,69 +1,127 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const btnRedefinir = document.getElementById('btn-redefinir');
-    const msgErro = document.getElementById('mensagem-erro');
-    const msgSucesso = document.getElementById('mensagem-sucesso');
-    const formContainer = document.getElementById('form-container');
+document.addEventListener("DOMContentLoaded", function () {
+  const botaoRedefinir = document.getElementById("btn-redefinir");
+  const mensagemErro = document.getElementById("mensagem-erro");
+  const mensagemSucesso = document.getElementById("mensagem-sucesso");
+  const formContainer = document.getElementById("form-container");
+  const parametros = new URLSearchParams(window.location.search);
+  const token = parametros.get("token");
 
-    // Captura o token da URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+  if (!token) {
+    mostrarMensagem(
+      mensagemErro,
+      "Link invalido. Nenhum token encontrado."
+    );
+    formContainer.style.display = "none";
+    return;
+  }
 
-    if (!token) {
-        msgErro.textContent = "Link inválido. Nenhum token encontrado.";
-        msgErro.style.display = 'block';
-        formContainer.style.display = 'none';
-        return;
-    }
-
-    btnRedefinir.addEventListener('click', async () => {
-        const novaSenha = document.getElementById('nova-senha').value;
-        const confirmarSenha = document.getElementById('confirmar-senha').value;
-
-        msgErro.style.display = 'none';
-        msgSucesso.style.display = 'none';
-
-        if (!novaSenha || !confirmarSenha) {
-            msgErro.textContent = "Por favor, preencha as duas senhas.";
-            msgErro.style.display = 'block';
-            return;
-        }
-
-        if (novaSenha !== confirmarSenha) {
-            msgErro.textContent = "As senhas não coincidem.";
-            msgErro.style.display = 'block';
-            return;
-        }
-
-        if (novaSenha.length < 6) {
-            msgErro.textContent = "A nova senha deve ter pelo menos 6 caracteres.";
-            msgErro.style.display = 'block';
-            return;
-        }
-
-        var API_BASE_URL = (window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3001/api" : "/api")).replace(/\/+$/, '');
-
-        try {
-            const resposta = await fetch(`${API_BASE_URL}/redefinir-senha`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: token, novaSenha: novaSenha })
-            });
-
-            const dados = await resposta.json();
-
-            if (resposta.ok && dados.success) {
-                msgSucesso.textContent = "Senha redefinida com sucesso! Você já pode fazer login.";
-                msgSucesso.style.display = 'block';
-                formContainer.style.display = 'none'; // Esconde o form
-            } else {
-                msgErro.textContent = dados.message || "Erro ao redefinir a senha.";
-                msgErro.style.display = 'block';
-            }
-        } catch (erro) {
-            msgErro.textContent = "Erro de conexão. Tente novamente mais tarde.";
-            msgErro.style.display = 'block';
-        }
-    });
+  botaoRedefinir.addEventListener("click", function () {
+    redefinirSenha(
+      token,
+      mensagemErro,
+      mensagemSucesso,
+      formContainer
+    );
+  });
 });
+
+function obterApiBaseUrl() {
+  const apiConfigurada =
+    window.API_BASE_URL || localStorage.getItem("apiBaseUrl");
+
+  if (apiConfigurada) {
+    return apiConfigurada.replace(/\/+$/, "");
+  }
+
+  const ambienteLocal =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.protocol === "file:";
+
+  if (ambienteLocal) {
+    return "http://localhost:3001/api";
+  }
+
+  return "/api";
+}
+
+function mostrarMensagem(elemento, texto) {
+  elemento.textContent = texto;
+  elemento.style.display = "block";
+}
+
+function esconderMensagem(elemento) {
+  elemento.style.display = "none";
+}
+
+// Valida e envia a nova senha para o backend.
+async function redefinirSenha(
+  token,
+  mensagemErro,
+  mensagemSucesso,
+  formContainer
+) {
+  const novaSenha = document.getElementById("nova-senha").value;
+  const confirmarSenha =
+    document.getElementById("confirmar-senha").value;
+
+  esconderMensagem(mensagemErro);
+  esconderMensagem(mensagemSucesso);
+
+  if (!novaSenha || !confirmarSenha) {
+    mostrarMensagem(
+      mensagemErro,
+      "Por favor, preencha as duas senhas."
+    );
+    return;
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    mostrarMensagem(mensagemErro, "As senhas nao coincidem.");
+    return;
+  }
+
+  if (novaSenha.length < 6) {
+    mostrarMensagem(
+      mensagemErro,
+      "A nova senha deve ter pelo menos 6 caracteres."
+    );
+    return;
+  }
+
+  try {
+    const resposta = await fetch(
+      obterApiBaseUrl() + "/redefinir-senha",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          token: token,
+          novaSenha: novaSenha,
+        }),
+      }
+    );
+
+    const dados = await resposta.json();
+
+    if (resposta.ok && dados.success) {
+      mostrarMensagem(
+        mensagemSucesso,
+        "Senha redefinida com sucesso! Voce ja pode fazer login."
+      );
+      formContainer.style.display = "none";
+    } else {
+      mostrarMensagem(
+        mensagemErro,
+        dados.message || "Erro ao redefinir a senha."
+      );
+    }
+  } catch (error) {
+    mostrarMensagem(
+      mensagemErro,
+      "Erro de conexao. Tente novamente mais tarde."
+    );
+  }
+}
