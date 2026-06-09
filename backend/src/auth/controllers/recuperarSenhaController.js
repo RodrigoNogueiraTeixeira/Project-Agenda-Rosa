@@ -43,7 +43,7 @@ function montarUrlDoFrontend(req, token) {
     process.env.APP_BASE_URL || enderecoPadrao
   ).replace(/\/+$/, "");
 
-  return `${appBaseUrl}/login/html/RedefinirSenha.html?token=${token}`;
+  return `${appBaseUrl}/login/html/redefinir-senha.html?token=${token}`;
 }
 
 // Cria um token e envia o link sem informar se o e-mail existe.
