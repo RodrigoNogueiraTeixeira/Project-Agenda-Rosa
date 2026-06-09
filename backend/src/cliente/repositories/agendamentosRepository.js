@@ -3,41 +3,6 @@ const clientesDAO = require("../dao/clientesDAO");
 const estabelecimentosRepository = require("./estabelecimentosRepository");
 const pagamentosDAO = require("../dao/pagamentosDAO");
 const pagamentosRepository = require("./pagamentosRepository");
-const { normalizarTexto } = require("../../utils/texto");
-
-function profissionalAtendeCategoria(especialidade, categoria) {
-  if (!especialidade) return true;
-  if (!categoria) return true;
-
-  const espNorm = normalizarTexto(especialidade);
-  const catNorm = normalizarTexto(categoria);
-
-  if (espNorm === catNorm) return true;
-  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
-
-  const sinonimos = {
-    "unha": ["manicure", "pedicure", "unhas"],
-    "unhas": ["manicure", "pedicure", "unha"],
-    "manicure": ["unha", "unhas", "pedicure"],
-    "pedicure": ["unha", "unhas", "manicure"],
-    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
-    "estetica facial": ["estetica", "estetica feminino"],
-    "estetica corporal": ["estetica", "estetica feminino"],
-    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
-    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
-    "cabeleireiro": ["cabelo", "corte"],
-    "cabeleireira": ["cabelo", "corte"]
-  };
-
-  const listaEsp = sinonimos[espNorm] || [];
-  if (listaEsp.includes(catNorm)) return true;
-
-  const listaCat = sinonimos[catNorm] || [];
-  if (listaCat.includes(espNorm)) return true;
-
-  return false;
-}
-
 function adicionarMinutos(horarioStr, minutos) {
   if (!horarioStr || !horarioStr.includes(":")) return horarioStr;
   const [h, m] = horarioStr.split(":").map(Number);
@@ -134,42 +99,34 @@ async function criarAgendamento(payload) {
   
   const horarioFim = `${String(horaFimNum).padStart(2, '0')}:${String(minFimNum).padStart(2, '0')}`;
 
-  // Buscar profissionais para resolver nomes e IDs e fazer auto-atribuição se "Sem preferência"
+  // Busca somente profissionais vinculados a todos os servicos escolhidos.
   const estabelecimentosDAO = require("../dao/estabelecimentosDAO");
-  const profissionais = await estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId);
+  const servicosIdsValidos = servicosSelecionados.map((servico) => Number(servico.id));
+  const profissionais = await estabelecimentosDAO.listarProfissionaisPorEstabelecimento(
+    estabelecimentoId,
+    servicosIdsValidos
+  );
   
   let profissionalNome = "Sem preferência";
   let finalProfissionalId = null;
 
   if (profissionalId && profissionalId !== "qualquer" && profissionalId !== "") {
-    const { get } = require("../../config/database");
-    const profRow = await get("SELECT nome, especialidade FROM profissionais WHERE id = ?", [Number(profissionalId)]);
+    const profRow = profissionais.find(
+      (profissional) => Number(profissional.id) === Number(profissionalId)
+    );
+
     if (profRow) {
-      // Validar capacitação do profissional para os serviços selecionados
-      for (const servico of servicosSelecionados) {
-        if (!profissionalAtendeCategoria(profRow.especialidade, servico.categoria)) {
-          throw new Error(`O profissional ${profRow.nome} nao atende a categoria '${servico.categoria}' do servico '${servico.nome}'.`);
-        }
-      }
       profissionalNome = profRow.nome;
       finalProfissionalId = Number(profissionalId);
     } else {
-      throw new Error("Profissional selecionado nao encontrado.");
+      throw new Error("O profissional selecionado nao atende a todos os servicos escolhidos.");
     }
   } else if (profissionais.length > 0) {
-    // "Sem preferência": Auto-atribui o primeiro profissional ativo que estiver livre E QUE ATENDA TODAS AS CATEGORIAS DOS SERVIÇOS SELECIONADOS
+    // Sem preferencia: escolhe o primeiro profissional vinculado que estiver livre.
     const { get } = require("../../config/database");
-    let profQualificadoEncontrado = false;
-    for (const prof of profissionais) {
-      let atendeTodos = true;
-      for (const servico of servicosSelecionados) {
-        if (!profissionalAtendeCategoria(prof.especialidade, servico.categoria)) {
-          atendeTodos = false;
-          break;
-        }
-      }
-      if (!atendeTodos) continue;
+    let profissionalLivreEncontrado = false;
 
+    for (const prof of profissionais) {
       const conflitoProf = await get(
         `
           SELECT id
@@ -203,20 +160,16 @@ async function criarAgendamento(payload) {
       if (!conflitoProf) {
         profissionalNome = prof.nome;
         finalProfissionalId = prof.id;
-        profQualificadoEncontrado = true;
+        profissionalLivreEncontrado = true;
         break;
       }
     }
-    if (!profQualificadoEncontrado) {
-      const algumQualificado = profissionais.some(prof => 
-        servicosSelecionados.every(servico => profissionalAtendeCategoria(prof.especialidade, servico.categoria))
-      );
-      if (!algumQualificado) {
-        throw new Error("Nenhum profissional cadastrado atende a todas as categorias dos servicos selecionados.");
-      } else {
-        throw new Error("Nao ha profissional qualificado disponivel para este horario.");
-      }
+
+    if (!profissionalLivreEncontrado) {
+      throw new Error("Nao ha profissional disponivel para este horario.");
     }
+  } else {
+    throw new Error("Nenhum profissional cadastrado atende a todos os servicos selecionados.");
   }
 
   // Validar se há conflito para o profissional selecionado (usando o cálculo em JS para consistência total com a exibição de horários)

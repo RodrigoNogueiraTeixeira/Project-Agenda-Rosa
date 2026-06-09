@@ -79,10 +79,19 @@ async function horariosDisponiveis(req, res) {
   }
 }
 
-// GET /api/estabelecimentos/:id/profissionais
+// GET /api/estabelecimentos/:id/profissionais?servicosIds=1,2
 async function listarProfissionais(req, res) {
   try {
-    const profissionais = await estabelecimentosRepository.listarProfissionais(req.params.id);
+    const servicosIds = String(req.query.servicosIds || "")
+      .split(",")
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    const idsSemRepeticao = [...new Set(servicosIds)];
+
+    const profissionais = await estabelecimentosRepository.listarProfissionais(
+      req.params.id,
+      idsSemRepeticao
+    );
     res.status(200).json({ profissionais });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao buscar profissionais.", detalhes: error.message });
