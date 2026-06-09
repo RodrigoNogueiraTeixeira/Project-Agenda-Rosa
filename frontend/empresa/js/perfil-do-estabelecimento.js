@@ -4,13 +4,9 @@ const API_CATEGORIAS_URL = "/api/categorias";
 // Elementos principais da tela.
 const formPerfil = document.getElementById("form-perfil-estabelecimento");
 const botaoSalvarPerfil = document.querySelector(".btn-salvar");
-const botaoEditarPerfil = document.querySelector(".btn-editar");
 const campoCategoria = document.getElementById("categoria-principal");
 const campoFotoLogo = document.getElementById("foto-logo");
 const previewLogo = document.getElementById("preview-logo");
-const camposPerfil = formPerfil
-  ? formPerfil.querySelectorAll("input:not(#foto-logo), select, textarea")
-  : [];
 
 let logoUrlAtual = "";
 
@@ -26,17 +22,6 @@ function obterValor(id) {
   }
 
   return campo.value.trim();
-}
-
-// Habilita ou bloqueia os campos do perfil.
-function definirModoEdicao(editando) {
-  for (const campo of camposPerfil) {
-    campo.disabled = !editando;
-  }
-
-  botaoSalvarPerfil.disabled = !editando;
-  botaoEditarPerfil.disabled = editando;
-  campoFotoLogo.disabled = !editando;
 }
 
 // Mostra a logo salva ou escolhida pela empresa.
@@ -215,7 +200,6 @@ async function carregarPerfil() {
     }
 
     preencherPerfil(perfil);
-    definirModoEdicao(false);
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
     alert(error.message);
@@ -253,20 +237,13 @@ async function salvarPerfil(event) {
       resultado.perfil.nomeEstabelecimento || ""
     );
     alert(resultado.message);
-    definirModoEdicao(false);
   } catch (error) {
     console.error("Erro ao salvar perfil:", error);
     alert(error.message);
-    definirModoEdicao(true);
   } finally {
+    botaoSalvarPerfil.disabled = false;
     botaoSalvarPerfil.textContent = "Salvar";
   }
-}
-
-if (botaoEditarPerfil) {
-  botaoEditarPerfil.addEventListener("click", function () {
-    definirModoEdicao(true);
-  });
 }
 
 if (campoFotoLogo) {
@@ -276,8 +253,6 @@ if (campoFotoLogo) {
 if (formPerfil) {
   formPerfil.addEventListener("submit", salvarPerfil);
 }
-
-definirModoEdicao(false);
 
 // As categorias devem aparecer antes dos dados do perfil.
 carregarCategorias().finally(carregarPerfil);
