@@ -239,14 +239,14 @@ async function criarAgendamento(payload) {
   );
 
   if (horarioFuncionamento?.empresa_id) {
-    if (!horarioFuncionamento.abre || !horarioFuncionamento.horario_abertura) {
+    if (horarioFuncionamento.abre === 0) {
       throw new Error("O estabelecimento nao abre nesta data.");
     }
 
-    if (
-      horario < horarioFuncionamento.horario_abertura ||
-      horarioFim > horarioFuncionamento.horario_fechamento
-    ) {
+    const abertura = horarioFuncionamento.horario_abertura || "09:00";
+    const fechamento = horarioFuncionamento.horario_fechamento || "19:00";
+
+    if (horario < abertura || horarioFim > fechamento) {
       throw new Error("O horario escolhido esta fora do funcionamento do estabelecimento.");
     }
 
