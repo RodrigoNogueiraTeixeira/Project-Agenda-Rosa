@@ -64,6 +64,30 @@ h2 {
   gap: 6px;
 }
 
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.lista-servicos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  border: 1px solid #e8c7d3;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.opcao-servico {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.opcao-servico input {
+  width: auto;
+}
+
 /* TEXTO DO LABEL */
 label {
   color: #444444;
