@@ -1,14 +1,13 @@
 const API_PERFIL_EMPRESA_URL = "/api/empresa/perfil";
 const API_CATEGORIAS_URL = "/api/categorias";
 
+// Elementos principais da tela.
 const formPerfil = document.getElementById("form-perfil-estabelecimento");
 const botaoSalvarPerfil = document.querySelector(".btn-salvar");
-const botaoEditarPerfil = document.querySelector(".btn-editar");
 const campoCategoria = document.getElementById("categoria-principal");
 const campoFotoLogo = document.getElementById("foto-logo");
 const previewLogo = document.getElementById("preview-logo");
-const camposPerfil =
-  formPerfil?.querySelectorAll("input:not(#foto-logo), select, textarea") || [];
+
 let logoUrlAtual = "";
 
 function obterEmpresaId() {
@@ -16,27 +15,44 @@ function obterEmpresaId() {
 }
 
 function obterValor(id) {
-  return document.getElementById(id)?.value.trim() || "";
+  const campo = document.getElementById(id);
+
+  if (!campo) {
+    return "";
+  }
+
+  return campo.value.trim();
 }
 
-function definirModoEdicao(editando) {
-  camposPerfil.forEach((campo) => {
-    campo.disabled = !editando;
-  });
-
-  botaoSalvarPerfil.disabled = !editando;
-  botaoEditarPerfil.disabled = editando;
-  campoFotoLogo.disabled = !editando;
-}
-
-// Mostra a imagem salva ou selecionada pela empresa.
+// Mostra a logo salva ou escolhida pela empresa.
 function mostrarLogo(logoUrl) {
   logoUrlAtual = logoUrl || "";
   previewLogo.src = logoUrlAtual;
-  previewLogo.style.display = logoUrlAtual ? "block" : "none";
+
+  if (logoUrlAtual) {
+    previewLogo.style.display = "block";
+  } else {
+    previewLogo.style.display = "none";
+  }
 }
 
-// Converte a imagem para texto para que ela possa ser salva no banco.
+function tipoDeImagemValido(tipo) {
+  if (tipo === "image/png") {
+    return true;
+  }
+
+  if (tipo === "image/jpeg") {
+    return true;
+  }
+
+  if (tipo === "image/webp") {
+    return true;
+  }
+
+  return false;
+}
+
+// Valida e prepara a imagem para ser salva.
 function selecionarLogo() {
   const arquivo = campoFotoLogo.files[0];
 
@@ -44,8 +60,7 @@ function selecionarLogo() {
     return;
   }
 
-  const tiposAceitos = ["image/png", "image/jpeg", "image/webp"];
-  if (!tiposAceitos.includes(arquivo.type)) {
+  if (!tipoDeImagemValido(arquivo.type)) {
     alert("Selecione uma imagem PNG, JPG ou WEBP.");
     campoFotoLogo.value = "";
     return;
@@ -58,70 +73,90 @@ function selecionarLogo() {
   }
 
   const leitor = new FileReader();
-  leitor.onload = () => mostrarLogo(leitor.result);
+
+  leitor.onload = function () {
+    mostrarLogo(leitor.result);
+  };
+
   leitor.readAsDataURL(arquivo);
 }
 
-// Carrega as categorias criadas no painel do administrador.
+// Carrega somente as categorias ativas.
 async function carregarCategorias() {
   try {
     const resposta = await fetch(API_CATEGORIAS_URL);
-    const resultado = await resposta.json().catch(() => ({}));
+    const resultado = await resposta.json().catch(function () {
+      return {};
+    });
 
     if (!resposta.ok || !resultado.success) {
-      throw new Error(resultado.message || "Nao foi possivel carregar as categorias.");
+      throw new Error(
+        resultado.message || "Nao foi possivel carregar as categorias."
+      );
     }
 
-    const categoriasAtivas = resultado.data.filter((categoria) => {
-      return String(categoria.status || "").toLowerCase() === "ativa";
-    });
+    for (const categoria of resultado.data) {
+      const status = String(categoria.status || "").toLowerCase();
 
-    categoriasAtivas.forEach((categoria) => {
-      const opcao = document.createElement("option");
-      opcao.value = categoria.nome;
-      opcao.textContent = categoria.nome;
-      campoCategoria.appendChild(opcao);
-    });
+      if (status === "ativa") {
+        const opcao = document.createElement("option");
+        opcao.value = categoria.nome;
+        opcao.textContent = categoria.nome;
+        campoCategoria.appendChild(opcao);
+      }
+    }
   } catch (error) {
     console.error("Erro ao carregar categorias:", error);
   }
 }
 
+// Mantem uma categoria antiga que ainda esteja salva no perfil.
+function adicionarCategoriaAntiga(categoria) {
+  if (!categoria) {
+    return;
+  }
+
+  let categoriaEncontrada = false;
+
+  for (const opcao of campoCategoria.options) {
+    if (opcao.value === categoria) {
+      categoriaEncontrada = true;
+      break;
+    }
+  }
+
+  if (!categoriaEncontrada) {
+    const opcao = document.createElement("option");
+    opcao.value = categoria;
+    opcao.textContent = categoria;
+    campoCategoria.appendChild(opcao);
+  }
+}
+
+function preencherCampo(id, valor) {
+  const campo = document.getElementById(id);
+
+  if (campo) {
+    campo.value = valor || "";
+  }
+}
+
+// Preenche o formulario com os dados recebidos da API.
 function preencherPerfil(perfil) {
   mostrarLogo(perfil.logoUrl);
+  adicionarCategoriaAntiga(perfil.categoriaPrincipal);
 
-  const campos = {
-    "nome-estabelecimento": perfil.nomeEstabelecimento,
-    "categoria-principal": perfil.categoriaPrincipal,
-    descricao: perfil.descricao,
-    telefone: perfil.telefone,
-    email: perfil.email,
-    cep: perfil.cep,
-    endereco: perfil.endereco,
-    numero: perfil.numero,
-    complemento: perfil.complemento,
-    bairro: perfil.bairro,
-    cidade: perfil.cidade,
-  };
-
-  Object.entries(campos).forEach(([id, valor]) => {
-    const campo = document.getElementById(id);
-    if (campo) {
-      // Mantem categorias antigas que ainda estejam salvas no perfil.
-      if (
-        id === "categoria-principal" &&
-        valor &&
-        !Array.from(campo.options).some((opcao) => opcao.value === valor)
-      ) {
-        const opcao = document.createElement("option");
-        opcao.value = valor;
-        opcao.textContent = valor;
-        campo.appendChild(opcao);
-      }
-
-      campo.value = valor || "";
-    }
-  });
+  preencherCampo("nome-estabelecimento", perfil.nomeEstabelecimento);
+  preencherCampo("categoria-principal", perfil.categoriaPrincipal);
+  preencherCampo("descricao", perfil.descricao);
+  preencherCampo("telefone", perfil.telefone);
+  preencherCampo("email", perfil.email);
+  preencherCampo("cep", perfil.cep);
+  preencherCampo("endereco", perfil.endereco);
+  preencherCampo("numero", perfil.numero);
+  preencherCampo("complemento", perfil.complemento);
+  preencherCampo("bairro", perfil.bairro);
+  preencherCampo("cidade", perfil.cidade);
 }
 
 function montarDadosPerfil() {
@@ -142,6 +177,7 @@ function montarDadosPerfil() {
   };
 }
 
+// Busca os dados atuais da empresa.
 async function carregarPerfil() {
   const empresaId = obterEmpresaId();
 
@@ -152,26 +188,29 @@ async function carregarPerfil() {
   }
 
   try {
-    const resposta = await fetch(`${API_PERFIL_EMPRESA_URL}?empresaId=${empresaId}`);
+    const resposta = await fetch(
+      `${API_PERFIL_EMPRESA_URL}?empresaId=${empresaId}`
+    );
     const perfil = await resposta.json();
 
     if (!resposta.ok) {
-      throw new Error(perfil.message || "Nao foi possivel carregar o perfil.");
+      throw new Error(
+        perfil.message || "Nao foi possivel carregar o perfil."
+      );
     }
 
     preencherPerfil(perfil);
-    definirModoEdicao(false);
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
     alert(error.message);
   }
 }
 
+// Envia as alteracoes do perfil para o backend.
 async function salvarPerfil(event) {
   event.preventDefault();
 
   const dados = montarDadosPerfil();
-
   botaoSalvarPerfil.disabled = true;
   botaoSalvarPerfil.textContent = "Salvando...";
 
@@ -183,30 +222,37 @@ async function salvarPerfil(event) {
       },
       body: JSON.stringify(dados),
     });
+
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
-      throw new Error(resultado.message || "Nao foi possivel salvar o perfil.");
+      throw new Error(
+        resultado.message || "Nao foi possivel salvar o perfil."
+      );
     }
 
     preencherPerfil(resultado.perfil);
-    localStorage.setItem("empresaNome", resultado.perfil.nomeEstabelecimento || "");
+    localStorage.setItem(
+      "empresaNome",
+      resultado.perfil.nomeEstabelecimento || ""
+    );
     alert(resultado.message);
-    definirModoEdicao(false);
   } catch (error) {
     console.error("Erro ao salvar perfil:", error);
     alert(error.message);
-    definirModoEdicao(true);
   } finally {
+    botaoSalvarPerfil.disabled = false;
     botaoSalvarPerfil.textContent = "Salvar";
   }
 }
 
-botaoEditarPerfil?.addEventListener("click", () => definirModoEdicao(true));
-campoFotoLogo?.addEventListener("change", selecionarLogo);
-formPerfil?.addEventListener("submit", salvarPerfil);
+if (campoFotoLogo) {
+  campoFotoLogo.addEventListener("change", selecionarLogo);
+}
 
-definirModoEdicao(false);
+if (formPerfil) {
+  formPerfil.addEventListener("submit", salvarPerfil);
+}
 
-// Primeiro carrega as categorias e depois os dados salvos da empresa.
+// As categorias devem aparecer antes dos dados do perfil.
 carregarCategorias().finally(carregarPerfil);

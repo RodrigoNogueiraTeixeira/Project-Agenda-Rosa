@@ -354,8 +354,8 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
   return slotsLivres;
 }
 
-async function listarProfissionais(estabelecimentoId) {
-  return estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId);
+async function listarProfissionais(estabelecimentoId, servicosIds) {
+  return estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId, servicosIds);
 }
 
 module.exports = {

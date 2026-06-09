@@ -384,9 +384,6 @@ function configurarModalAgendamento() {
           notaHorario.style.display = "block";
         }
       } else {
-        if (!verificarCapacitacaoProfissional("profissional")) {
-          return;
-        }
         if (campoHorario) {
           campoHorario.disabled = false;
         }
@@ -438,10 +435,6 @@ async function confirmarAgendamento() {
   if (!validacaoData.ok) {
     if (campoData) campoData.style.borderColor = "red";
     mostrarFeedbackAgendamento(validacaoData.mensagem, "erro");
-    return;
-  }
-
-  if (!verificarCapacitacaoProfissional("profissional")) {
     return;
   }
 
@@ -593,11 +586,8 @@ function abrirModalAgendamento(loja) {
     checkbox.setAttribute("data-categoria", String(servico.categoria || ""));
     checkbox.setAttribute("data-nome", String(servico.nome || ""));
     checkbox.onchange = () => {
-      if (checkbox.checked && !verificarCapacitacaoProfissional("servico")) {
-        return;
-      }
       atualizarTotalAgendamento();
-      atualizarHorariosDisponiveis();
+      carregarProfissionaisPorServicos();
     };
 
     const nome = document.createElement("span");
@@ -616,30 +606,8 @@ function abrirModalAgendamento(loja) {
 
   const selectProfissional = document.getElementById("profissionalAgendamento");
   if (selectProfissional) {
-    selectProfissional.innerHTML = '<option value="">Carregando...</option>';
+    selectProfissional.innerHTML = '<option value="">Selecione um servico primeiro</option>';
     selectProfissional.disabled = true;
-    
-    fetch(`${API_BASE_URL}/estabelecimentos/${loja.id}/profissionais`)
-      .then(res => res.json())
-      .then(dados => {
-        selectProfissional.innerHTML = '<option value="">Selecione o profissional</option>';
-        
-        const list = dados.profissionais || [];
-        list.forEach(p => {
-          const opt = document.createElement("option");
-          opt.value = p.id;
-          opt.textContent = p.nome + (p.especialidade ? ` - ${p.especialidade}` : "");
-          opt.setAttribute("data-especialidade", String(p.especialidade || ""));
-          opt.setAttribute("data-nome", String(p.nome || ""));
-          selectProfissional.appendChild(opt);
-        });
-        selectProfissional.disabled = false;
-      })
-      .catch(err => {
-        console.error("Erro ao carregar profissionais", err);
-        selectProfissional.innerHTML = '<option value="">Erro ao carregar profissionais</option>';
-        selectProfissional.disabled = false;
-      });
   }
 
   const campoData = document.getElementById("dataAgendamento");
@@ -804,93 +772,65 @@ window.filtrarResultados = filtrarResultados;
 window.mostrarMaisLojas = mostrarMaisLojas;
 window.agendar = agendar;
 
-function normalizarTexto(valor) {
-  return String(valor || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLowerCase();
-}
-
-function profissionalAtendeCategoria(especialidade, categoria) {
-  if (!especialidade) return true;
-  if (!categoria) return true;
-
-  const espNorm = normalizarTexto(especialidade);
-  const catNorm = normalizarTexto(categoria);
-
-  if (espNorm === catNorm) return true;
-  if (espNorm.includes(catNorm) || catNorm.includes(espNorm)) return true;
-
-  const sinonimos = {
-    "unha": ["manicure", "pedicure", "unhas"],
-    "unhas": ["manicure", "pedicure", "unha"],
-    "manicure": ["unha", "unhas", "pedicure"],
-    "pedicure": ["unha", "unhas", "manicure"],
-    "estetica": ["estetica facial", "estetica corporal", "estetica feminino"],
-    "estetica facial": ["estetica", "estetica feminino"],
-    "estetica corporal": ["estetica", "estetica feminino"],
-    "estetica feminino": ["estetica", "estetica facial", "estetica corporal"],
-    "cabelo": ["cabeleireiro", "cabeleireira", "corte"],
-    "cabeleireiro": ["cabelo", "corte"],
-    "cabeleireira": ["cabelo", "corte"]
-  };
-
-  const listaEsp = sinonimos[espNorm] || [];
-  if (listaEsp.includes(catNorm)) return true;
-
-  const listaCat = sinonimos[catNorm] || [];
-  if (listaCat.includes(espNorm)) return true;
-
-  return false;
-}
-
-function verificarCapacitacaoProfissional(elementoQueMudou) {
+// Atualiza a lista com profissionais que atendem aos servicos marcados.
+async function carregarProfissionaisPorServicos() {
   const selectProfissional = document.getElementById("profissionalAgendamento");
-  if (!selectProfissional || !selectProfissional.value) return true;
-
-  const optSelecionada = selectProfissional.options[selectProfissional.selectedIndex];
-  const especialidade = optSelecionada.getAttribute("data-especialidade") || "";
-  const nomeProf = optSelecionada.getAttribute("data-nome") || "";
-
+  const campoHorario = document.getElementById("horarioAgendamento");
+  const notaHorario = document.getElementById("nota-horario");
   const checkboxes = document.querySelectorAll("#listaServicosModal input[type='checkbox']");
-  
+  const servicosIds = [];
+
   for (const cb of checkboxes) {
     if (cb.checked) {
-      const categoria = cb.getAttribute("data-categoria") || "";
-      const nomeServico = cb.getAttribute("data-nome") || "";
-
-      if (!profissionalAtendeCategoria(especialidade, categoria)) {
-        Swal.fire({
-          title: "Profissional não capacitado",
-          text: `O profissional ${nomeProf} (${especialidade || 'Sem especialidade'}) não realiza o serviço: ${nomeServico} (${categoria || 'Sem categoria'}).`,
-          icon: "warning",
-          confirmButtonText: "Entendido"
-        });
-
-        // Resetar o que causou o conflito
-        if (elementoQueMudou === "profissional") {
-          selectProfissional.value = "";
-          // Também limpar horários
-          const campoHorario = document.getElementById("horarioAgendamento");
-          if (campoHorario) {
-            campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
-            campoHorario.disabled = true;
-            campoHorario.value = "";
-          }
-          const notaHorario = document.getElementById("nota-horario");
-          if (notaHorario) {
-            notaHorario.style.display = "block";
-          }
-        } else {
-          // Foi o checkbox do serviço
-          cb.checked = false;
-          atualizarTotalAgendamento();
-          atualizarHorariosDisponiveis();
-        }
-        return false;
-      }
+      servicosIds.push(Number(cb.value));
     }
   }
-  return true;
+
+  if (!selectProfissional) return;
+
+  selectProfissional.value = "";
+  selectProfissional.disabled = true;
+
+  if (campoHorario) {
+    campoHorario.innerHTML = '<option value="">Selecione o profissional primeiro</option>';
+    campoHorario.disabled = true;
+  }
+  if (notaHorario) notaHorario.style.display = "block";
+
+  if (servicosIds.length === 0) {
+    selectProfissional.innerHTML = '<option value="">Selecione um servico primeiro</option>';
+    return;
+  }
+
+  selectProfissional.innerHTML = '<option value="">Carregando...</option>';
+
+  try {
+    const estabelecimentoId = estadoTela.agendamentoAtual.estabelecimentoId;
+    const resposta = await fetch(
+      `${API_BASE_URL}/estabelecimentos/${estabelecimentoId}/profissionais?servicosIds=${servicosIds.join(",")}`
+    );
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(dados.erro || "Erro ao buscar profissionais.");
+    }
+
+    const profissionais = dados.profissionais || [];
+    if (profissionais.length === 0) {
+      selectProfissional.innerHTML = '<option value="">Nenhum profissional atende aos servicos</option>';
+      return;
+    }
+
+    selectProfissional.innerHTML = '<option value="">Selecione o profissional</option>';
+    for (const profissional of profissionais) {
+      const option = document.createElement("option");
+      option.value = profissional.id;
+      option.textContent = profissional.nome;
+      selectProfissional.appendChild(option);
+    }
+    selectProfissional.disabled = false;
+  } catch (error) {
+    console.error("Erro ao carregar profissionais", error);
+    selectProfissional.innerHTML = '<option value="">Erro ao carregar profissionais</option>';
+  }
 }

@@ -1,13 +1,14 @@
 const API_AGENDAMENTOS_URL = "/api/empresa/agendamentos";
 
-// Captura os principais elementos da tela da agenda.
+// Elementos principais da agenda.
 const tabelaAgendamentos = document.querySelector("tbody");
-const formFiltrosAgenda = document.querySelector("#form-filtros-agenda");
-const selectProfissional = document.querySelector("#profissional");
-const modalDetalhes = document.querySelector("#abrir-detalhes");
-const detalhesConteudo = document.querySelector("#detalhes-agendamento");
+const formFiltrosAgenda = document.getElementById("form-filtros-agenda");
+const selectProfissional = document.getElementById("profissional");
+const modalDetalhes = document.getElementById("abrir-detalhes");
+const detalhesConteudo = document.getElementById(
+  "detalhes-agendamento"
+);
 
-// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -19,7 +20,17 @@ function obterEmpresaId() {
   return empresaId;
 }
 
-// Carrega os profissionais ativos da empresa no filtro da agenda.
+function obterValor(id) {
+  const campo = document.getElementById(id);
+
+  if (!campo) {
+    return "";
+  }
+
+  return campo.value.trim();
+}
+
+// Carrega os profissionais ativos no filtro.
 async function carregarProfissionais() {
   const empresaId = obterEmpresaId();
 
@@ -28,51 +39,82 @@ async function carregarProfissionais() {
   }
 
   try {
-    const resposta = await fetch(`${API_AGENDAMENTOS_URL}/profissionais?empresaId=${empresaId}`);
+    const resposta = await fetch(
+      `${API_AGENDAMENTOS_URL}/profissionais?empresaId=${empresaId}`
+    );
     const profissionais = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        profissionais.message || "Nao foi possivel carregar os profissionais."
+      );
+    }
 
     selectProfissional.innerHTML = '<option value="todos">Todos</option>';
 
-    profissionais.forEach((profissional) => {
+    for (const profissional of profissionais) {
       const opcao = document.createElement("option");
       opcao.value = profissional.id;
       opcao.textContent = profissional.nome;
       selectProfissional.appendChild(opcao);
-    });
+    }
   } catch (error) {
     console.error("Erro ao carregar profissionais:", error);
   }
 }
 
-// Busca o valor de um campo pelo ID.
-function obterValor(id) {
-  return document.getElementById(id)?.value.trim() || "";
-}
-
-// Traduz o status salvo no banco para um texto mais amigavel na tabela.
+// Traduz o status para o texto exibido na tela.
 function formatarStatus(status) {
-  const nomes = {
-    pendente: "Pendente",
-    agendado: "Agendado",
-    confirmado: "Confirmado",
-    cancelado: "Cancelado",
-    concluido: "Concluido",
-    realizado: "Realizado",
-  };
+  if (status === "pendente") {
+    return "Pendente";
+  }
 
-  return nomes[status] || status;
+  if (status === "agendado") {
+    return "Agendado";
+  }
+
+  if (status === "confirmado") {
+    return "Confirmado";
+  }
+
+  if (status === "cancelado") {
+    return "Cancelado";
+  }
+
+  if (status === "concluido") {
+    return "Concluido";
+  }
+
+  if (status === "realizado") {
+    return "Realizado";
+  }
+
+  return status;
 }
 
-// Monta os parametros de filtro que serao enviados para a API.
-function montarFiltros() {
-  const parametros = new URLSearchParams({
-    empresaId: obterEmpresaId() || "",
-  });
+// Converte os status antigos para os usados atualmente.
+function obterStatusAtual(status) {
+  if (status === "confirmado") {
+    return "agendado";
+  }
 
+  if (status === "realizado") {
+    return "concluido";
+  }
+
+  return status;
+}
+
+// Monta os filtros enviados para a API.
+function montarFiltros() {
+  const parametros = new URLSearchParams();
+  const empresaId = obterEmpresaId();
   const dataInicial = obterValor("data-inicial");
   const dataFinal = obterValor("data-final");
   const profissionalId = obterValor("profissional");
   const cliente = obterValor("cliente");
+
+  parametros.set("empresaId", empresaId || "");
 
   if (dataInicial) {
     parametros.set("dataInicial", dataInicial);
@@ -93,7 +135,7 @@ function montarFiltros() {
   return parametros;
 }
 
-// Preenche a modal com as informacoes do agendamento selecionado.
+// Abre a janela com os detalhes do agendamento.
 function abrirDetalhes(agendamento) {
   detalhesConteudo.innerHTML = `
     <div class="info-card">
@@ -129,32 +171,32 @@ function abrirDetalhes(agendamento) {
   modalDetalhes.checked = true;
 }
 
-// Cria uma linha da tabela para um agendamento retornado pela API.
-function criarLinhaAgendamento(agendamento) {
-  const linha = document.createElement("tr");
-  linha.classList.add("linha-agendamento");
-  const statusAtual = agendamento.status === "confirmado"
-    ? "agendado"
-    : agendamento.status === "realizado"
-      ? "concluido"
-      : agendamento.status;
-
-  let botoesAcao = "";
-
-  if (statusAtual === "pendente") {
-    botoesAcao = `
+// Define os botoes disponiveis para cada status.
+function montarBotoesDeAcao(status) {
+  if (status === "pendente") {
+    return `
       <button type="button" data-status="confirmado">Confirmar agendamento</button>
       <button type="button" class="btn-outline" data-status="cancelado">Cancelar agendamento</button>
     `;
-  } else if (statusAtual === "agendado") {
-    botoesAcao = `
+  }
+
+  if (status === "agendado") {
+    return `
       <button type="button" class="btn-outline" data-status="cancelado">Cancelar agendamento</button>
       <button type="button" class="btn-outline" data-status="realizado">Marcar como realizado</button>
     `;
-  } else {
-    botoesAcao = "<span>Sem acoes disponiveis</span>";
   }
 
+  return "<span>Sem acoes disponiveis</span>";
+}
+
+// Monta uma linha da tabela da agenda.
+function criarLinhaAgendamento(agendamento) {
+  const linha = document.createElement("tr");
+  const statusAtual = obterStatusAtual(agendamento.status);
+  const botoesAcao = montarBotoesDeAcao(statusAtual);
+
+  linha.classList.add("linha-agendamento");
   linha.innerHTML = `
     <td>${agendamento.dataAgendamento} ${agendamento.horarioInicio}</td>
     <td>${agendamento.nomeCliente}</td>
@@ -167,22 +209,29 @@ function criarLinhaAgendamento(agendamento) {
     </td>
   `;
 
-  // Abre os detalhes ao clicar nas informacoes principais da linha.
-  linha.querySelectorAll("td:not(.acoes)").forEach((celula) => {
-    celula.addEventListener("click", () => abrirDetalhes(agendamento));
-  });
+  const celulasDeDetalhes = linha.querySelectorAll("td:not(.acoes)");
 
-  // Liga os botoes de acao a atualizacao de status no back-end.
-  linha.querySelectorAll("[data-status]").forEach((botao) => {
-    botao.addEventListener("click", () => {
-      atualizarStatusAgendamento(agendamento.id, botao.dataset.status);
+  for (const celula of celulasDeDetalhes) {
+    celula.addEventListener("click", function () {
+      abrirDetalhes(agendamento);
     });
-  });
+  }
+
+  const botoesDeStatus = linha.querySelectorAll("[data-status]");
+
+  for (const botao of botoesDeStatus) {
+    botao.addEventListener("click", function () {
+      atualizarStatusAgendamento(
+        agendamento.id,
+        botao.dataset.status
+      );
+    });
+  }
 
   return linha;
 }
 
-// Busca os agendamentos da empresa e atualiza a tabela.
+// Busca os agendamentos usando os filtros da tela.
 async function carregarAgendamentos() {
   const empresaId = obterEmpresaId();
 
@@ -196,8 +245,17 @@ async function carregarAgendamentos() {
   }
 
   try {
-    const resposta = await fetch(`${API_AGENDAMENTOS_URL}?${montarFiltros()}`);
+    const filtros = montarFiltros();
+    const resposta = await fetch(
+      `${API_AGENDAMENTOS_URL}?${filtros.toString()}`
+    );
     const agendamentos = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        agendamentos.message || "Nao foi possivel carregar os agendamentos."
+      );
+    }
 
     tabelaAgendamentos.innerHTML = "";
 
@@ -210,43 +268,61 @@ async function carregarAgendamentos() {
       return;
     }
 
-    agendamentos.forEach((agendamento) => {
-      tabelaAgendamentos.appendChild(criarLinhaAgendamento(agendamento));
-    });
+    for (const agendamento of agendamentos) {
+      const linha = criarLinhaAgendamento(agendamento);
+      tabelaAgendamentos.appendChild(linha);
+    }
   } catch (error) {
     console.error("Erro ao carregar agenda:", error);
     alert("Nao foi possivel carregar os agendamentos.");
   }
 }
 
-// Atualiza o status de um agendamento.
-async function atualizarStatusAgendamento(id, status) {
-  const mensagens = {
-    confirmado: "Deseja confirmar este agendamento?",
-    cancelado: "Deseja cancelar este agendamento?",
-    realizado: "Deseja marcar este agendamento como realizado?",
-  };
+function obterMensagemDeConfirmacao(status) {
+  if (status === "confirmado") {
+    return "Deseja confirmar este agendamento?";
+  }
 
-  if (!confirm(mensagens[status])) {
+  if (status === "cancelado") {
+    return "Deseja cancelar este agendamento?";
+  }
+
+  if (status === "realizado") {
+    return "Deseja marcar este agendamento como realizado?";
+  }
+
+  return "Deseja atualizar este agendamento?";
+}
+
+// Atualiza o status depois da confirmacao.
+async function atualizarStatusAgendamento(id, status) {
+  const mensagem = obterMensagemDeConfirmacao(status);
+
+  if (!confirm(mensagem)) {
     return;
   }
 
   try {
-    const resposta = await fetch(`${API_AGENDAMENTOS_URL}/${id}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        empresaId: obterEmpresaId(),
-        status,
-      }),
-    });
+    const resposta = await fetch(
+      `${API_AGENDAMENTOS_URL}/${id}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          empresaId: obterEmpresaId(),
+          status: status,
+        }),
+      }
+    );
 
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
-      alert(resultado.message || "Nao foi possivel atualizar o agendamento.");
+      alert(
+        resultado.message || "Nao foi possivel atualizar o agendamento."
+      );
       return;
     }
 
@@ -258,12 +334,12 @@ async function atualizarStatusAgendamento(id, status) {
   }
 }
 
-// Aplica os filtros sem recarregar a pagina.
-formFiltrosAgenda?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  carregarAgendamentos();
-});
+if (formFiltrosAgenda) {
+  formFiltrosAgenda.addEventListener("submit", function (event) {
+    event.preventDefault();
+    carregarAgendamentos();
+  });
+}
 
-// Carrega os agendamentos assim que a tela abre.
 carregarProfissionais();
 carregarAgendamentos();

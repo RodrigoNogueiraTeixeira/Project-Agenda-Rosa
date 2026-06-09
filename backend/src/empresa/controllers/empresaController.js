@@ -1,19 +1,19 @@
 const empresaRepository = require("../repositories/empresaRepository");
 
 function validarCadastroEmpresa(dados) {
-  const camposObrigatorios = [
-    "nomeResponsavel",
-    "telefone",
-    "email",
-    "nomeEstabelecimento",
-    "senha",
-  ];
-
-  const camposAusentes = camposObrigatorios.filter((campo) => {
-    return !dados[campo] || String(dados[campo]).trim() === "";
-  });
-
-  if (camposAusentes.length > 0) {
+  // Confere os campos obrigatorios do cadastro.
+  if (
+    !dados.nomeResponsavel ||
+    String(dados.nomeResponsavel).trim() === "" ||
+    !dados.telefone ||
+    String(dados.telefone).trim() === "" ||
+    !dados.email ||
+    String(dados.email).trim() === "" ||
+    !dados.nomeEstabelecimento ||
+    String(dados.nomeEstabelecimento).trim() === "" ||
+    !dados.senha ||
+    String(dados.senha).trim() === ""
+  ) {
     return "Preencha todos os campos obrigatorios.";
   }
 
@@ -29,23 +29,27 @@ function validarCadastroEmpresa(dados) {
 }
 
 function validarPerfilEmpresa(dados) {
-  const camposObrigatorios = [
-    "empresaId",
-    "nomeEstabelecimento",
-    "categoriaPrincipal",
-    "telefone",
-    "email",
-    "cep",
-    "endereco",
-    "bairro",
-    "cidade",
-  ];
-
-  const camposAusentes = camposObrigatorios.filter((campo) => {
-    return !dados[campo] || String(dados[campo]).trim() === "";
-  });
-
-  if (camposAusentes.length > 0) {
+  // Confere os dados obrigatorios do perfil.
+  if (
+    !dados.empresaId ||
+    String(dados.empresaId).trim() === "" ||
+    !dados.nomeEstabelecimento ||
+    String(dados.nomeEstabelecimento).trim() === "" ||
+    !dados.categoriaPrincipal ||
+    String(dados.categoriaPrincipal).trim() === "" ||
+    !dados.telefone ||
+    String(dados.telefone).trim() === "" ||
+    !dados.email ||
+    String(dados.email).trim() === "" ||
+    !dados.cep ||
+    String(dados.cep).trim() === "" ||
+    !dados.endereco ||
+    String(dados.endereco).trim() === "" ||
+    !dados.bairro ||
+    String(dados.bairro).trim() === "" ||
+    !dados.cidade ||
+    String(dados.cidade).trim() === ""
+  ) {
     return "Preencha todos os campos obrigatorios do perfil.";
   }
 
@@ -72,6 +76,7 @@ function validarPerfilEmpresa(dados) {
 }
 
 async function cadastrarEmpresa(req, res) {
+  // Valida e salva uma nova empresa.
   try {
     const erroValidacao = validarCadastroEmpresa(req.body);
 
@@ -98,6 +103,7 @@ async function cadastrarEmpresa(req, res) {
 }
 
 async function buscarPerfil(req, res) {
+  // Busca os dados usados na tela de perfil.
   try {
     if (!req.query.empresaId) {
       return res.status(400).json({ message: "Informe o ID da empresa." });
@@ -117,6 +123,7 @@ async function buscarPerfil(req, res) {
 }
 
 async function atualizarPerfil(req, res) {
+  // Valida e atualiza os dados do estabelecimento.
   try {
     const erroValidacao = validarPerfilEmpresa(req.body);
 

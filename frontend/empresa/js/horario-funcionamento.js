@@ -1,10 +1,11 @@
 const API_HORARIOS_URL = "/api/empresa/horarios-funcionamento";
 
-// Captura os elementos principais da tela de horario de funcionamento.
+// Elementos principais da tela.
 const linhasHorarios = document.querySelectorAll("[data-dia-semana]");
-const botaoSalvarHorarios = document.querySelector("[data-salvar-horarios]");
+const botaoSalvarHorarios = document.querySelector(
+  "[data-salvar-horarios]"
+);
 
-// Busca o ID salvo no login e impede acesso sem empresa identificada.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -16,32 +17,33 @@ function obterEmpresaId() {
   return empresaId;
 }
 
-// Busca um campo dentro da linha do dia da semana.
 function obterCampo(linha, seletor) {
   return linha.querySelector(seletor);
 }
 
-// Habilita ou desabilita campos de horario conforme o dia abre ou nao.
+// Habilita os campos quando a empresa abre no dia.
 function atualizarCamposDaLinha(linha) {
-  const abre = obterCampo(linha, ".js-abre").value === "sim";
+  const campoAbre = obterCampo(linha, ".js-abre");
+  const abre = campoAbre.value === "sim";
   const camposDeHorario = linha.querySelectorAll("input[type='time']");
 
-  camposDeHorario.forEach((campo) => {
+  for (const campo of camposDeHorario) {
     campo.disabled = !abre;
 
     if (!abre) {
       campo.value = "";
     }
-  });
+  }
 }
 
-// Monta o objeto de um dia da semana a partir dos campos da tabela.
+// Le os horarios preenchidos em uma linha.
 function montarHorarioDaLinha(linha) {
-  const abre = obterCampo(linha, ".js-abre").value === "sim";
+  const campoAbre = obterCampo(linha, ".js-abre");
+  const abre = campoAbre.value === "sim";
 
   return {
     diaSemana: Number(linha.dataset.diaSemana),
-    abre,
+    abre: abre,
     horarioAbertura: obterCampo(linha, ".js-abertura").value,
     horarioFechamento: obterCampo(linha, ".js-fechamento").value,
     intervaloInicio: obterCampo(linha, ".js-intervalo-inicio").value,
@@ -49,29 +51,35 @@ function montarHorarioDaLinha(linha) {
   };
 }
 
-// Monta o corpo completo que sera enviado para a API.
 function montarDadosHorarios() {
+  const horarios = [];
+
+  for (const linha of linhasHorarios) {
+    horarios.push(montarHorarioDaLinha(linha));
+  }
+
   return {
     empresaId: obterEmpresaId(),
-    horarios: Array.from(linhasHorarios).map(montarHorarioDaLinha),
+    horarios: horarios,
   };
 }
 
-// Valida regras basicas da tela antes de enviar para o back-end.
+// Confere as regras de abertura e intervalo.
 function validarHorarios(dados) {
   if (!dados.empresaId) {
     return "Empresa nao identificada. Cadastre ou acesse a empresa antes de salvar horarios.";
   }
 
   for (const horario of dados.horarios) {
-    if (horario.abre && (!horario.horarioAbertura || !horario.horarioFechamento)) {
+    if (
+      horario.abre &&
+      (!horario.horarioAbertura || !horario.horarioFechamento)
+    ) {
       return "Dias abertos precisam ter horario de abertura e fechamento.";
     }
 
     if (
       horario.abre &&
-      horario.horarioAbertura &&
-      horario.horarioFechamento &&
       horario.horarioAbertura >= horario.horarioFechamento
     ) {
       return "O horario de abertura deve ser menor que o horario de fechamento.";
@@ -85,43 +93,56 @@ function validarHorarios(dados) {
       return "O inicio do intervalo deve ser menor que o fim do intervalo.";
     }
 
-    if (Boolean(horario.intervaloInicio) !== Boolean(horario.intervaloFim)) {
+    const informouInicio = Boolean(horario.intervaloInicio);
+    const informouFim = Boolean(horario.intervaloFim);
+
+    if (informouInicio !== informouFim) {
       return "Informe o inicio e o fim do intervalo.";
     }
 
-    if (
-      horario.abre &&
-      horario.intervaloInicio &&
-      (
-        horario.intervaloInicio < horario.horarioAbertura ||
-        horario.intervaloFim > horario.horarioFechamento
-      )
-    ) {
-      return "O intervalo deve estar dentro do horario de funcionamento.";
+    if (horario.abre && horario.intervaloInicio) {
+      const intervaloAntesDaAbertura =
+        horario.intervaloInicio < horario.horarioAbertura;
+      const intervaloDepoisDoFechamento =
+        horario.intervaloFim > horario.horarioFechamento;
+
+      if (intervaloAntesDaAbertura || intervaloDepoisDoFechamento) {
+        return "O intervalo deve estar dentro do horario de funcionamento.";
+      }
     }
   }
 
   return null;
 }
 
-// Preenche uma linha da tabela com os dados retornados pela API.
+// Preenche o dia com o horario retornado pelo backend.
 function preencherLinha(horario) {
-  const linha = document.querySelector(`[data-dia-semana="${horario.diaSemana}"]`);
+  const seletor = `[data-dia-semana="${horario.diaSemana}"]`;
+  const linha = document.querySelector(seletor);
 
   if (!linha) {
     return;
   }
 
-  obterCampo(linha, ".js-abre").value = horario.abre ? "sim" : "nao";
-  obterCampo(linha, ".js-abertura").value = horario.horarioAbertura || "";
-  obterCampo(linha, ".js-fechamento").value = horario.horarioFechamento || "";
-  obterCampo(linha, ".js-intervalo-inicio").value = horario.intervaloInicio || "";
-  obterCampo(linha, ".js-intervalo-fim").value = horario.intervaloFim || "";
+  if (horario.abre) {
+    obterCampo(linha, ".js-abre").value = "sim";
+  } else {
+    obterCampo(linha, ".js-abre").value = "nao";
+  }
+
+  obterCampo(linha, ".js-abertura").value =
+    horario.horarioAbertura || "";
+  obterCampo(linha, ".js-fechamento").value =
+    horario.horarioFechamento || "";
+  obterCampo(linha, ".js-intervalo-inicio").value =
+    horario.intervaloInicio || "";
+  obterCampo(linha, ".js-intervalo-fim").value =
+    horario.intervaloFim || "";
 
   atualizarCamposDaLinha(linha);
 }
 
-// Carrega os horarios salvos da empresa assim que a tela abre.
+// Carrega os horarios salvos da empresa.
 async function carregarHorarios() {
   const empresaId = obterEmpresaId();
 
@@ -130,21 +151,27 @@ async function carregarHorarios() {
   }
 
   try {
-    const resposta = await fetch(`${API_HORARIOS_URL}?empresaId=${empresaId}`);
+    const resposta = await fetch(
+      `${API_HORARIOS_URL}?empresaId=${empresaId}`
+    );
     const horarios = await resposta.json();
 
     if (!resposta.ok) {
-      throw new Error(horarios.message || "Nao foi possivel carregar os horarios.");
+      throw new Error(
+        horarios.message || "Nao foi possivel carregar os horarios."
+      );
     }
 
-    horarios.forEach(preencherLinha);
+    for (const horario of horarios) {
+      preencherLinha(horario);
+    }
   } catch (error) {
     console.error("Erro ao carregar horarios:", error);
     alert("Nao foi possivel carregar os horarios de funcionamento.");
   }
 }
 
-// Salva os sete dias da semana no back-end.
+// Salva os horarios dos sete dias.
 async function salvarHorarios() {
   const dados = montarDadosHorarios();
   const erroValidacao = validarHorarios(dados);
@@ -169,7 +196,9 @@ async function salvarHorarios() {
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
-      alert(resultado.message || "Nao foi possivel salvar os horarios.");
+      alert(
+        resultado.message || "Nao foi possivel salvar os horarios."
+      );
       return;
     }
 
@@ -183,17 +212,19 @@ async function salvarHorarios() {
   }
 }
 
-// Liga cada select "Abre?" ao comportamento de habilitar/desabilitar campos.
-linhasHorarios.forEach((linha) => {
-  obterCampo(linha, ".js-abre").addEventListener("change", () => {
+// Configura o campo "Abre?" de cada dia.
+for (const linha of linhasHorarios) {
+  const campoAbre = obterCampo(linha, ".js-abre");
+
+  campoAbre.addEventListener("change", function () {
     atualizarCamposDaLinha(linha);
   });
 
   atualizarCamposDaLinha(linha);
-});
+}
 
-// Liga o botao da tela a funcao que salva os horarios.
-botaoSalvarHorarios?.addEventListener("click", salvarHorarios);
+if (botaoSalvarHorarios) {
+  botaoSalvarHorarios.addEventListener("click", salvarHorarios);
+}
 
-// Carrega os horarios ja salvos quando a pagina abre.
 carregarHorarios();

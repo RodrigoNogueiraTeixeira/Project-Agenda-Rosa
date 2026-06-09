@@ -1,31 +1,40 @@
 const homeEmpresaRepository = require("../repositories/homeEmpresaRepository");
 
 function obterDataHoje() {
-  return new Date().toISOString().slice(0, 10);
+  const dataAtual = new Date();
+  return dataAtual.toISOString().slice(0, 10);
 }
 
 function obterHoraAtual() {
-  return new Date().toTimeString().slice(0, 5);
+  const dataAtual = new Date();
+  return dataAtual.toTimeString().slice(0, 5);
 }
 
+// Busca os indicadores usados na home da empresa.
 async function buscarResumo(req, res) {
   try {
-    const { empresaId } = req.query;
+    const empresaId = req.query.empresaId;
 
     if (!empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
+      return res.status(400).json({
+        message: "Informe o ID da empresa.",
+      });
     }
 
-    const resumo = await homeEmpresaRepository.buscarResumo({
-      empresaId,
+    const filtros = {
+      empresaId: empresaId,
       dataHoje: obterDataHoje(),
       horaAtual: obterHoraAtual(),
-    });
+    };
+
+    const resumo = await homeEmpresaRepository.buscarResumo(filtros);
 
     return res.json(resumo);
   } catch (error) {
     console.error("Erro ao buscar resumo da home:", error);
-    return res.status(500).json({ message: "Erro interno ao buscar resumo da home." });
+    return res.status(500).json({
+      message: "Erro interno ao buscar resumo da home.",
+    });
   }
 }
 
