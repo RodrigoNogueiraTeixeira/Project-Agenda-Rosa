@@ -28,7 +28,7 @@ function agruparPorEstabelecimento(rows, campoId) {
 // Aplica regra de busca e devolve resultado pronto para o front.
 async function listarEstabelecimentosComFiltro({ cidade, bairro, tipo, busca, page, limit }) {
   const pagina = Number(page) > 0 ? Number(page) : 1;
-  const limite = Number(limit) > 0 ? Number(limit) : 2;
+  const limite = Number(limit) > 0 ? Number(limit) : 6;
 
   const cidadeNormalizada = normalizarTexto(cidade);
   const bairroNormalizado = normalizarTexto(bairro);
@@ -46,9 +46,9 @@ async function listarEstabelecimentosComFiltro({ cidade, bairro, tipo, busca, pa
     const bairroItem = normalizarTexto(item.bairro);
     const nomeItem = normalizarTexto(item.nome);
 
-    const atendeCidade = !cidadeNormalizada || cidadeItem.includes(cidadeNormalizada);
-    const atendeBairro = !bairroNormalizado || bairroItem.includes(bairroNormalizado);
-    const atendeBusca = !buscaNormalizada || nomeItem.includes(buscaNormalizada);
+    const atendeCidade = !cidadeNormalizada || (cidadeItem && (cidadeItem.includes(cidadeNormalizada) || cidadeNormalizada.includes(cidadeItem)));
+    const atendeBairro = !bairroNormalizado || (bairroItem && (bairroItem.includes(bairroNormalizado) || bairroNormalizado.includes(bairroItem)));
+    const atendeBusca = !buscaNormalizada || (nomeItem && (nomeItem.includes(buscaNormalizada) || buscaNormalizada.includes(nomeItem)));
 
     return atendeCidade && atendeBairro && atendeBusca;
   });
