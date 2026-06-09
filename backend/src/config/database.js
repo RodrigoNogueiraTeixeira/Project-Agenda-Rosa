@@ -340,6 +340,18 @@ async function criarTabelas() {
     )
   `);
 
+  // Servicos atendidos por cada profissional
+  await run(`
+    CREATE TABLE IF NOT EXISTS profissional_servicos (
+      id SERIAL PRIMARY KEY,
+      profissional_id INTEGER NOT NULL,
+      servico_id INTEGER NOT NULL,
+      FOREIGN KEY (profissional_id) REFERENCES profissionais(id) ON DELETE CASCADE,
+      FOREIGN KEY (servico_id) REFERENCES servicos(id) ON DELETE CASCADE,
+      UNIQUE (profissional_id, servico_id)
+    )
+  `);
+
   // Horários de funcionamento
   await run(`
     CREATE TABLE IF NOT EXISTS horarios_funcionamento (
@@ -681,6 +693,7 @@ async function resetarSequences() {
     "pagamentos_webhooks",
     "empresas",
     "profissionais",
+    "profissional_servicos",
     "horarios_funcionamento",
     "bloqueios_horarios",
     "categorias"

@@ -1,4 +1,5 @@
 const API_PROFISSIONAIS_URL = "/api/empresa/profissionais";
+const API_SERVICOS_URL = "/api/empresa/servicos";
 
 // Elementos principais da tela.
 const formProfissional = document.getElementById("form-profissional");
@@ -6,6 +7,7 @@ const tabelaProfissionais = document.querySelector("tbody");
 const botaoSalvarProfissional = formProfissional
   ? formProfissional.querySelector("button[type='submit']")
   : null;
+const listaServicos = document.getElementById("servicos-profissional");
 
 let profissionalEmEdicaoId = null;
 
@@ -30,13 +32,26 @@ function obterValor(id) {
   return campo.value.trim();
 }
 
+function obterServicosSelecionados() {
+  const servicosIds = [];
+  const campos = listaServicos.querySelectorAll(
+    "input[type='checkbox']:checked"
+  );
+
+  for (const campo of campos) {
+    servicosIds.push(Number(campo.value));
+  }
+
+  return servicosIds;
+}
+
 function montarDadosProfissional() {
   return {
     empresaId: obterEmpresaId(),
     nome: obterValor("nome-profissional"),
     telefone: obterValor("telefone-profissional"),
     email: obterValor("email-profissional"),
-    especialidade: obterValor("especialidade-profissional"),
+    servicosIds: obterServicosSelecionados(),
     status: obterValor("status-profissional"),
   };
 }
@@ -55,21 +70,66 @@ function validarFormularioProfissional(dados) {
     return "Informe um e-mail valido para o profissional.";
   }
 
+  if (dados.servicosIds.length === 0) {
+    return "Selecione pelo menos um servico atendido pelo profissional.";
+  }
+
   return null;
+}
+
+// Carrega os servicos cadastrados pela empresa.
+async function carregarServicos() {
+  const empresaId = obterEmpresaId();
+
+  if (!empresaId) {
+    return;
+  }
+
+  try {
+    const resposta = await fetch(
+      `${API_SERVICOS_URL}?empresaId=${empresaId}`
+    );
+    const servicos = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        servicos.message || "Nao foi possivel carregar os servicos."
+      );
+    }
+
+    listaServicos.innerHTML = "";
+
+    if (servicos.length === 0) {
+      listaServicos.innerHTML =
+        "<p>Cadastre um serviço antes de cadastrar profissionais.</p>";
+      return;
+    }
+
+    for (const servico of servicos) {
+      const opcao = document.createElement("label");
+      opcao.className = "opcao-servico";
+
+      const campo = document.createElement("input");
+      campo.type = "checkbox";
+      campo.value = servico.id;
+
+      const texto = document.createElement("span");
+      texto.textContent = servico.nome;
+
+      opcao.appendChild(campo);
+      opcao.appendChild(texto);
+      listaServicos.appendChild(opcao);
+    }
+  } catch (error) {
+    console.error("Erro ao carregar servicos:", error);
+    listaServicos.innerHTML = "<p>Erro ao carregar serviços.</p>";
+  }
 }
 
 function limparFormulario() {
   formProfissional.reset();
   profissionalEmEdicaoId = null;
   botaoSalvarProfissional.textContent = "Cadastrar profissional";
-}
-
-function obterStatusDoProfissional(profissional) {
-  if (profissional.ativo) {
-    return "ativo";
-  }
-
-  return "inativo";
 }
 
 function obterTextoStatus(profissional) {
@@ -80,6 +140,21 @@ function obterTextoStatus(profissional) {
   return "Inativo";
 }
 
+function marcarServicosDoProfissional(servicos) {
+  const campos = listaServicos.querySelectorAll("input[type='checkbox']");
+
+  for (const campo of campos) {
+    campo.checked = false;
+
+    for (const servico of servicos || []) {
+      if (Number(campo.value) === Number(servico.id)) {
+        campo.checked = true;
+        break;
+      }
+    }
+  }
+}
+
 // Preenche o formulario para editar um profissional.
 function preencherFormularioParaEdicao(profissional) {
   document.getElementById("nome-profissional").value = profissional.nome;
@@ -87,13 +162,26 @@ function preencherFormularioParaEdicao(profissional) {
     profissional.telefone || "";
   document.getElementById("email-profissional").value =
     profissional.email || "";
-  document.getElementById("especialidade-profissional").value =
-    profissional.especialidade || "";
   document.getElementById("status-profissional").value =
-    obterStatusDoProfissional(profissional);
+    profissional.ativo ? "ativo" : "inativo";
+  marcarServicosDoProfissional(profissional.servicos);
 
   profissionalEmEdicaoId = profissional.id;
   botaoSalvarProfissional.textContent = "Salvar alterações";
+}
+
+function obterNomesDosServicos(profissional) {
+  const nomes = [];
+
+  for (const servico of profissional.servicos || []) {
+    nomes.push(servico.nome);
+  }
+
+  if (nomes.length === 0) {
+    return "-";
+  }
+
+  return nomes.join(", ");
 }
 
 // Monta uma linha da tabela com os botoes de acao.
@@ -104,7 +192,7 @@ function criarLinhaProfissional(profissional) {
     <td>${profissional.nome}</td>
     <td>${profissional.telefone || "-"}</td>
     <td>${profissional.email || "-"}</td>
-    <td>${profissional.especialidade || "-"}</td>
+    <td>${obterNomesDosServicos(profissional)}</td>
     <td>${obterTextoStatus(profissional)}</td>
     <td class="acoes">
       <button type="button" class="btn-outline" data-acao="editar">Editar</button>
@@ -112,16 +200,17 @@ function criarLinhaProfissional(profissional) {
     </td>
   `;
 
-  const botaoEditar = linha.querySelector("[data-acao='editar']");
-  const botaoExcluir = linha.querySelector("[data-acao='excluir']");
+  linha
+    .querySelector("[data-acao='editar']")
+    .addEventListener("click", function () {
+      preencherFormularioParaEdicao(profissional);
+    });
 
-  botaoEditar.addEventListener("click", function () {
-    preencherFormularioParaEdicao(profissional);
-  });
-
-  botaoExcluir.addEventListener("click", function () {
-    excluirProfissional(profissional.id);
-  });
+  linha
+    .querySelector("[data-acao='excluir']")
+    .addEventListener("click", function () {
+      excluirProfissional(profissional.id);
+    });
 
   return linha;
 }
@@ -131,11 +220,6 @@ async function carregarProfissionais() {
   const empresaId = obterEmpresaId();
 
   if (!empresaId) {
-    tabelaProfissionais.innerHTML = `
-      <tr>
-        <td colspan="6">Cadastre uma empresa antes de gerenciar profissionais.</td>
-      </tr>
-    `;
     return;
   }
 
@@ -163,8 +247,9 @@ async function carregarProfissionais() {
     }
 
     for (const profissional of profissionais) {
-      const linha = criarLinhaProfissional(profissional);
-      tabelaProfissionais.appendChild(linha);
+      tabelaProfissionais.appendChild(
+        criarLinhaProfissional(profissional)
+      );
     }
   } catch (error) {
     console.error("Erro ao carregar profissionais:", error);
@@ -172,7 +257,6 @@ async function carregarProfissionais() {
   }
 }
 
-// Define a rota e o metodo de cadastro ou edicao.
 function obterDadosDaRequisicao() {
   if (profissionalEmEdicaoId) {
     return {
@@ -212,7 +296,6 @@ async function salvarProfissional(event) {
       },
       body: JSON.stringify(dados),
     });
-
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
@@ -239,13 +322,8 @@ async function salvarProfissional(event) {
   }
 }
 
-// Exclui o profissional depois da confirmacao.
 async function excluirProfissional(id) {
-  const confirmarExclusao = confirm(
-    "Deseja realmente excluir este profissional?"
-  );
-
-  if (!confirmarExclusao) {
+  if (!confirm("Deseja realmente excluir este profissional?")) {
     return;
   }
 
@@ -257,7 +335,6 @@ async function excluirProfissional(id) {
         method: "DELETE",
       }
     );
-
     const resultado = await resposta.json();
 
     if (!resposta.ok) {
@@ -279,4 +356,4 @@ if (formProfissional) {
   formProfissional.addEventListener("submit", salvarProfissional);
 }
 
-carregarProfissionais();
+carregarServicos().finally(carregarProfissionais);

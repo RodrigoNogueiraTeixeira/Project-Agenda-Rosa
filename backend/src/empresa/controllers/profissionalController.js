@@ -14,6 +14,16 @@ function validarProfissional(dados) {
     return "Informe um e-mail valido para o profissional.";
   }
 
+  if (!Array.isArray(dados.servicosIds) || dados.servicosIds.length === 0) {
+    return "Selecione pelo menos um servico atendido pelo profissional.";
+  }
+
+  for (const servicoId of dados.servicosIds) {
+    if (!Number.isInteger(Number(servicoId)) || Number(servicoId) <= 0) {
+      return "Selecione servicos validos para o profissional.";
+    }
+  }
+
   if (
     dados.status &&
     dados.status !== "ativo" &&
@@ -70,6 +80,12 @@ async function cadastrarProfissional(req, res) {
       profissional: profissional,
     });
   } catch (error) {
+    if (error.message.includes("servicos cadastrados pela empresa")) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
     console.error("Erro ao cadastrar profissional:", error);
     return res.status(500).json({
       message: "Erro interno ao cadastrar profissional.",
@@ -103,6 +119,12 @@ async function atualizarProfissional(req, res) {
       profissional: profissional,
     });
   } catch (error) {
+    if (error.message.includes("servicos cadastrados pela empresa")) {
+      return res.status(400).json({
+        message: error.message,
+      });
+    }
+
     console.error("Erro ao atualizar profissional:", error);
     return res.status(500).json({
       message: "Erro interno ao atualizar profissional.",
