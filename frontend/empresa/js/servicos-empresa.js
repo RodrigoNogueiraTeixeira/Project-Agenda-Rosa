@@ -8,6 +8,8 @@ const botaoSalvarServico = formServico
   ? formServico.querySelector("button[type='submit']")
   : null;
 const campoCategoria = document.getElementById("categoria-servico");
+const campoPreco = document.getElementById("preco-servico");
+const campoDuracao = document.getElementById("duracao-servico");
 
 // Guarda o servico selecionado para edicao.
 let servicoEmEdicaoId = null;
@@ -65,10 +67,66 @@ async function carregarCategorias() {
 
 // Converte o valor em centavos para moeda brasileira.
 function formatarPreco(precoCentavos) {
+  const valor = Number(precoCentavos);
+
+  if (!Number.isFinite(valor)) {
+    return "R$ 0,00";
+  }
+
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(precoCentavos / 100);
+  }).format(valor / 100);
+}
+
+// Retorna os campos mesmo se o PostgreSQL enviar o alias em minusculo.
+function normalizarServico(servico) {
+  let precoCentavos = servico.precoCentavos;
+  let duracaoMinutos = servico.duracaoMinutos;
+
+  if (precoCentavos === undefined) {
+    precoCentavos = servico.precocentavos;
+  }
+
+  if (precoCentavos === undefined || precoCentavos === null) {
+    precoCentavos = Math.round(Number(servico.preco || 0) * 100);
+  }
+
+  if (duracaoMinutos === undefined) {
+    duracaoMinutos = servico.duracaominutos;
+  }
+
+  if (duracaoMinutos === undefined || duracaoMinutos === null) {
+    duracaoMinutos = 30;
+  }
+
+  servico.precoCentavos = Number(precoCentavos);
+  servico.duracaoMinutos = Number(duracaoMinutos);
+
+  return servico;
+}
+
+// Formata o preco enquanto o usuario digita.
+function formatarCampoPreco() {
+  const numeros = campoPreco.value.replace(/\D/g, "");
+  const centavos = Number(numeros || 0);
+
+  campoPreco.value = formatarPreco(centavos);
+}
+
+// Deixa somente os numeros da duracao.
+function limparCampoDuracao() {
+  campoDuracao.value = campoDuracao.value.replace(/\D/g, "");
+}
+
+function formatarCampoDuracao() {
+  const minutos = campoDuracao.value.replace(/\D/g, "");
+
+  if (minutos) {
+    campoDuracao.value = `${Number(minutos)} min`;
+  } else {
+    campoDuracao.value = "";
+  }
 }
 
 function montarDadosServico() {
@@ -127,6 +185,8 @@ function adicionarCategoriaAntiga(categoria) {
 
 // Preenche o formulario para editar um servico.
 function preencherFormularioParaEdicao(servico) {
+  servico = normalizarServico(servico);
+
   document.getElementById("nome-servico").value = servico.nome;
   adicionarCategoriaAntiga(servico.categoria);
   campoCategoria.value = servico.categoria;
@@ -154,6 +214,8 @@ function obterTextoStatus(status) {
 
 // Monta uma linha da tabela com os botoes de acao.
 function criarLinhaServico(servico) {
+  servico = normalizarServico(servico);
+
   const linha = document.createElement("tr");
 
   linha.innerHTML = `
@@ -323,6 +385,16 @@ async function excluirServico(id) {
 
 if (formServico) {
   formServico.addEventListener("submit", salvarServico);
+}
+
+if (campoPreco) {
+  campoPreco.addEventListener("input", formatarCampoPreco);
+}
+
+if (campoDuracao) {
+  campoDuracao.addEventListener("focus", limparCampoDuracao);
+  campoDuracao.addEventListener("input", limparCampoDuracao);
+  campoDuracao.addEventListener("blur", formatarCampoDuracao);
 }
 
 // As categorias devem aparecer antes dos servicos.
