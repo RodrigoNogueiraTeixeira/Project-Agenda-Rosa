@@ -29,6 +29,9 @@ body {
   padding: 32px;
   margin-bottom: 28px;
   box-shadow: 0 8px 24px rgba(182, 92, 138, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .topo h1 {
@@ -170,11 +173,6 @@ button,
   background: #fff5f9;
 }
 
-/* VOLTAR */
-.acoes {
-  margin-top: 4px;
-}
-
 .btn-voltar {
   display: inline-block;
   text-decoration: none;
@@ -189,6 +187,12 @@ button,
 
 /* RESPONSIVO */
 @media (max-width: 768px) {
+  .topo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
   body {
     padding: 28px 14px;
   }
