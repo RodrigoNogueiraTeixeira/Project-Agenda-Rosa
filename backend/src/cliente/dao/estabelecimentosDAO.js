@@ -131,7 +131,7 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
     const marcadores = servicosIds.map(() => "?").join(", ");
 
     // O profissional precisa estar vinculado a todos os servicos selecionados.
-    return all(
+    const resultado = await all(
       `
         SELECT p.id, p.nome
         FROM profissionais p
@@ -147,8 +147,14 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
       `,
       [empresaId, estabelecimentoId, ...servicosIds, servicosIds.length]
     );
+
+    if (resultado && resultado.length > 0) {
+      return resultado;
+    }
   }
 
+  // Fallback: se nenhum profissional atende aos serviços específicos (ou se nenhum serviço foi passado),
+  // retorna todos os profissionais ativos cadastrados pela empresa do estabelecimento.
   return all(
     "SELECT id, nome, especialidade FROM profissionais WHERE empresa_id = ? AND ativo = 1 ORDER BY nome",
     [empresaId]
