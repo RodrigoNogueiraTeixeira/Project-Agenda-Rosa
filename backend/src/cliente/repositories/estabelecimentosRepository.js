@@ -168,7 +168,7 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
     data
   );
 
-  if (configuracao?.empresa_id && (!configuracao.abre || !configuracao.horario_abertura)) {
+  if (configuracao?.empresa_id && configuracao.abre === 0) {
     return [];
   }
 
