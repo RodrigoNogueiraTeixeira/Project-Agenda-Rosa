@@ -7,7 +7,7 @@ const CLIENTE_ID = Number(localStorage.getItem("clienteId") || 1);
 // Estado da tela (somente para interatividade e exibicao).
 const estadoTela = {
   paginaAtual: 1,
-  limite: 2,
+  limite: 6,
   totalPaginas: 1,
   filtros: {
     cidade: "",
