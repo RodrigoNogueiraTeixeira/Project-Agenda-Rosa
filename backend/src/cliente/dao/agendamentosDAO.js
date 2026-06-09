@@ -156,7 +156,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         SELECT id
         FROM agendamentos
         WHERE estabelecimento_id = ?
-          AND data = ?
+          AND COALESCE(data, data_agendamento) = ?
           AND (
             status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
@@ -166,8 +166,8 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
             OR profissional = (SELECT nome FROM profissionais WHERE id = ?)
           )
           AND (
-            (? < horario_fim AND ? > horario)
-            OR (horario_fim IS NULL AND horario = ?)
+            (? < horario_fim AND ? > COALESCE(horario, horario_inicio))
+            OR (horario_fim IS NULL AND COALESCE(horario, horario_inicio) = ?)
           )
         LIMIT 1
       `,
@@ -195,14 +195,14 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         SELECT id
         FROM agendamentos
         WHERE estabelecimento_id = ?
-          AND data = ?
+          AND COALESCE(data, data_agendamento) = ?
           AND (
             status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
           )
           AND (
-            (? < horario_fim AND ? > horario)
-            OR (horario_fim IS NULL AND horario = ?)
+            (? < horario_fim AND ? > COALESCE(horario, horario_inicio))
+            OR (horario_fim IS NULL AND COALESCE(horario, horario_inicio) = ?)
           )
         LIMIT 1
       `,
@@ -217,7 +217,7 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
         SELECT id
         FROM agendamentos
         WHERE estabelecimento_id = ?
-          AND data = ?
+          AND COALESCE(data, data_agendamento) = ?
           AND (
             status IN ('agendado', 'confirmado', 'concluido', 'realizado')
             OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
@@ -227,8 +227,8 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
             OR profissional = ?
           )
           AND (
-            (? < horario_fim AND ? > horario)
-            OR (horario_fim IS NULL AND horario = ?)
+            (? < horario_fim AND ? > COALESCE(horario, horario_inicio))
+            OR (horario_fim IS NULL AND COALESCE(horario, horario_inicio) = ?)
           )
         LIMIT 1
       `,
@@ -254,10 +254,14 @@ async function existeConflitoDeHorario({ estabelecimentoId, data, horario, horar
 // Busca todos os horários ocupados para uma data e estabelecimento (e profissional) específicos
 async function listarHorariosOcupados(estabelecimentoId, data, profissionalId = null) {
   let query = `
-    SELECT horario, horario_fim, profissional_id, profissional
+    SELECT 
+      COALESCE(horario, horario_inicio) AS horario, 
+      horario_fim, 
+      profissional_id, 
+      profissional
     FROM agendamentos
     WHERE estabelecimento_id = ?
-      AND data = ?
+      AND COALESCE(data, data_agendamento) = ?
       AND (
         status IN ('agendado', 'confirmado', 'concluido', 'realizado')
         OR (status = 'pendente' AND criado_em::timestamptz >= NOW() - INTERVAL '15 minutes')
