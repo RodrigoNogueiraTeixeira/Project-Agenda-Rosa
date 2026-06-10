@@ -6,6 +6,33 @@ function verificarAutenticacaoAdmin() {
     }
 }
 
+function formatarDataCadastro(dataStr) {
+    if (!dataStr) return 'N/A';
+    try {
+        // Se a string já tiver formato ISO, tentamos converter
+        const dataObj = new Date(dataStr);
+        if (isNaN(dataObj.getTime())) {
+            const partes = String(dataStr).split(' ');
+            if (partes.length >= 2) {
+                const dataPartes = partes[0].split('-');
+                const horaPartes = partes[1].split(':');
+                if (dataPartes.length === 3 && horaPartes.length >= 2) {
+                    return `${dataPartes[2]}/${dataPartes[1]}/${dataPartes[0]} ${horaPartes[0]}:${horaPartes[1]}`;
+                }
+            }
+            return dataStr;
+        }
+        const dia = String(dataObj.getDate()).padStart(2, '0');
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0');
+        const ano = dataObj.getFullYear();
+        const hora = String(dataObj.getHours()).padStart(2, '0');
+        const minuto = String(dataObj.getMinutes()).padStart(2, '0');
+        return `${dia}/${mes}/${ano} ${hora}:${minuto}`;
+    } catch (e) {
+        return dataStr;
+    }
+}
+
 // Daniel e Rodrigo: Função que desenha a tabela na tela
 function renderizarTabela(empresas) {
     const tbody = document.getElementById('tabela-aprovacao');
@@ -40,7 +67,7 @@ function renderizarTabela(empresas) {
                 <td>${empresa.nome}</td>
                 <td>${empresa.responsavel}</td>
                 <td>${empresa.cidade}</td>
-                <td>${empresa.datacadastro || empresa.dataCadastro || 'N/A'}</td>
+                <td>${formatarDataCadastro(empresa.datacadastro || empresa.dataCadastro)}</td>
                 <td><span class="${statusClass}">${statusTexto}</span></td>
                 <td class="AcoesTabela">
                     <div class="AgrupadorBotoes"> 
@@ -171,7 +198,7 @@ async function abrirModalDetalhes(id) {
                     <div class="detalhe-rotulo">Status e Cadastro</div>
                     <div class="detalhe-valor">
                         <strong>Status Atual:</strong> ${emp.status}<br>
-                        <strong>Data de Cadastro:</strong> ${emp.datacadastro || emp.dataCadastro || 'N/A'}
+                        <strong>Data de Cadastro:</strong> ${formatarDataCadastro(emp.datacadastro || emp.dataCadastro)}
                     </div>
                 </div>
             `;

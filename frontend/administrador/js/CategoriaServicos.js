@@ -30,7 +30,7 @@ function renderizarTabelaCategorias(categorias) {
                 <td class="AcoesTabela"> 
                     <div class="AgrupadorBotoes">
                         <button type="button" class="BntEditar" data-id="${categoria.id}">Editar</button>
-                        <button type="button" class="BntExcluirInativa" data-id="${categoria.id}">Excluir/Inativa</button>
+                        <button type="button" class="BntExcluirInativa" data-id="${categoria.id}">Excluir</button>
                     </div>
                 </td>
             </tr>
