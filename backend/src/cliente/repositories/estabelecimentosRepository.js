@@ -253,69 +253,96 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
   // 2. Reunir candidatos a horários de início
   // Geramos os horários padrão a cada 30 min.
   // Além disso, adicionamos o horário de término de cada consulta ocupada no dia como um candidato!
+  // 2. Reunir candidatos a horários de início:
+  // Para evitar testar cada minuto do dia (o que seria extremamente lento), nós geramos um conjunto de horários candidatos.
+  // Usamos um 'Set' (conjunto de valores únicos) para evitar que o mesmo minuto de início seja inserido mais de uma vez.
   const candidatosMinutosSet = new Set();
   
+  // Primeiro, inserimos no Set os horários de início padrão gerados a cada 30 minutos (definido por 'stepMinutos').
+  // O loop começa nos minutos de abertura e vai até os minutos de fechamento.
   for (let m = inicioMinutos; m <= fimMinutos; m += stepMinutos) {
     candidatosMinutosSet.add(m);
   }
   
-  // Para cada consulta ocupada, adicionamos o horario de inicio e o horario_fim como possiveis candidatos de inicio
+  // Para cada agendamento ocupado cadastrado nesse dia, também adicionamos seu horário de término como um candidato.
+  // Isso é importante porque se um profissional termina um serviço às 14:15, o horário das 14:15 torna-se livre
+  // e elegível para iniciar um novo agendamento, mesmo que não seja um múltiplo exato de 30 minutos.
   for (const o of ocupados) {
     if (o.horario && o.horario.includes(":")) {
       const [hI, mI] = o.horario.split(":").map(Number);
       const minutosInicio = hI * 60 + mI;
+      // Garante que o horário do compromisso está dentro da faixa de funcionamento do salão.
       if (minutosInicio >= inicioMinutos && minutosInicio <= fimMinutos) {
         candidatosMinutosSet.add(minutosInicio);
       }
     }
+    // Determina o horário de término do agendamento (usa 'horario_fim' ou assume duração de 30 min como fallback).
     const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
     if (oFim && oFim.includes(":")) {
       const [hF, mF] = oFim.split(":").map(Number);
       const minutosFim = hF * 60 + mF;
+      // Garante que o horário de término do agendamento está dentro do expediente do estabelecimento.
       if (minutosFim >= inicioMinutos && minutosFim <= fimMinutos) {
         candidatosMinutosSet.add(minutosFim);
       }
     }
   }
   
-  // Converter Set para array ordenado
+  // Converte o Set (com valores únicos e sem duplicados) em um array regular do JS e o ordena numericamente de forma crescente.
   const candidatosMinutos = Array.from(candidatosMinutosSet).sort((a, b) => a - b);
   
   const slotsLivres = [];
   
+  // Captura os objetos de data atual e data selecionada para fazer validações contra agendamentos no passado.
   const dataHoje = new Date();
   const dataSelecionadaObj = new Date(`${data}T00:00:00`);
   
+  // Compara se o dia selecionado é hoje.
   const isHoje = dataHoje.toDateString() === dataSelecionadaObj.toDateString();
+  // Converte a hora atual do sistema em minutos absolutos (ex: 10:15 da manhã vira 615 minutos).
   const agoraMinutos = dataHoje.getHours() * 60 + dataHoje.getMinutes();
 
+  // Função utilitária interna para checar se dois intervalos de tempo possuem sobreposição/conflito.
+  // Retorna true se houver qualquer intersecção (colisão) entre o intervalo A e o intervalo B.
   const sobrepoe = (inicioA, fimA, inicioB, fimB) => {
     return inicioA < fimB && fimA > inicioB;
   };
 
+  // Função utilitária interna para verificar se um bloqueio da agenda é global (se aplica a todos, não apenas a um profissional específico).
   const bloqueioGlobal = (bloqueio) => {
     return !bloqueio.profissional_id && !bloqueio.profissional_nome;
   };
 
+  // Função utilitária interna para verificar se um profissional específico está bloqueado (de férias, atestado, folga, etc.) no slot de tempo verificado.
   const profissionalBloqueado = (idProfissional, slotInicio, slotFim) => {
     return bloqueios.some((bloqueio) => {
       const pertenceAoProfissional = Number(bloqueio.profissional_id) === Number(idProfissional);
+      // O profissional está indisponível se houver um bloqueio global da empresa OU um bloqueio específico dele
+      // que se sobreponha ao horário do slot analisado.
       return (bloqueioGlobal(bloqueio) || pertenceAoProfissional)
         && sobrepoe(slotInicio, slotFim, bloqueio.horario_inicio, bloqueio.horario_fim);
     });
   };
   
+  // 3. Validação de cada Horário Candidato:
   for (const m of candidatosMinutos) {
+    // Se o horário candidato somado com a duração do serviço exceder o horário de encerramento do estabelecimento, ignora.
     if (m + duracaoMinutos > fimMinutos) {
-      continue; // Não cabe dentro do horário de expediente
+      continue;
     }
     
+    // Verifica se o horário candidato está no passado (caso o agendamento esteja sendo feito para o dia de hoje).
     const passado = isHoje && m <= agoraMinutos;
     
+    // Formata o minuto absoluto de início de volta para a string textual "HH:MM".
     const slotInicioStr = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
     const slotFimMinutos = m + duracaoMinutos;
+    // Formata o minuto absoluto de término do slot para a string textual "HH:MM".
     const slotFimStr = `${String(Math.floor(slotFimMinutos / 60)).padStart(2, '0')}:${String(slotFimMinutos % 60).padStart(2, '0')}`;
 
+    // Validação de intervalo de descanso/almoço da loja:
+    // Se o estabelecimento possui horário de intervalo e o slot de agendamento colidir com ele, 
+    // adiciona o slot na lista marcado como indisponível e pula para o próximo candidato.
     if (
       intervaloInicio &&
       intervaloFim &&
@@ -325,9 +352,11 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
       continue;
     }
     
-    // 3. Verificar conflito
+    // 4. Verificação de Conflitos de Agendamentos e Bloqueios:
     if (temProfissionalEspecifico) {
-      // Para um profissional específico, o horário está livre se não houver intersecção com nenhum de seus agendamentos ocupados
+      // Caso o cliente tenha escolhido um profissional específico:
+      // O slot estará disponível apenas se não houver conflito com nenhum agendamento daquele profissional
+      // e o profissional não possuir bloqueios ativos no horário.
       let conflito = false;
       for (const o of ocupados) {
         const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
@@ -347,10 +376,11 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
         passado
       });
     } else {
-      // Se for "Sem preferência" (Qualquer):
-      // O horário está livre se houver pelo menos UM profissional ativo livre.
-      // Se o salão não tiver nenhum profissional ativo cadastrado ainda, fazemos a checagem global contra todos os agendamentos ocupados.
+      // Caso o cliente selecione "Sem preferência de profissional" (Qualquer Profissional):
+      // O slot estará disponível se pelo menos UM profissional ativo da loja estiver livre durante todo o intervalo do serviço.
       if (profissionais.length === 0) {
+        // Fallback: se a loja não tiver nenhum profissional ativo cadastrado no sistema,
+        // fazemos a validação de conflito contra a lista global de agendamentos ocupados da loja.
         let conflitoGlobal = false;
         for (const o of ocupados) {
           const oFim = o.horario_fim || adicionarMinutos(o.horario, 30);
@@ -374,15 +404,14 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
           passado
         });
       } else {
-        // Se houver profissionais cadastrados, verificamos cada um individualmente.
-        // O slot de tempo está disponível se pelo menos um profissional estiver livre durante todo o intervalo [slotInicioStr, slotFimStr].
+        // Se a loja tem profissionais, rodamos a lógica de verificação individual por profissional.
         let peloMenosUmLivre = false;
         
         for (const prof of profissionais) {
           let profOcupado = false;
           
           for (const o of ocupados) {
-            // Verifica se este agendamento ocupado pertence a este profissional
+            // Verifica se esse compromisso ocupado pertence a este profissional específico do laço.
             const ehDesteProf = Number(o.profissionalId) === Number(prof.id) || o.profissional === prof.nome;
             if (!ehDesteProf) continue;
             
@@ -393,13 +422,15 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
             }
           }
 
+          // Checa se o profissional possui bloqueios para este horário analisado.
           if (profissionalBloqueado(prof.id, slotInicioStr, slotFimStr)) {
             profOcupado = true;
           }
           
+          // Se esse profissional não estiver ocupado nem bloqueado, consideramos que o slot é válido (pelo menos um profissional está livre).
           if (!profOcupado) {
             peloMenosUmLivre = true;
-            break; // Achou um profissional livre!
+            break; // Interrompe a verificação do time de profissionais, pois já localizou um profissional livre.
           }
         }
         
@@ -412,9 +443,11 @@ async function calcularHorariosDisponiveis(estabelecimentoId, data, duracaoMinut
     }
   }
   
+  // Retorna a coleção contendo todos os slots analisados com status (disponível, passado, etc.) para renderização no front.
   return slotsLivres;
 }
 
+// Busca e lista todos os profissionais associados a um determinado estabelecimento que podem executar os serviços desejados.
 async function listarProfissionais(estabelecimentoId, servicosIds) {
   return estabelecimentosDAO.listarProfissionaisPorEstabelecimento(estabelecimentoId, servicosIds);
 }
