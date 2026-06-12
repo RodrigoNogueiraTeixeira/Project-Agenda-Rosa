@@ -120,13 +120,18 @@ function formatarMoeda(valor) {
   return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
 }
 
-// Le os filtros digitados na tela.
+// Captura os filtros de busca inseridos no formulário da tela pelo cliente.
 function capturarFiltrosDoFormulario() {
   return {
+    // Captura o valor da cidade e remove espaços nas pontas. Usa ?. para evitar erros se o campo não existir.
     cidade: String(document.getElementById("cidade")?.value || "").trim(),
+    // Captura o bairro digitado.
     bairro: String(document.getElementById("bairro")?.value || "").trim(),
+    // Obtém o serviço selecionado no seletor (select).
     tipo: String(document.getElementById("tipoServico")?.value || "").trim(),
+    // Captura o termo de busca textual digitado no input de texto livre.
     busca: String(document.getElementById("campoBusca")?.value || "").trim(),
+    // Captura o raio em quilômetros para cálculo de geolocalização.
     raioKm: String(document.getElementById("raioDistancia")?.value || "").trim()
   };
 }
@@ -163,16 +168,19 @@ function validarDataAgendamentoFront(dataTexto) {
   return { ok: true, mensagem: "" };
 }
 
-// Busca estabelecimentos no backend (que agora centraliza as regras de negocio).
+// Envia a requisição assíncrona HTTP para a API de estabelecimentos com os parâmetros de paginação e filtros.
 async function buscarEstabelecimentos(reiniciarPagina) {
+  // Se for uma nova busca (clique em Buscar), reinicia o contador para a primeira página do cursor.
   if (reiniciarPagina) {
     estadoTela.paginaAtual = 1;
   }
 
+  // Cria um objeto URLSearchParams nativo do navegador para facilitar a formatação segura dos parâmetros da URL.
   const query = new URLSearchParams();
   query.set("page", String(estadoTela.paginaAtual));
   query.set("limit", String(estadoTela.limite));
 
+  // Adiciona condicionalmente cada um dos filtros ativos na query string.
   if (estadoTela.filtros.cidade) {
     query.set("cidade", estadoTela.filtros.cidade);
   }
@@ -189,11 +197,15 @@ async function buscarEstabelecimentos(reiniciarPagina) {
     query.set("q", estadoTela.filtros.busca);
   }
 
+  // Serializa a query string (Ex: "page=1&limit=6&cidade=São+Paulo").
   const queryString = new URLSearchParams(query).toString();
+  // Faz a chamada assíncrona GET na API de estabelecimentos usando a rota configurada.
   const resposta = await chamarApi(`/estabelecimentos?${queryString}`);
   const lista = Array.isArray(resposta.estabelecimentos) ? resposta.estabelecimentos : [];
 
+  // Calcula o total de páginas dividindo a contagem total de registros do banco pelo limite de itens por página.
   estadoTela.totalPaginas = Math.ceil((resposta.total || 0) / estadoTela.limite);
+  // Alimenta o dicionário de cache local (Map) com os estabelecimentos para evitar consultas redundantes no agendamento.
   for (const estabelecimento of lista) {
     estadoTela.mapaEstabelecimentos.set(Number(estabelecimento.id), estabelecimento);
   }
@@ -201,36 +213,43 @@ async function buscarEstabelecimentos(reiniciarPagina) {
   return lista;
 }
 
-// Renderiza os cards dos estabelecimentos na area de resultados.
+// Cria dinamicamente os cards das lojas na área de resultados da busca.
 function renderizarResultados(estabelecimentos, append) {
   const container = document.getElementById("lista-resultados");
   const botaoVerMais = document.getElementById("btn-ver-mais");
 
+  // Verificação de segurança caso as tags HTML não existam no DOM da página atual.
   if (!container || !botaoVerMais) {
     return;
   }
 
+  // Se não for append (nova busca), limpa a listagem anterior de lojas no HTML.
   if (!append) {
     container.innerHTML = "";
   }
 
+  // Se a consulta retornou vazia e é uma nova busca, exibe mensagem informativa de nenhum resultado.
   if (!estabelecimentos.length && !append) {
     container.innerHTML = "<p>Nenhum resultado encontrado.</p>";
   }
 
+  // Percorre cada loja retornada para injetar o template HTML do cartão.
   for (const loja of estabelecimentos) {
     const servicos = Array.isArray(loja.servicos) ? loja.servicos : [];
 
+    // Cria a lista de serviços com nome e preço formatado para moeda nacional.
     let htmlDosServicos = "";
     for (const servico of servicos) {
       htmlDosServicos += `<li>${servico.nome} • ${formatarMoeda(servico.preco)}</li>`;
     }
 
+    // Adiciona o HTML do cartão (card) contendo logo, nome, endereço, distância e botão de ação.
     container.innerHTML += `
       <div class="card-loja">
         <div class="card-esquerda">
           <div class="tag-nome">${loja.nome}</div>
           <div class="placeholder-img">
+            <!-- Caso a imagem falhe ao carregar (URL quebrada), esconde a tag e exibe estilização sem-logo -->
             <img src="${loja.logoUrl || ""}" alt="Logo de ${loja.nome}" loading="lazy" onerror="this.style.display='none'; this.parentElement.classList.add('sem-logo');" />
           </div>
         </div>
@@ -239,40 +258,51 @@ function renderizarResultados(estabelecimentos, append) {
           <p><strong>Endereco:</strong> ${loja.endereco}</p>
           ${loja.distanciaKm ? `<p><strong>Distância:</strong> ${loja.distanciaKm} km</p>` : ""}
           <ul>${htmlDosServicos}</ul>
+          <!-- O clique no botão chama a função agendar passando o ID numérico do estabelecimento -->
           <button class="btn-agendar" onclick="agendar(${loja.id}, this)">Agendar</button>
         </div>
       </div>
     `;
   }
 
+  // Se a página atual de listagem for menor do que o total de páginas existentes, mostra o botão "Ver mais".
   const aindaTemPagina = estadoTela.paginaAtual < estadoTela.totalPaginas;
   botaoVerMais.style.display = aindaTemPagina ? "inline-block" : "none";
 }
 
-// Acao do botao "Buscar" da tela.
+// Ação disparada quando o cliente clica no botão "Buscar".
 async function filtrarResultados() {
   try {
+    // Zera qualquer aviso ou feedback de busca anterior.
     limparFeedback();
+    // Captura e armazena os valores dos campos de filtros preenchidos pelo usuário.
     estadoTela.filtros = capturarFiltrosDoFormulario();
 
+    // Executa a busca assíncrona limpando/reiniciando a página para 1 (true).
     let lista = await buscarEstabelecimentos(true);
+    // Renderiza a primeira leva de resultados limpando a tela (false no append).
     renderizarResultados(lista, false);
 
+    // Se a busca voltou vazia, dá feedback ao usuário.
     if (!lista.length) {
       mostrarFeedback("Nenhum estabelecimento encontrado.", "erro");
     } else {
       mostrarFeedback("Busca realizada com sucesso.", "sucesso");
     }
   } catch (error) {
+    // Captura e exibe qualquer falha de conexão ou erro interno do servidor.
     mostrarFeedback(`Erro ao buscar estabelecimentos: ${error.message}`, "erro");
   }
 }
 
-// Acao do botao "Ver mais".
+// Ação disparada quando o cliente clica no botão "Ver mais".
 async function mostrarMaisLojas() {
   try {
+    // Incrementa a página atual no estado para carregar o próximo conjunto de dados.
     estadoTela.paginaAtual += 1;
+    // Busca os estabelecimentos da próxima página na API (false para não reiniciar a contagem).
     const lista = await buscarEstabelecimentos(false);
+    // Renderiza as novas lojas anexando-as abaixo das existentes (true no append).
     renderizarResultados(lista, true);
   } catch (error) {
     mostrarFeedback(`Erro ao carregar mais resultados: ${error.message}`, "erro");
