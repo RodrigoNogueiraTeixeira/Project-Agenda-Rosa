@@ -1,3 +1,4 @@
+// Importa a classe Pool do pacote 'pg' (PostgreSQL client para Node.js) para gerenciar o pool de conexões com o banco.
 const { Pool } = require("pg");
 
 // ============================================================
@@ -8,11 +9,15 @@ const { Pool } = require("pg");
 // postgresql://usuario:senha@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
 // ============================================================
 
+// Instancia o Pool de conexões do PostgreSQL passando as configurações necessárias.
 const pool = new Pool({
+  // Define a string de conexão (obtida das variáveis de ambiente do sistema).
   connectionString: process.env.DATABASE_URL,
+  // Habilita SSL se houver uma URL de banco configurada, ignorando a rejeição de certificados autoassinados (necessário para o Neon).
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
+// Registra um ouvinte para capturar erros inesperados em conexões ociosas no pool (evitando travar o servidor).
 pool.on("error", (err) => {
   console.error("Erro inesperado na conexão com o banco de dados:", err.message);
 });
@@ -26,26 +31,30 @@ pool.on("error", (err) => {
 // necessário alterar nenhum outro arquivo do projeto.
 // ============================================================
 
+// Função que traduz a sintaxe de queries SQLite para PostgreSQL.
 function traduzirParaPostgres(sql) {
+  // Inicializa o contador posicional dos parâmetros ($1, $2, etc.).
   let contador = 0;
 
-  // Converte ? para $1, $2, $3...
+  // Substitui todas as interrogações (?) do SQLite pelos parâmetros indexados ($1, $2...) do Postgres.
   let sqlConvertido = sql.replace(/\?/g, () => {
-    contador++;
-    return `$${contador}`;
+    contador++; // Incrementa o contador a cada interrogação encontrada.
+    return `$${contador}`; // Retorna a string '$1', '$2', etc. no lugar do '?'.
   });
 
-  // Converte INTEGER PRIMARY KEY AUTOINCREMENT → SERIAL PRIMARY KEY
+  // Substitui a definição de chave primária autoincrementável do SQLite pelo tipo correspondente do Postgres (SERIAL PRIMARY KEY).
   sqlConvertido = sqlConvertido.replace(
     /INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/gi,
     "SERIAL PRIMARY KEY"
   );
 
-  // Converte PRAGMA (comandos internos do SQLite, ignorados no Postgres)
+  // Verifica se a query inicia com comandos do tipo PRAGMA (configurações específicas do SQLite que não funcionam no Postgres).
   if (/^\s*PRAGMA/i.test(sqlConvertido)) {
+    // Retorna um objeto indicando que essa query específica deve ser ignorada na execução.
     return { sql: null, ignorar: true };
   }
 
+  // Retorna a query convertida pronta para ser executada no PostgreSQL.
   return { sql: sqlConvertido, ignorar: false };
 }
 
@@ -53,79 +62,103 @@ function traduzirParaPostgres(sql) {
 // FUNÇÕES UTILITÁRIAS DE BANCO DE DADOS
 // ============================================================
 
-// Executa SQL sem retorno de linhas (INSERT, UPDATE, DELETE, CREATE).
+// Executa comandos SQL que não retornam registros (como INSERT, UPDATE, DELETE e CREATE TABLE).
 async function run(sql, params = []) {
+  // Traduz o SQL SQLite original para a sintaxe compatível com o PostgreSQL.
   const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
 
+  // Se a query for identificada como ignorável (ex: PRAGMA), retorna valores nulos imediatamente.
   if (ignorar) {
     return { lastID: null, changes: 0 };
   }
 
-  // Para INSERT INTO, adiciona RETURNING id para capturar o ID gerado
+  // Variável para armazenar a query final que será enviada ao PostgreSQL.
   let sqlFinal = sqlPg;
+  // Testa se a query é uma inserção (INSERT INTO).
   const ehInsert = /^\s*INSERT\s+INTO/i.test(sqlFinal);
+  // Se for um INSERT e não tiver a cláusula 'RETURNING' (necessária no Postgres para pegar o ID inserido)...
   if (ehInsert && !/RETURNING/i.test(sqlFinal)) {
-    // Remove ponto e vírgula final se houver, e adiciona RETURNING id
+    // Remove qualquer ponto e vírgula final se houver e adiciona ' RETURNING id' no final da query.
     sqlFinal = sqlFinal.replace(/;?\s*$/, "") + " RETURNING id";
   }
 
+  // Executa a query traduzida no pool do PostgreSQL passando os parâmetros limpos.
   const result = await pool.query(sqlFinal, params);
 
+  // Se for um INSERT e o banco retornou linhas, extrai o ID gerado (coluna 'id' retornada pelo RETURNING id).
   const lastID = ehInsert && result.rows && result.rows[0]
     ? Number(result.rows[0].id)
     : null;
 
+  // Retorna o ID do registro recém-criado e o número de linhas afetadas (rowCount).
   return {
     lastID,
     changes: result.rowCount || 0
   };
 }
 
-// Busca uma única linha.
+// Busca e retorna apenas uma única linha do banco de dados (equivalente ao 'get' do SQLite).
 async function get(sql, params = []) {
+  // Traduz a sintaxe da query SQL.
   const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
 
+  // Retorna null se for um comando SQLite para ignorar.
   if (ignorar) {
     return null;
   }
 
+  // Executa a query no PostgreSQL.
   const result = await pool.query(sqlPg, params);
+  // Retorna o primeiro registro (index 0) da lista de resultados, ou null se não encontrar nada.
   return result.rows[0] || null;
 }
 
-// Busca várias linhas.
+// Busca e retorna múltiplas linhas do banco de dados (equivalente ao 'all' do SQLite).
 async function all(sql, params = []) {
+  // Traduz a sintaxe da query SQL.
   const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
 
+  // Retorna uma lista vazia se for um comando SQLite para ignorar.
   if (ignorar) {
     return [];
   }
 
+  // Executa a query no PostgreSQL.
   const result = await pool.query(sqlPg, params);
+  // Retorna o array contendo todos os registros encontrados no banco.
   return result.rows;
 }
 
-// Executa um bloco de operações sob a mesma transação e conexão.
+// Executa um bloco de operações sob a mesma transação física e conexão de banco de dados (garantia ACID de atomicidade).
 async function transaction(callback) {
+  // Obtém uma conexão exclusiva do pool (essencial para que os comandos de transação BEGIN/COMMIT rodem no mesmo canal físico).
   const client = await pool.connect();
   try {
+    // Inicia a transação no banco de dados.
     await client.query("BEGIN");
 
+    // Cria um objeto 'tx' que fornece as funções utilitárias ligadas a este cliente específico da transação.
     const tx = {
+      // Executa comandos SQL de gravação/alteração sob esta transação específica.
       run: async (sql, params = []) => {
+        // Traduz a query de SQLite para a sintaxe do PostgreSQL.
         const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
         if (ignorar) {
           return { lastID: null, changes: 0 };
         }
 
         let sqlFinal = sqlPg;
+        // Verifica se é um comando de inserção de dados.
         const ehInsert = /^\s*INSERT\s+INTO/i.test(sqlFinal);
+        // Garante que consultas de inserção retornem o ID gerado pelo Postgres usando RETURNING id.
         if (ehInsert && !/RETURNING/i.test(sqlFinal)) {
           sqlFinal = sqlFinal.replace(/;?\s*$/, "") + " RETURNING id";
         }
 
+        // Executa a query na conexão dedicada desta transação.
         const result = await client.query(sqlFinal, params);
 
+        // Extrai o ID autogerado em caso de inserção bem-sucedida.
         const lastID = ehInsert && result.rows && result.rows[0]
           ? Number(result.rows[0].id)
           : null;
@@ -135,12 +168,14 @@ async function transaction(callback) {
           changes: result.rowCount || 0
         };
       },
+      // Busca uma única linha usando a conexão desta transação.
       get: async (sql, params = []) => {
         const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
         if (ignorar) return null;
         const result = await client.query(sqlPg, params);
         return result.rows[0] || null;
       },
+      // Busca várias linhas usando a conexão desta transação.
       all: async (sql, params = []) => {
         const { sql: sqlPg, ignorar } = traduzirParaPostgres(sql);
         if (ignorar) return [];
@@ -149,13 +184,19 @@ async function transaction(callback) {
       }
     };
 
+    // Executa a função de callback fornecida pelo programador, que contém as queries a serem rodadas sequencialmente na transação.
     const result = await callback(tx);
+    // Se o callback rodar com sucesso sem disparar erros, confirma todas as alterações definitivamente no banco de dados.
     await client.query("COMMIT");
+    // Retorna o resultado obtido na execução do callback.
     return result;
   } catch (error) {
+    // Se qualquer query falhar ou disparar erro, desfaz completamente todas as alterações pendentes da transação (BEGIN).
     await client.query("ROLLBACK");
+    // Repropaga o erro para ser capturado nas camadas superiores (como controllers).
     throw error;
   } finally {
+    // Sempre libera a conexão dedicada de volta para o Pool de conexões (previne vazamentos de conexão).
     client.release();
   }
 }
@@ -421,34 +462,50 @@ async function criarTabelas() {
     )
   `);
 
-  // Seed inicial de categorias
+  // SEED DE CATEGORIAS: Popula a tabela 'categorias' com registros padrões se ela estiver totalmente vazia.
+  // Realiza um SELECT COUNT para contar quantos registros de categorias existem no banco.
   const hasCategorias = await get("SELECT COUNT(*) AS count FROM categorias");
+  // Se a tabela estiver vazia (count === 0)...
   if (hasCategorias && Number(hasCategorias.count) === 0) {
+    // Insere a categoria 'Cabelo' no banco.
     await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Cabelo", "Servicos relacionados a corte e finalizacao.", "Ativa"]);
+    // Insere a categoria 'Unhas' no banco.
     await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Unhas", "Servicos de manicure e pedicure.", "Ativa"]);
+    // Insere a categoria 'Estética Feminino' no banco.
     await run("INSERT INTO categorias (nome, descricao, status) VALUES (?, ?, ?)", ["Estética Feminino", "Servicos de estetica corporal e facial feminina.", "Ativa"]);
   }
 }
 
-// Mantem bancos existentes compativeis com o CRUD de servicos da empresa.
+// MIGRAÇÃO DE SERVIÇOS: Atualiza a estrutura física da tabela 'servicos' para adicionar colunas do painel da empresa.
 async function migrarTabelaServicos() {
+  // Adiciona a coluna 'empresa_id' (inteiro) se ela não existir.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS empresa_id INTEGER");
+  // Adiciona a coluna 'categoria' (texto) com o valor padrão 'Geral' se não existir.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT 'Geral'");
+  // Adiciona a coluna 'preco_centavos' (inteiro) para evitar problemas de precisão com floats.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS preco_centavos INTEGER");
+  // Adiciona a coluna 'duracao_minutos' (inteiro) com valor padrão de 30 minutos.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS duracao_minutos INTEGER DEFAULT 30");
+  // Adiciona a coluna de descrição do serviço (texto).
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS descricao TEXT");
+  // Adiciona a coluna de status (texto) com o valor padrão 'ativo'.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'ativo'");
+  // Adiciona a coluna 'criado_em' (texto) contendo a data e hora do servidor convertida em texto.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS criado_em TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)");
+  // Adiciona a coluna 'atualizado_em' (texto) contendo a data e hora do servidor.
   await run("ALTER TABLE servicos ADD COLUMN IF NOT EXISTS atualizado_em TEXT DEFAULT (CURRENT_TIMESTAMP::TEXT)");
 
-  // O vinculo definitivo com estabelecimentos sera tratado em uma etapa propria.
+  // Altera a coluna 'estabelecimento_id' para aceitar valores nulos (remove o NOT NULL) porque agora vinculamos serviços à empresa.
   await run("ALTER TABLE servicos ALTER COLUMN estabelecimento_id DROP NOT NULL");
 
+  // Migra os preços antigos de float (Ex: 15.50) para centavos (Ex: 1550) multiplicando por 100 e arredondando para inteiro.
   await run(`
     UPDATE servicos
     SET preco_centavos = ROUND(preco * 100)::INTEGER
     WHERE preco_centavos IS NULL AND preco IS NOT NULL
   `);
+  
+  // Atualiza quaisquer dados antigos ou nulos nas novas colunas com os respectivos fallbacks padrão.
   await run(`
     UPDATE servicos
     SET
@@ -460,21 +517,29 @@ async function migrarTabelaServicos() {
   `);
 }
 
-// Relaciona empresas aprovadas aos estabelecimentos exibidos no marketplace.
+// MIGRAÇÃO DE RELACIONAMENTO: Conecta a conta da empresa ao estabelecimento físico no banco de dados.
 async function migrarRelacionamentoEmpresaEstabelecimento() {
+  // Adiciona a coluna 'empresa_id' na tabela 'estabelecimentos' se ela ainda não existir.
   await run("ALTER TABLE estabelecimentos ADD COLUMN IF NOT EXISTS empresa_id INTEGER");
+  
+  // Cria um índice único na coluna 'empresa_id' para forçar que cada empresa só possa ter 1 estabelecimento cadastrado (Relação 1:1).
   await run(`
     CREATE UNIQUE INDEX IF NOT EXISTS estabelecimentos_empresa_id_unique
     ON estabelecimentos (empresa_id)
   `);
+  
+  // Executa uma query de bloco de código procedimental em PL/pgSQL no PostgreSQL.
   await run(`
     DO $$
     BEGIN
+      -- Verifica se a restrição de chave estrangeira (FK) 'estabelecimentos_empresa_id_fkey' já existe.
       IF NOT EXISTS (
         SELECT 1
         FROM pg_constraint
         WHERE conname = 'estabelecimentos_empresa_id_fkey'
       ) THEN
+        -- Se não existir, altera a tabela estabelecimentos adicionando a FK que aponta para a tabela empresas(id).
+        -- ON DELETE CASCADE significa que se a empresa for deletada, seu estabelecimento é apagado automaticamente.
         ALTER TABLE estabelecimentos
         ADD CONSTRAINT estabelecimentos_empresa_id_fkey
         FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE;
