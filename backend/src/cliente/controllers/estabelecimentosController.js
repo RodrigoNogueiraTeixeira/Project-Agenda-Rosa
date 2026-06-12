@@ -99,10 +99,28 @@ async function horariosDisponiveis(req, res) {
       return;
     }
 
-    // 3. Validação de Formato e Regras de Negócio:
-    // - A data deve seguir estritamente o formato ISO YYYY-MM-DD.
-    // - A duração total do agendamento deve ser maior que 0 minutos e menor ou igual a 720 minutos (12 horas).
+    // 3. Validação de Formato e Regras de Negócio (Segurança de Entrada):
+    // POR QUE FAZEMOS ISSO? 
+    // - O banco de dados (SQLite) e as bibliotecas de datas exigem estritamente o formato ISO "AAAA-MM-DD".
+    //   Se o front-end enviar algo corrompido (ex: "hoje", "12/06/2026", "2026/06/12" ou tentativas de injeção de código),
+    //   as funções matemáticas do repositório vão falhar ou retornar erros internos (500).
+    //
+    // O QUE SIGNIFICA A EXPRESÃO REGULAR (REGEX) `/^\d{4}-\d{2}-\d{2}$/`?
+    // - `/` ... `/`: Delimitadores que abrem e fecham a expressão regular no JavaScript.
+    // - `^`: Exige que a validação comece exatamente a partir do início da string (evita texto extra no início).
+    // - `\d{4}`: Exige exatamente 4 caracteres numéricos (dígitos) para o Ano (ex: 2026).
+    // - `-`: Exige um hífen literal após o ano.
+    // - `\d{2}`: Exige exatamente 2 caracteres numéricos para o Mês (ex: 06).
+    // - `-`: Exige outro hífen literal.
+    // - `\d{2}`: Exige exatamente 2 caracteres numéricos para o Dia (ex: 12).
+    // - `$`: Exige que a string termine imediatamente após os dígitos do dia (impede texto extra no final).
+    // - `.test(data)`: Função do JavaScript que avalia se a variável 'data' se encaixa nesse padrão (retorna true ou false).
+    //
+    // TAMBÉM VALIDAMOS A DURAÇÃO DO SERVIÇO:
+    // - 'duracaoMinutos <= 0': Garante que o agendamento não tenha tempo nulo ou negativo.
+    // - 'duracaoMinutos > 720': Define um teto de segurança de 12 horas (720 minutos) por agendamento.
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data) || duracaoMinutos <= 0 || duracaoMinutos > 720) {
+      // Retorna 400 (Bad Request) se a data não estiver no padrão ou se a duração for irreal.
       res.status(400).json({ erro: "Data ou duracao invalida." });
       return;
     }
