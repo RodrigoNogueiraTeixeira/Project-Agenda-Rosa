@@ -1,3 +1,45 @@
+/**
+ * ==================================================================================
+ * AGENDA ROSA - MÓDULO DO CLIENTE (homeCliente.js)
+ * ==================================================================================
+ * Este script gerencia as interações da página inicial do cliente (Home do Cliente).
+ * Ele controla filtros de busca, paginação, requisições de estabelecimentos à API, 
+ * renderização dinâmica dos cartões de lojas e fluxo de modal para novos agendamentos.
+ * 
+ * ----------------------------------------------------------------------------------
+ * FILTROS DE BUSCA ATIVOS (Objeto 'estadoTela.filtros'):
+ * - cidade: Filtra estabelecimentos pelo nome exato da cidade.
+ * - bairro: Filtra estabelecimentos pelo nome exato do bairro.
+ * - tipo: Filtra estabelecimentos pelo tipo/categoria de serviço selecionado.
+ * - busca: Termo textual ('q') para busca rápida pelo nome do estabelecimento.
+ * 
+ * ----------------------------------------------------------------------------------
+ * PRINCIPAIS FUNÇÕES DE BUSCA, FILTRO E PAGINAÇÃO COM SUAS RESPECTIVAS LINHAS:
+ * 
+ * 1. buscarEstabelecimentos(reiniciarPagina)
+ *    - Linha de início: 214
+ *    - Funcionamento: Constrói a query string com a paginação e os filtros ativos
+ *      e faz a requisição GET assíncrona ao endpoint da API (/estabelecimentos).
+ *      Atualiza o cache em memória e calcula o total de páginas disponíveis.
+ * 
+ * 2. renderizarResultados(estabelecimentos, append)
+ *    - Linha de início: 291
+ *    - Funcionamento: Monta dinamicamente os cards HTML de cada loja retornada, 
+ *      incluindo imagem de logo, serviços, preços, distância e o botão "Agendar".
+ *      Gerencia se a tela deve ser limpa ou se novas lojas devem ser adicionadas
+ *      abaixo das existentes (append), além de definir a exibição do botão "Ver mais".
+ * 
+ * 3. filtrarResultados()
+ *    - Linha de início: 387
+ *    - Funcionamento: Captura os novos filtros informados pelo usuário, reseta
+ *      a paginação para a primeira página e executa uma nova busca limpa.
+ * 
+ * 4. mostrarMaisLojas()
+ *    - Linha de início: 422
+ *    - Funcionamento: Avança a página atual de exibição e busca novos dados, 
+ *      anexando os novos cartões abaixo dos já existentes na tela (modo append).
+ * ==================================================================================
+ */
 // URL base da API. Se nao houver configuracao, usamos localhost:3001.
 const API_BASE_URL = window.API_BASE_URL || localStorage.getItem("apiBaseUrl") || (window.location.hostname === "localhost" ? "http://localhost:3001/api" : "/api");
 
@@ -169,18 +211,33 @@ function validarDataAgendamentoFront(dataTexto) {
 }
 
 // Envia a requisição assíncrona HTTP para a API de estabelecimentos com os parâmetros de paginação e filtros.
+// Recebe o parâmetro booleano 'reiniciarPagina' para saber se é uma busca nova ou continuação de paginação.
 async function buscarEstabelecimentos(reiniciarPagina) {
-  // Se for uma nova busca (clique em Buscar), reinicia o contador para a primeira página do cursor.
+  // 1. Controle de Página:
+  // Se for uma busca nova (usuário clicou em 'Buscar' ou recarregou a página), 'reiniciarPagina' é true.
+  // Reiniciamos o contador no estado da tela para a primeira página (página 1).
+  // Se for paginação (usuário clicou em 'Ver mais'), este bloco é ignorado, mantendo a página incremental corrente.
   if (reiniciarPagina) {
     estadoTela.paginaAtual = 1;
   }
 
-  // Cria um objeto URLSearchParams nativo do navegador para facilitar a formatação segura dos parâmetros da URL.
+  // 2. Instanciação do Montador de Query String:
+  // Cria um objeto nativo da Web API do navegador chamado 'URLSearchParams'.
+  // Ele serve para construir, formatar e escapar caracteres especiais (como espaços e acentos) na URL de forma segura.
+  // NOTA ACADÊMICA: Requisições do tipo HTTP GET não devem enviar dados sensíveis ou payloads no corpo (body).
+  // Portanto, todos os filtros de busca são acoplados diretamente ao final da URL como Query Parameters (Ex: ?page=1&limit=6).
   const query = new URLSearchParams();
+  
+  // 3. Definição da Paginação Básica:
+  // Adiciona os parâmetros obrigatórios da paginação que a API espera receber:
+  // 'page': o número da página atual a buscar.
+  // 'limit': o número máximo de itens por página configurado no estado da tela.
   query.set("page", String(estadoTela.paginaAtual));
   query.set("limit", String(estadoTela.limite));
 
-  // Adiciona condicionalmente cada um dos filtros ativos na query string.
+  // 4. Injeção Condicional de Filtros:
+  // Adiciona apenas as chaves dos filtros opcionais cujo conteúdo foi preenchido pelo usuário.
+  // Se a propriedade correspondente estiver vazia (null/undefined/string vazia), ela é omitida para economizar dados na URL.
   if (estadoTela.filtros.cidade) {
     query.set("cidade", estadoTela.filtros.cidade);
   }
@@ -194,22 +251,40 @@ async function buscarEstabelecimentos(reiniciarPagina) {
   }
 
   if (estadoTela.filtros.busca) {
+    // Parâmetro 'q' representa o termo de busca textual digitado no campo de pesquisa rápida.
     query.set("q", estadoTela.filtros.busca);
   }
 
-  // Serializa a query string (Ex: "page=1&limit=6&cidade=São+Paulo").
+  // 5. Conversão da Query em String:
+  // Converte o objeto estruturado 'query' em uma string formatada para URLs (Ex: "page=1&limit=6&cidade=Belo+Horizonte").
   const queryString = new URLSearchParams(query).toString();
-  // Faz a chamada assíncrona GET na API de estabelecimentos usando a rota configurada.
+  
+  // 6. Chamada Assíncrona à API:
+  // Dispara a chamada HTTP GET utilizando a função utilitária global 'chamarApi'.
+  // O endpoint chamado será '/estabelecimentos' seguido pela interrogação (?) e a query string montada.
+  // O 'await' suspende a execução temporariamente até o servidor responder, mantendo o fluxo assíncrono.
   const resposta = await chamarApi(`/estabelecimentos?${queryString}`);
+  
+  // 7. Validação de Integridade dos Resultados (Fallback):
+  // Verifica de forma segura se o retorno 'resposta.estabelecimentos' é de fato um Array.
+  // Se for um array válido, usa ele mesmo. Se for nulo ou inválido, define 'lista' como um array vazio '[]'.
+  // Isso protege o loop for..of subsequente e evita falhas críticas de renderização.
   const lista = Array.isArray(resposta.estabelecimentos) ? resposta.estabelecimentos : [];
 
-  // Calcula o total de páginas dividindo a contagem total de registros do banco pelo limite de itens por página.
+  // 8. Cálculo de Total de Páginas:
+  // 'resposta.total' indica o total absoluto de lojas encontradas no banco de dados que atendem àqueles filtros.
+  // Dividimos esse total pelo limite de exibição por página e arredondamos para cima com 'Math.ceil' (Ex: 7 itens / 3 por página = 2.33, vira 3 páginas).
   estadoTela.totalPaginas = Math.ceil((resposta.total || 0) / estadoTela.limite);
-  // Alimenta o dicionário de cache local (Map) com os estabelecimentos para evitar consultas redundantes no agendamento.
+  
+  // 9. Armazenamento em Cache no Mapa Local:
+  // Percorre cada estabelecimento retornado e o adiciona a um dicionário em memória (Map).
+  // A chave é o ID da loja (convertido para número seguro) e o valor é o próprio objeto com as informações completas.
+  // Isso serve para resgatar os detalhes da loja instantaneamente na tela sem precisar fazer outra chamada ao banco quando o cliente clicar em agendar.
   for (const estabelecimento of lista) {
     estadoTela.mapaEstabelecimentos.set(Number(estabelecimento.id), estabelecimento);
   }
 
+  // 10. Retorno da Lista de Lojas Filtradas:
   return lista;
 }
 
@@ -235,6 +310,9 @@ function renderizarResultados(estabelecimentos, append) {
 
   // Percorre cada loja retornada para injetar o template HTML do cartão.
   for (const loja of estabelecimentos) {
+    // A função 'Array.isArray(valor)' verifica se a variável é de fato uma lista (Array), retornando true ou false.
+    // Se for um array, usa o próprio 'loja.servicos'. Se não for (ex: null ou undefined se a loja não tiver serviços cadastrados), 
+    // define 'servicos' como um array vazio '[]'. Isso serve para evitar que o loop 'for...of' de serviços quebre a página com erro de iteração.
     const servicos = Array.isArray(loja.servicos) ? loja.servicos : [];
 
     // Cria a lista de serviços com nome e preço formatado para moeda nacional.
@@ -244,67 +322,124 @@ function renderizarResultados(estabelecimentos, append) {
     }
 
     // Adiciona o HTML do cartão (card) contendo logo, nome, endereço, distância e botão de ação.
+    // Usamos interpolação de strings do JavaScript (template literals com crase ``) para construir a estrutura dinamicamente.
     container.innerHTML += `
+      <!-- Container principal do cartão da loja -->
       <div class="card-loja">
+        
+        <!-- Lado esquerdo do cartão: Contém a imagem do logotipo ou o nome alternativo -->
         <div class="card-esquerda">
+          <!-- Texto alternativo com o nome da loja que ficará visível caso a logo falhe ao carregar -->
           <div class="tag-nome">${loja.nome}</div>
+          
+          <!-- Container de estilização da imagem/placeholder -->
           <div class="placeholder-img">
-            <!-- Caso a imagem falhe ao carregar (URL quebrada), esconde a tag e exibe estilização sem-logo -->
+            <!-- 
+              Tag de Imagem para carregar a logo do estabelecimento:
+              - src: Define a URL da imagem. Se 'loja.logoUrl' for nula/indefinida/vazia, o operador '||' garante um fallback para string vazia.
+              - alt: Texto alternativo para acessibilidade e leitores de tela.
+              - loading="lazy": Adia o carregamento da imagem até que ela esteja próxima da área visível da tela (melhora a performance).
+              - onerror: Evento disparado caso a imagem falhe ao carregar (ex: link quebrado). O inline JS oculta o elemento de imagem (display='none')
+                e adiciona a classe CSS 'sem-logo' ao elemento pai (placeholder-img) para ativar a estilização de fallback usando a 'tag-nome'.
+            -->
             <img src="${loja.logoUrl || ""}" alt="Logo de ${loja.nome}" loading="lazy" onerror="this.style.display='none'; this.parentElement.classList.add('sem-logo');" />
           </div>
         </div>
+        
+        <!-- Lado direito do cartão: Detalhes informativos do estabelecimento e botão de agendamento -->
         <div class="card-direita">
+          <!-- Nome do estabelecimento em destaque -->
           <h3>${loja.nome}</h3>
+          
+          <!-- Endereço físico da loja -->
           <p><strong>Endereco:</strong> ${loja.endereco}</p>
+          
+          <!-- Interpolação condicional: Se existir 'loja.distanciaKm', renderiza a tag com a distância. Caso contrário, renderiza vazio "" -->
           ${loja.distanciaKm ? `<p><strong>Distância:</strong> ${loja.distanciaKm} km</p>` : ""}
+          
+          <!-- Lista desordenada contendo os serviços oferecidos e seus respectivos preços pré-renderizados -->
           <ul>${htmlDosServicos}</ul>
-          <!-- O clique no botão chama a função agendar passando o ID numérico do estabelecimento -->
+          
+          <!-- 
+            Botão que dispara a ação de agendamento:
+            - onclick: Chama a função global 'agendar()'.
+            - loja.id: Passa o ID único do estabelecimento como primeiro argumento.
+            - this: Passa a referência do próprio elemento HTML do botão como segundo argumento (útil para gerenciar o estado visual do clique).
+          -->
           <button class="btn-agendar" onclick="agendar(${loja.id}, this)">Agendar</button>
         </div>
       </div>
     `;
   }
 
-  // Se a página atual de listagem for menor do que o total de páginas existentes, mostra o botão "Ver mais".
+  // Faz o controle visual da paginação do botão "Ver mais".
+  // 1. Verifica se a página atual exibida (estadoTela.paginaAtual) é estritamente menor do que o total de páginas que o servidor possui (estadoTela.totalPaginas).
+  //    Se for menor, significa que ainda restam mais lojas para carregar nas próximas páginas, e 'aindaTemPagina' será 'true'.
   const aindaTemPagina = estadoTela.paginaAtual < estadoTela.totalPaginas;
+
+  // 2. Define a visibilidade do botão 'Ver mais' na interface alterando a propriedade CSS 'display' com base em um operador ternário:
+  //    - Se 'aindaTemPagina' for true: define 'inline-block' para que o botão apareça.
+  //    - Se 'aindaTemPagina' for false: define 'none' para esconder o botão por completo, já que todas as lojas já foram carregadas.
   botaoVerMais.style.display = aindaTemPagina ? "inline-block" : "none";
 }
 
 // Ação disparada quando o cliente clica no botão "Buscar".
+// O prefixo 'async' torna esta função assíncrona, permitindo usar o operador 'await' para pausar e esperar requisições de rede.
 async function filtrarResultados() {
+  // O bloco 'try' tenta executar as operações de busca. Se algo falhar (ex.: rede cair), o fluxo desvia imediatamente para o 'catch'.
   try {
-    // Zera qualquer aviso ou feedback de busca anterior.
+    // Zera qualquer aviso ou feedback visual de busca anterior na tela.
     limparFeedback();
-    // Captura e armazena os valores dos campos de filtros preenchidos pelo usuário.
+    
+    // Captura e armazena no estado global da tela (estadoTela.filtros) os valores preenchidos nos filtros (cidade, bairro, tipo).
     estadoTela.filtros = capturarFiltrosDoFormulario();
 
-    // Executa a busca assíncrona limpando/reiniciando a página para 1 (true).
+    // Envia a requisição assíncrona para a API chamando 'buscarEstabelecimentos'.
+    // O argumento 'true' sinaliza que queremos reiniciar a paginação para a página 1 (nova busca).
+    // O 'await' pausa a execução da função até que a lista de estabelecimentos seja retornada da API.
     let lista = await buscarEstabelecimentos(true);
-    // Renderiza a primeira leva de resultados limpando a tela (false no append).
+    
+    // Passa os dados recebidos para serem renderizados em HTML na tela.
+    // O segundo argumento 'false' desativa o modo 'append', limpando todos os cards anteriores do container antes de desenhar os novos.
     renderizarResultados(lista, false);
 
-    // Se a busca voltou vazia, dá feedback ao usuário.
+    // Verifica se a lista retornada está vazia (!lista.length avalia como true se o tamanho da lista for igual a 0).
     if (!lista.length) {
+      // Exibe uma mensagem de feedback informando que nenhuma loja atende aos filtros pesquisados.
       mostrarFeedback("Nenhum estabelecimento encontrado.", "erro");
     } else {
+      // Exibe uma mensagem de feedback indicando que a busca obteve sucesso.
       mostrarFeedback("Busca realizada com sucesso.", "sucesso");
     }
   } catch (error) {
-    // Captura e exibe qualquer falha de conexão ou erro interno do servidor.
+    // Bloco executado apenas em caso de erro (ex: falha de internet ou erro do servidor).
+    // Captura a exceção 'error' e exibe o detalhe do problema ('error.message') na tela de forma amigável ao cliente.
     mostrarFeedback(`Erro ao buscar estabelecimentos: ${error.message}`, "erro");
   }
 }
 
 // Ação disparada quando o cliente clica no botão "Ver mais".
+// A função é assíncrona ('async') para lidar com a chamada HTTP que buscará a próxima página de lojas de forma não-bloqueante.
 async function mostrarMaisLojas() {
   try {
-    // Incrementa a página atual no estado para carregar o próximo conjunto de dados.
+    // 1. Incremento de Página:
+    // Aumenta em 1 unidade o número da página atual a ser pesquisada no estado da tela (Ex: se estava na página 1, passa para a página 2).
     estadoTela.paginaAtual += 1;
-    // Busca os estabelecimentos da próxima página na API (false para não reiniciar a contagem).
+    
+    // 2. Requisição Assíncrona dos Novos Registros:
+    // Chama a função 'buscarEstabelecimentos' passando o argumento 'false'.
+    // O 'false' indica que não queremos reiniciar a paginação (não volta para a página 1, mantendo o incremento feito acima).
+    // O 'await' pausa a execução até que o servidor retorne a lista de estabelecimentos correspondente à nova página pesquisada.
     const lista = await buscarEstabelecimentos(false);
-    // Renderiza as novas lojas anexando-as abaixo das existentes (true no append).
+    
+    // 3. Renderização Acumulativa (Append):
+    // Passa a lista retornada de novos estabelecimentos para a função 'renderizarResultados'.
+    // O segundo argumento definido como 'true' ativa o modo 'append' (anexar).
+    // Isso instrui a função a não apagar os cartões de lojas já exibidos na tela, mas sim a desenhar as novas lojas logo abaixo dos cartões existentes.
     renderizarResultados(lista, true);
   } catch (error) {
+    // Caso ocorra qualquer falha na chamada HTTP ou processamento, o fluxo desvia para este bloco.
+    // Exibe um feedback visual de erro na tela informando a mensagem técnica detalhada ('error.message').
     mostrarFeedback(`Erro ao carregar mais resultados: ${error.message}`, "erro");
   }
 }
