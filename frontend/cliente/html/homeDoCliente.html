@@ -10,6 +10,11 @@
   </head>
 
   <body class="pagina-home-cliente">
+    
+    <!-- ==========================================
+         MÓDULO 1: CABEÇALHO (Header)
+         Identificação da página e botão de logoff
+         ========================================== -->
     <header class="cabecalho-home">
       <div>
         <h1>Home do Cliente</h1>
@@ -20,7 +25,10 @@
       </nav>
     </header>
 
+    <!-- CONTEÚDO PRINCIPAL (Main Container) -->
     <main id="conteudoPrincipal">
+      
+      <!-- SUBMÓDULO: BANNER ILUSTRATIVO (Hero Section) -->
       <section id="mensagemIlustrativa">
         <div class="mensagem-texto">
           <h2>Buscar estabelecimentos</h2>
@@ -29,12 +37,17 @@
         <div class="mensagem-arte" aria-hidden="true"></div>
       </section>
 
+      <!-- MÓDULO 2: MENUS DE NAVEGAÇÃO DA ÁREA DO CLIENTE -->
       <nav id="menusDeNavegacao" aria-label="Menu Principal">
         <a href="#">Buscar estabelecimentos</a>
         <a href="./AgendamentoCliente.html">Meus agendamentos</a>
         <a href="./ClienteEditarPerfil.html">Ver Perfil</a>
       </nav>
 
+      <!-- ==========================================
+         MÓDULO 3: FILTRO E BUSCA DE LOJAS
+         Formulário com filtros opcionais de localização, tipo e busca textual
+         ========================================== -->
       <section id="area-de-busca">
         <h2>Buscar estabelecimentos</h2>
         <form id="formBuscarEstabelecimentos">
@@ -78,6 +91,10 @@
         </form>
       </section>
 
+      <!-- ==========================================
+         MÓDULO 4: RESULTADOS DA BUSCA (Lojas Filtradas)
+         Container para listagem dinâmica das lojas e paginação (Ver Mais)
+         ========================================== -->
       <section id="area-de-resultados">
         <h2>Resultados</h2>
 
@@ -89,8 +106,10 @@
       </section>
     </main>
 
-    <!-- Modal de agendamento.
-         Ele começa escondido e é aberto via JavaScript ao clicar em "Agendar". -->
+    <!-- ==========================================
+         MÓDULO 5: MODAL DE AGENDAMENTO (Popup)
+         Formulário de marcação de serviço, profissional, data, horário e mapa
+         ========================================== -->
     <div id="overlayAgendamento" class="sobreposicao-agendamento" style="display: none;">
       <section id="modalAgendamento" class="modal-agendamento" role="dialog" aria-modal="true" aria-labelledby="tituloAgendamento">
         <button id="fecharAgendamento" class="btn-fechar-modal" type="button" aria-label="Fechar">×</button>
@@ -155,6 +174,7 @@
       </section>
     </div>
 
+    <!-- REFERÊNCIA AO SCRIPT DE LÓGICA DO CLIENTE -->
     <script src="../js/homeCliente.js"></script>
   </body>
 </html>

@@ -1,5 +1,4 @@
 # 🌸 Agenda Rosa
-
 O **Agenda Rosa** é uma plataforma web moderna de agendamentos online desenvolvida especificamente para conectar clientes a estabelecimentos de beleza e estética. O sistema permite que os clientes encontrem estabelecimentos, escolham serviços e profissionais, e realizem agendamentos de forma intuitiva, enquanto oferece às empresas ferramentas robustas para gerenciar sua agenda, equipe, serviços e perfil.
 
 ---
