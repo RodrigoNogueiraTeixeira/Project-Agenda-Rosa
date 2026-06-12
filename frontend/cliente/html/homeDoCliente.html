@@ -87,6 +87,8 @@
 
           <div id="feedbackBusca" aria-live="polite"></div>
 
+          <!-- O atributo type="button" impede que o botão envie o formulário por padrão (o que recarregaria a página). 
+               Isso permite que o clique seja capturado e tratado puramente pela função JavaScript 'filtrarResultados()'. -->
           <button type="button" onclick="filtrarResultados()">Buscar</button>
         </form>
       </section>
