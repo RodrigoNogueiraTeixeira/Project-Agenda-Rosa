@@ -1,12 +1,23 @@
+// Importa as funções auxiliares de execução de query do banco de dados configurado (config/database.js).
+// - all: executa consultas SQL que retornam múltiplas linhas de registros.
+// - get: executa consultas SQL que retornam apenas uma única linha (ou nulo).
 const { all, get } = require("../../config/database");
 
-// Busca estabelecimentos com filtro de tipo (filtros textuais ficam no repository).
+// Função: listarComFiltros
+// Objetivo: Consulta estabelecimentos filtrando pelo tipo de serviço cadastrado, usando SQL parametrizado.
+// Parâmetros:
+// - tipos: array contendo as categorias de serviços para filtrar (ex: ['salao', 'cabeleireiro']).
 async function listarComFiltros({ tipos }) {
   const condicoes = [];
   const params = [];
 
+  // Se houver tipos especificados na busca:
   if (tipos && tipos.length > 0) {
+    // Cria marcadores genéricos "?" separados por vírgula para segurança contra SQL Injection (ex: "?, ?").
     const marcadores = tipos.map(() => "?").join(", ");
+    
+    // Adiciona uma cláusula EXISTS para buscar estabelecimentos que possuam ao menos uma
+    // correspondência na tabela relacionada 'estabelecimento_tipos'.
     condicoes.push(`
       EXISTS (
         SELECT 1
@@ -15,11 +26,15 @@ async function listarComFiltros({ tipos }) {
           AND LOWER(et.tipo) IN (${marcadores})
       )
     `);
+    
+    // Alimenta o array de parâmetros seguros com os tipos normalizados em minúsculas.
     params.push(...tipos.map((tipo) => String(tipo || "").toLowerCase()));
   }
 
+  // Se houver condições, monta a cláusula WHERE conectando-as com AND. Caso contrário, monta string vazia.
   const whereSql = condicoes.length > 0 ? `WHERE ${condicoes.join(" AND ")}` : "";
 
+  // Executa a consulta SELECT parametrizada buscando os campos básicos da loja.
   const rows = await all(
     `
       SELECT e.id, e.nome, e.cidade, e.bairro, e.endereco, e.cep, e.logo_url, e.latitude, e.longitude
@@ -30,13 +45,17 @@ async function listarComFiltros({ tipos }) {
     params
   );
 
+  // Retorna o resultado envelopado com o total de linhas encontradas.
   return {
     total: rows.length,
     estabelecimentos: rows
   };
 }
 
-// Busca um estabelecimento pelo id.
+// Função: buscarPorId
+// Objetivo: Executa um SELECT simples para resgatar os dados de um estabelecimento a partir do seu ID numérico.
+// Parâmetros:
+// - id: ID do estabelecimento.
 async function buscarPorId(id) {
   return get(
     `SELECT id, nome, cidade, bairro, endereco, cep, logo_url, latitude, longitude FROM estabelecimentos WHERE id = ?`,
@@ -44,12 +63,17 @@ async function buscarPorId(id) {
   );
 }
 
-// Busca os tipos para uma lista de estabelecimentos.
+// Função: listarTiposPorEstabelecimentos
+// Objetivo: Busca em lote (batch query) as especialidades/tipos de uma lista de estabelecimentos.
+// Parâmetros:
+// - ids: array de IDs numéricos de estabelecimentos (ex: [1, 2, 3]).
 async function listarTiposPorEstabelecimentos(ids) {
+  // Verificação de segurança para evitar consultas SQL malformadas com arrays vazios.
   if (!ids || ids.length === 0) {
     return [];
   }
 
+  // Gera marcadores "?" baseados na quantidade de IDs do array.
   const marcadores = ids.map(() => "?").join(", ");
   return all(
     `
@@ -62,7 +86,10 @@ async function listarTiposPorEstabelecimentos(ids) {
   );
 }
 
-// Busca os servicos para uma lista de estabelecimentos.
+// Função: listarServicosPorEstabelecimentos
+// Objetivo: Busca em lote os serviços cadastrados e ativos para uma lista de estabelecimentos.
+// Parâmetros:
+// - ids: array de IDs de estabelecimentos.
 async function listarServicosPorEstabelecimentos(ids) {
   if (!ids || ids.length === 0) {
     return [];
@@ -81,7 +108,11 @@ async function listarServicosPorEstabelecimentos(ids) {
   );
 }
 
-// Busca servicos validos de um estabelecimento por lista de IDs.
+// Função: listarServicosSelecionados
+// Objetivo: Busca uma lista de serviços específicos de um determinado estabelecimento que estejam ativos no banco.
+// Parâmetros:
+// - estabelecimentoId: ID do estabelecimento.
+// - servicosIds: lista contendo os IDs numéricos dos serviços selecionados na tela (ex: [5, 12]).
 async function listarServicosSelecionados(estabelecimentoId, servicosIds) {
   if (!servicosIds || servicosIds.length === 0) {
     return [];
@@ -101,8 +132,13 @@ async function listarServicosSelecionados(estabelecimentoId, servicosIds) {
   );
 }
 
-// Atualiza as coordenadas do estabelecimento.
+// Função: atualizarCoordenadas
+// Objetivo: Executa um comando SQL UPDATE para salvar as coordenadas de geolocalização (latitude e longitude) de uma loja.
+// Parâmetros:
+// - id: ID do estabelecimento.
+// - latitude, longitude: coordenadas decimais.
 async function atualizarCoordenadas(id, latitude, longitude) {
+  // Importa a função utilitária de alteração/execução no banco de dados.
   const { run } = require("../../config/database");
   return run(
     `UPDATE estabelecimentos SET latitude = ?, longitude = ? WHERE id = ?`,
@@ -110,8 +146,15 @@ async function atualizarCoordenadas(id, latitude, longitude) {
   );
 }
 
-// Busca profissionais ativos da empresa do estabelecimento.
+// Função: listarProfissionaisPorEstabelecimento
+// Objetivo: Lista os profissionais ativos da empresa correspondente ao estabelecimento.
+// Se uma lista de IDs de serviços for enviada, garante que apenas profissionais habilitados a prestar
+// TODOS os serviços selecionados sejam retornados.
+// Parâmetros:
+// - estabelecimentoId: ID da loja.
+// - servicosIds: array contendo IDs de serviços selecionados (opcional).
 async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicosIds = []) {
+  // 1. Busca a 'empresa_id' atrelada ao estabelecimento:
   const estabelecimento = await get(
     "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
@@ -119,6 +162,8 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
 
   let empresaId = estabelecimento ? estabelecimento.empresa_id : null;
 
+  // 2. Fallback de Segurança:
+  // Se a empresa_id estiver nula no estabelecimento, tenta recuperar através de algum serviço cadastrado.
   if (!empresaId) {
     const servico = await get(
       "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
@@ -127,10 +172,15 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
     empresaId = servico ? servico.empresa_id : estabelecimentoId;
   }
 
+  // 3. Filtragem Avançada de Profissionais por Habilidades (Serviços):
+  // Se o usuário selecionou serviços específicos na tela de agendamento:
   if (servicosIds.length > 0) {
     const marcadores = servicosIds.map(() => "?").join(", ");
 
-    // O profissional precisa estar vinculado a todos os servicos selecionados.
+    // O profissional precisa estar vinculado e habilitado a executar a totalidade dos serviços selecionados.
+    // Usamos INNER JOINs entre as tabelas profissionais, profissional_servicos e servicos.
+    // A cláusula 'HAVING COUNT(DISTINCT ps.servico_id) = ?' valida se a quantidade de correspondências
+    // bate com o tamanho do array enviado pelo frontend.
     const resultado = await all(
       `
         SELECT p.id, p.nome, p.especialidade
@@ -148,19 +198,26 @@ async function listarProfissionaisPorEstabelecimento(estabelecimentoId, servicos
       [empresaId, estabelecimentoId, ...servicosIds, servicosIds.length]
     );
 
+    // Se encontrou profissionais qualificados em lote, retorna-os imediatamente.
     if (resultado && resultado.length > 0) {
       return resultado;
     }
   }
 
-  // Fallback: se nenhum profissional atende aos serviços específicos (ou se nenhum serviço foi passado),
-  // retorna todos os profissionais ativos cadastrados pela empresa do estabelecimento.
+  // 4. Fallback Geral (Sem serviços especificados ou sem correspondências exclusivas):
+  // Retorna todos os profissionais ativos associados à empresa do estabelecimento ordenados por nome.
   return all(
     "SELECT id, nome, especialidade FROM profissionais WHERE empresa_id = ? AND ativo = 1 ORDER BY nome",
     [empresaId]
   );
 }
 
+// Função: buscarHorarioFuncionamento
+// Objetivo: Consulta as definições de horários e intervalos de expediente da empresa de um estabelecimento
+// filtrando por um dia da semana específico (0 = Domingo, 1 = Segunda, ..., 6 = Sábado).
+// Parâmetros:
+// - estabelecimentoId: ID do estabelecimento.
+// - diaSemana: número inteiro representando o dia da semana.
 async function buscarHorarioFuncionamento(estabelecimentoId, diaSemana) {
   return get(
     `SELECT
@@ -179,7 +236,14 @@ async function buscarHorarioFuncionamento(estabelecimentoId, diaSemana) {
   );
 }
 
+// Função: listarBloqueiosPorData
+// Objetivo: Consulta bloqueios pontuais de agenda (feriados, recessos ou folgas de profissionais)
+// cadastrados para a empresa do estabelecimento em uma determinada data.
+// Parâmetros:
+// - estabelecimentoId: ID do estabelecimento.
+// - data: string da data no formato "YYYY-MM-DD".
 async function listarBloqueiosPorData(estabelecimentoId, data) {
+  // 1. Localiza a empresa associada ao estabelecimento:
   const estabelecimento = await get(
     "SELECT empresa_id FROM estabelecimentos WHERE id = ?",
     [estabelecimentoId]
@@ -187,6 +251,7 @@ async function listarBloqueiosPorData(estabelecimentoId, data) {
 
   let empresaId = estabelecimento ? estabelecimento.empresa_id : null;
 
+  // 2. Fallback de Segurança:
   if (!empresaId) {
     const servico = await get(
       "SELECT DISTINCT empresa_id FROM servicos WHERE estabelecimento_id = ? AND empresa_id IS NOT NULL LIMIT 1",
@@ -195,6 +260,8 @@ async function listarBloqueiosPorData(estabelecimentoId, data) {
     empresaId = servico ? servico.empresa_id : estabelecimentoId;
   }
 
+  // 3. Consulta Bloqueios na Data:
+  // Retorna a lista de bloqueios cadastrados com início e fim para a data correspondente.
   return all(
     `SELECT
       bh.profissional_id,
