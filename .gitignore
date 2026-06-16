@@ -1,6 +1,7 @@
 backend/node_modules/
 backend/.env
 backend/data/agendarosa.db
+backend/data/db.json
 
 ### VS Code ###
 .vscode/
