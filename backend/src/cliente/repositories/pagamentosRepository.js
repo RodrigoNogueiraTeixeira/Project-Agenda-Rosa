@@ -81,11 +81,20 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
         unit_price: Number(agendamento.total || 0)
       }
     ],
+
+    //////
+    // e passado para o mercado pago a cobrança
+    /////
     // 'external_reference': É a placa de identificação que NÓS damos para a cobrança.
     // Quando o Mercado Pago nos avisar que o pagamento caiu, ele vai devolver essa mesma "placa" (ex: agenda-rosa-5-1234)
     // para podermos procurar no nosso banco de dados a qual agendamento aquele dinheiro pertence.
     external_reference: externalReference, 
     
+
+
+    /////
+    // sao as paginas de redirecionamento, para voltar o cliente ao site.
+    /////
     // 'back_urls': O que acontece depois que o cliente termina de digitar o cartão lá na tela do Mercado Pago?
     // O Mercado Pago precisa de links para redirecionar (mandar de volta) o cliente para o nosso site.
     back_urls: {
@@ -97,16 +106,28 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
       failure: `${config.appBaseUrl}/html/pagamentoFalha.html`
     },
 
+
+    /////
+    // se o pagamento for aprovado de forma instantanea volta o cliente.
+    /////
     // 'auto_return': Trabalha junto com as 'back_urls' acima. 
     // O valor "approved" significa que, se o pagamento for aprovado instantaneamente, o Mercado Pago joga o cliente 
     // de volta pro nosso site AUTOMATICAMENTE, sem o cliente precisar clicar em um botão "Voltar para o site da loja".
     auto_return: "approved",
 
+
+    /////
+    // recebe notificacoes se caso o pagamento foi efetuado ou alguma novidade
+    /////
     // 'notification_url': É o "telefone" do nosso servidor (o Webhook!).
     // Passamos esse link para o Mercado Pago e dizemos: "Se houver qualquer novidade nesse Pix/Cartão, mande um aviso aqui!"
     // O '|| undefined' garante que, se não tivermos essa URL no momento, o campo é ignorado sem dar erro de sistema.
     notification_url: config.webhookUrl || undefined, 
     
+    //////
+    // E um bolso secreto, onde enviamos para o mercado pago id do agendamento e do cliente, apenas para que
+    // o adm tenha nocao do pagamento efetuado e qual foi o agndamento.
+    ////// 
     // 'metadata': É como um bolso secreto do Mercado Pago.
     // Ele não usa isso pra nada, mas permite que a gente esconda dados úteis ali dentro (como o ID do Agendamento e do Cliente).
     // Assim, se a dona do salão abrir o site oficial do Mercado Pago para conferir a conta, ela vai ver de qual agendamento é o dinheiro.
@@ -122,7 +143,9 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
     Authorization: `Bearer ${config.accessToken}`
   };
 
-
+  ///////
+  // parceria, se formos parceiro ganhamos recompensas (implementacao futura)
+  ///////
   // Se a empresa Agenda Rosa for uma agência parceira oficial do Mercado Pago,
   // ela vai ter um código de parceiro (integratorId). 
   // Esse 'if' faz o seguinte: "Se existir um código de parceiro configurado, anexe ele no 'cabeçalho' da mensagem".
@@ -131,6 +154,10 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
     headers["x-integrator-id"] = config.integratorId;
   }
 
+
+  ///////
+  // aqui enviamos para o mercado pago as configuracoes que fizemos.
+  ///////
   // =====================================
   // EXPLICANDO O FETCH:
   // =====================================
@@ -150,7 +177,8 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
     throw new Error(dados.message || "Falha ao criar preferencia no Mercado Pago.");
   }
 
-  // Salva no nosso próprio banco de dados SQLite que esse pagamento acabou de ser "PENDENTE"
+
+  // Salva no nosso próprio banco de dados que esse pagamento acabou de ser "PENDENTE"
   const pagamentoId = await pagamentosDAO.criarPedidoPagamento({
     agendamentoId: idAgendamento,
     clienteId: idCliente,
@@ -178,10 +206,13 @@ async function criarPreferenciaCheckout({ agendamentoId, clienteId }) {
  * O QUE FAZ: É aqui que a mágica acontece. Quando o cliente paga, o Mercado Pago manda um pacote de dados para cá.
  */
 async function processarWebhookMercadoPago(payload) {
-  // Pega qual foi o evento e qual ID de pagamento mudou.
-  // Os '|| ""' (OU Vazio) servem para evitar que o programa quebre se o Mercado Pago mandar dados em branco.
+  // Pega o assunto/tópico do evento (ex: "payment" para avisos de pagamento ou "merchant_order" para pedidos).
   const topic = payload.type || payload.topic || "";
+  
+  // Pega a ação realizada (ex: "payment.created" ao criar ou "payment.updated" ao atualizar o status do pagamento).
   const action = payload.action || "";
+  
+  // Pega o ID único do pagamento gerado no Mercado Pago (convertido para Texto de forma segura).
   const dataId = String((payload.data && payload.data.id) || "");
 
   // Anotamos no banco de dados tudo o que recebemos de fora por pura segurança e histórico
@@ -198,20 +229,33 @@ async function processarWebhookMercadoPago(payload) {
 
   const config = obterConfigMercadoPago();
   
-  // IMPORTANTE: Nós NÃO confiamos cega no que o Webhook nos enviou, pois pode ser um hacker simulando um webhook falso para aprovar um Pix de graça.
-  // Então nós fazemos um "GET" com a nossa própria chave (accessToken) pedindo pro Mercado Pago a situação REAL oficial daquele ID.
-  const resposta = await fetch(`${config.baseUrl}/v1/payments/${dataId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${config.accessToken}`
+  // ====================================================================================
+  // SISTEMA DE SEGURANÇA CONTRA FRAUDES (VERIFICAÇÃO DUPLA):
+  // Não confiamos nas informações enviadas diretamente pelo Webhook, pois um invasor poderia
+  // fingir ser o Mercado Pago para aprovar agendamentos de graça.
+  // Em vez disso, pegamos apenas o ID da transação (dataId) e fazemos uma chamada direta,
+  // via GET, para a API oficial do Mercado Pago para obter o status real e autêntico do pagamento.
+  // ====================================================================================
+  const resposta = await fetch(
+    // URL: Central de pagamentos do Mercado Pago concatenado com o ID da transação que queremos consultar.
+    `${config.baseUrl}/v1/payments/${dataId}`, 
+    {
+      method: "GET", // Método GET: Apenas consulta/leitura de dados seguros.
+      headers: {
+        // Envia o nosso token de acesso (accessToken) no cabeçalho para nos autenticar.
+        Authorization: `Bearer ${config.accessToken}`
+      }
     }
-  });
+  );
 
   const dadosPagamento = await resposta.json().catch(() => ({}));
   if (!resposta.ok) {
     return { processado: false, motivo: "nao_foi_possivel_consultar_pagamento" };
   }
 
+  //////
+  // external_refeece se refere a cobrança, puxamos ele e analisamos se existe uma cobranca
+  /////
   // Lembra do externalReference "agenda-rosa-5-12345" que enviamos na criação? Ele voltou!
   // Usamos isso para achar no nosso banco quem é o dono exato desse pagamento e a qual agendamento ele pertence.
   const externalReference = String(dadosPagamento.external_reference || "");
@@ -219,6 +263,7 @@ async function processarWebhookMercadoPago(payload) {
     return { processado: false, motivo: "sem_external_reference" };
   }
 
+  // --- BUSCA LOCAL: Encontra a comanda de pagamento pendente correspondente em nosso próprio banco de dados ---
   const pagamentoLocal = await pagamentosDAO.buscarPorExternalReference(externalReference);
   if (!pagamentoLocal) {
     return { processado: false, motivo: "pagamento_local_nao_encontrado" };

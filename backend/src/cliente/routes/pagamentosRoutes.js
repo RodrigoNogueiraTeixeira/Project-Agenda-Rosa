@@ -15,6 +15,7 @@ const { Router } = require("express");
 // Importa o "Guarda de Trânsito" (Controller) que sabe o que fazer com cada pedido
 const pagamentosController = require("../controllers/pagamentosController");
 
+// Inicializa o roteador do Express que usaremos para definir as URLs (endpoints) do fluxo de pagamentos.
 const router = Router();
 
 // ==========================================
@@ -36,16 +37,16 @@ router.get("/pagamentos/mercadopago/status-config", pagamentosController.statusC
 router.post("/pagamentos/mercadopago/preference", pagamentosController.criarPreferencia);
 
 // ==========================================
-// ROTA 3: Receber Avisos do Mercado Pago (Webhook)
+// ROTA 3: Receber Avisos do Mercado Pago se foi pago ou nao, avisa o banco de dados
 // ==========================================
 // O QUE É: Uma rota do tipo POST. ATENÇÃO: Quem chama essa rota NÃO É o seu frontend, é o próprio servidor do Mercado Pago!
-// FLUXO: Lembra da 'webhookUrl' que configuramos no mercadoPago.js? O Mercado Pago vai enviar um POST "invisível" para ESSE endereço
+// FLUXO: O Mercado Pago vai enviar um POST "invisível" para ESSE endereço
 // toda vez que um cliente pagar o Pix no aplicativo do banco dele. O Controller recebe esse aviso, descobre qual foi o agendamento pago,
 // e manda o banco de dados atualizar o status de "PENDENTE" para "APROVADO".
 router.post("/pagamentos/mercadopago/webhook", pagamentosController.webhookMercadoPago);
 
 // ==========================================
-// ROTA 4: Consultar o Status de um Pagamento
+// ROTA 4: Consultar o Status de um Pagamento para demonstrar de forma visual o status do pagamento
 // ==========================================
 // O QUE É: Uma rota do tipo GET. Aquele ":id" na URL é um parâmetro dinâmico (ex: /pagamentos/123).
 // FLUXO: Usado caso o cliente queira ver o recibo de um pagamento. O Controller vai procurar esse ID do pagamento
