@@ -1,9 +1,11 @@
+/* Estilos da tela de agenda da empresa */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* Estrutura principal da pagina */
 body {
   font-family: "Segoe UI", sans-serif;
   background: linear-gradient(135deg, #fff7fa, #f8d6e1);
@@ -13,6 +15,7 @@ body {
   padding: 40px 20px;
 }
 
+/* Cards e cabecalho */
 .container {
   width: 100%;
   max-width: 1300px;
@@ -55,6 +58,7 @@ body {
   font-weight: 700;
 }
 
+/* Formulario de filtros */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -98,6 +102,7 @@ select:focus {
   box-shadow: 0 0 0 4px rgba(217, 79, 138, 0.15);
 }
 
+/* Tabela de agendamentos */
 .table-wrapper {
   overflow-x: auto;
   border: 1px solid #f0d7e3;
@@ -140,6 +145,7 @@ tbody tr:hover {
   cursor: pointer;
 }
 
+/* Botoes de acao */
 .acoes {
   display: flex;
   flex-direction: column;
@@ -204,6 +210,7 @@ button:hover {
   background: #fff5f9;
 }
 
+/* Modal de detalhes do agendamento */
 .modal-check {
   display: none;
 }
@@ -283,6 +290,7 @@ button:hover {
   margin-top: 22px;
 }
 
+/* Ajustes para telas menores */
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;

@@ -1,5 +1,6 @@
 const { run, get, all, transaction } = require("../../config/database");
 
+// Define os campos basicos retornados para profissionais.
 function selecionarCamposProfissional() {
   return `SELECT
     id,
@@ -49,6 +50,7 @@ async function adicionarServicos(profissionais, empresaId) {
 }
 
 async function listarPorEmpresa(filtros) {
+  // Aplica o filtro de ativos quando solicitado pela tela.
   const params = [filtros.empresaId];
   let filtroAtivo = "";
 
@@ -68,6 +70,7 @@ async function listarPorEmpresa(filtros) {
 }
 
 async function buscarPorId(id, empresaId) {
+  // Busca o profissional e adiciona seus servicos vinculados.
   const profissional = await get(
     `${selecionarCamposProfissional()}
     WHERE id = ? AND empresa_id = ?`,
@@ -87,6 +90,7 @@ async function buscarPorId(id, empresaId) {
 }
 
 function montarMarcadores(quantidade) {
+  // Gera os placeholders usados no IN da consulta.
   const marcadores = [];
 
   for (let indice = 0; indice < quantidade; indice += 1) {
@@ -113,6 +117,7 @@ async function validarServicos(tx, empresaId, servicosIds) {
 }
 
 async function salvarVinculos(tx, profissionalId, servicosIds) {
+  // Cadastra os servicos atendidos pelo profissional.
   for (const servicoId of servicosIds) {
     await tx.run(
       `INSERT INTO profissional_servicos (profissional_id, servico_id)
@@ -123,6 +128,7 @@ async function salvarVinculos(tx, profissionalId, servicosIds) {
 }
 
 async function criar(dados) {
+  // Cria profissional e vinculos em uma unica transacao.
   const profissionalId = await transaction(async function (tx) {
     await validarServicos(tx, dados.empresaId, dados.servicosIds);
 
@@ -153,6 +159,7 @@ async function criar(dados) {
 }
 
 async function atualizar(id, dados) {
+  // Atualiza o profissional e recria seus vinculos de servicos.
   const atualizado = await transaction(async function (tx) {
     const profissional = await tx.get(
       "SELECT id FROM profissionais WHERE id = ? AND empresa_id = ?",
@@ -203,6 +210,7 @@ async function atualizar(id, dados) {
 }
 
 async function excluir(id, empresaId) {
+  // Exclui somente se o profissional pertencer a empresa.
   const resultado = await run(
     "DELETE FROM profissionais WHERE id = ? AND empresa_id = ?",
     [id, empresaId]

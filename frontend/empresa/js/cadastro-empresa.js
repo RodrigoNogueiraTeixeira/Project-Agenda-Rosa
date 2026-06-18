@@ -16,6 +16,7 @@ var API_BASE_URL = (
 ).replace(/\/+$/, "");
 
 function obterValor(id) {
+  // Busca o valor digitado e remove espacos das pontas.
   var campo = document.getElementById(id);
   return campo ? String(campo.value).trim() : "";
 }
@@ -60,6 +61,7 @@ function validarFormulario(dados, confirmarSenha) {
 }
 
 async function cadastrarEmpresa(event) {
+  // Envia o cadastro inicial da empresa para aprovacao.
   event.preventDefault();
 
   var dados = montarDadosEmpresa();
@@ -103,5 +105,6 @@ async function cadastrarEmpresa(event) {
 }
 
 if (formCadastroEmpresa) {
+  // Intercepta o envio padrao para salvar via API.
   formCadastroEmpresa.addEventListener("submit", cadastrarEmpresa);
 }

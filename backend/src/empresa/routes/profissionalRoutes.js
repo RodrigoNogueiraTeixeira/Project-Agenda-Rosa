@@ -3,6 +3,7 @@ const profissionalController = require("../controllers/profissionalController");
 
 const router = express.Router();
 
+// Rotas de manutencao dos profissionais da empresa.
 router.get("/", profissionalController.listarProfissionais);
 router.post("/", profissionalController.cadastrarProfissional);
 router.put("/:id", profissionalController.atualizarProfissional);

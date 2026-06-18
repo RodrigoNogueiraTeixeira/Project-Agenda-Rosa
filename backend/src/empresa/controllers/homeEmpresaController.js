@@ -1,10 +1,12 @@
 const homeEmpresaRepository = require("../repositories/homeEmpresaRepository");
 
+// Retorna a data atual no formato usado nas consultas do banco.
 function obterDataHoje() {
   const dataAtual = new Date();
   return dataAtual.toISOString().slice(0, 10);
 }
 
+// Retorna a hora atual para localizar o proximo atendimento do dia.
 function obterHoraAtual() {
   const dataAtual = new Date();
   return dataAtual.toTimeString().slice(0, 5);

@@ -10,10 +10,12 @@ const previewLogo = document.getElementById("preview-logo");
 
 let logoUrlAtual = "";
 
+// Le a empresa associada ao perfil atual.
 function obterEmpresaId() {
   return localStorage.getItem("empresaId");
 }
 
+// Busca valores dos campos do formulario.
 function obterValor(id) {
   const campo = document.getElementById(id);
 
@@ -37,6 +39,7 @@ function mostrarLogo(logoUrl) {
 }
 
 function tipoDeImagemValido(tipo) {
+  // Aceita apenas os formatos permitidos para a logo.
   if (tipo === "image/png") {
     return true;
   }
@@ -134,6 +137,7 @@ function adicionarCategoriaAntiga(categoria) {
 }
 
 function preencherCampo(id, valor) {
+  // Preenche um campo somente se ele existir na tela.
   const campo = document.getElementById(id);
 
   if (campo) {
@@ -160,6 +164,7 @@ function preencherPerfil(perfil) {
 }
 
 function montarDadosPerfil() {
+  // Monta o corpo enviado para atualizar o perfil.
   return {
     empresaId: obterEmpresaId(),
     nomeEstabelecimento: obterValor("nome-estabelecimento"),
@@ -247,10 +252,12 @@ async function salvarPerfil(event) {
 }
 
 if (campoFotoLogo) {
+  // Atualiza a pre-visualizacao quando uma imagem e escolhida.
   campoFotoLogo.addEventListener("change", selecionarLogo);
 }
 
 if (formPerfil) {
+  // Envia o formulario para a API sem recarregar a pagina.
   formPerfil.addEventListener("submit", salvarPerfil);
 }
 

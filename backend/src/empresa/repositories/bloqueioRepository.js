@@ -1,5 +1,6 @@
 const bloqueioDAO = require("../dao/bloqueioDAO");
 
+// Lista os bloqueios cadastrados para a empresa.
 async function listarPorEmpresa(empresaId) {
   return bloqueioDAO.listarPorEmpresa(empresaId);
 }
@@ -34,6 +35,7 @@ async function criar(dados) {
   return bloqueioDAO.criar(dadosDoBloqueio);
 }
 
+// Remove o bloqueio dentro do escopo da empresa.
 async function excluir(id, empresaId) {
   return bloqueioDAO.excluir(id, empresaId);
 }

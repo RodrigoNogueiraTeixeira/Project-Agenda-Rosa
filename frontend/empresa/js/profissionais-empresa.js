@@ -11,6 +11,7 @@ const listaServicos = document.getElementById("servicos-profissional");
 
 let profissionalEmEdicaoId = null;
 
+// Recupera a empresa logada antes de consultar profissionais.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -22,6 +23,7 @@ function obterEmpresaId() {
   return empresaId;
 }
 
+// Busca o valor de um campo e remove espacos das pontas.
 function obterValor(id) {
   const campo = document.getElementById(id);
 
@@ -32,6 +34,7 @@ function obterValor(id) {
   return campo.value.trim();
 }
 
+// Le os servicos marcados no cadastro do profissional.
 function obterServicosSelecionados() {
   const servicosIds = [];
   const campos = listaServicos.querySelectorAll(
@@ -46,6 +49,7 @@ function obterServicosSelecionados() {
 }
 
 function montarDadosProfissional() {
+  // Monta o corpo enviado para cadastro ou edicao.
   return {
     empresaId: obterEmpresaId(),
     nome: obterValor("nome-profissional"),
@@ -127,12 +131,14 @@ async function carregarServicos() {
 }
 
 function limparFormulario() {
+  // Volta o formulario para o modo de cadastro.
   formProfissional.reset();
   profissionalEmEdicaoId = null;
   botaoSalvarProfissional.textContent = "Cadastrar profissional";
 }
 
 function obterTextoStatus(profissional) {
+  // Traduz o campo ativo para o texto exibido na tabela.
   if (profissional.ativo) {
     return "Ativo";
   }
@@ -141,6 +147,7 @@ function obterTextoStatus(profissional) {
 }
 
 function marcarServicosDoProfissional(servicos) {
+  // Marca os servicos ja vinculados ao profissional em edicao.
   const campos = listaServicos.querySelectorAll("input[type='checkbox']");
 
   for (const campo of campos) {
@@ -171,6 +178,7 @@ function preencherFormularioParaEdicao(profissional) {
 }
 
 function obterNomesDosServicos(profissional) {
+  // Junta os nomes dos servicos em uma unica celula.
   const nomes = [];
 
   for (const servico of profissional.servicos || []) {
@@ -258,6 +266,7 @@ async function carregarProfissionais() {
 }
 
 function obterDadosDaRequisicao() {
+  // Alterna entre cadastro e atualizacao conforme o modo atual.
   if (profissionalEmEdicaoId) {
     return {
       url: `${API_PROFISSIONAIS_URL}/${profissionalEmEdicaoId}`,
@@ -274,6 +283,7 @@ function obterDadosDaRequisicao() {
 }
 
 async function salvarProfissional(event) {
+  // Salva o profissional e atualiza a tabela.
   event.preventDefault();
 
   const dados = montarDadosProfissional();
@@ -323,6 +333,7 @@ async function salvarProfissional(event) {
 }
 
 async function excluirProfissional(id) {
+  // Remove o profissional depois da confirmacao do usuario.
   if (!confirm("Deseja realmente excluir este profissional?")) {
     return;
   }
@@ -353,6 +364,7 @@ async function excluirProfissional(id) {
 }
 
 if (formProfissional) {
+  // Intercepta o envio do formulario para usar a API.
   formProfissional.addEventListener("submit", salvarProfissional);
 }
 

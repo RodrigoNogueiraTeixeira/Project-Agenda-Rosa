@@ -2,10 +2,12 @@ const agendamentoRepository = require("../repositories/agendamentoRepository");
 
 const PRAZO_CANCELAMENTO_HORAS = 2;
 
+// Verifica se o horario foi recebido no formato esperado.
 function horaValida(hora) {
   return /^\d{2}:\d{2}$/.test(String(hora));
 }
 
+// Transforma HH:MM em minutos para facilitar comparacoes e somas.
 function converterHoraParaMinutos(hora) {
   const partes = String(hora).split(":");
   const horas = Number(partes[0]);
@@ -24,11 +26,13 @@ function calcularHorarioFim(horarioInicio, duracaoMinutos) {
   return `${horas}:${minutos}`;
 }
 
+// Usa a data informada para identificar o dia da semana do agendamento.
 function obterDiaSemana(data) {
   const dataAgendamento = new Date(`${data}T00:00:00`);
   return dataAgendamento.getDay();
 }
 
+// Compara dois periodos e informa se existe choque de horarios.
 function horariosSobrepostos(inicioA, fimA, inicioB, fimB) {
   if (inicioA < fimB && fimA > inicioB) {
     return true;
@@ -37,6 +41,7 @@ function horariosSobrepostos(inicioA, fimA, inicioB, fimB) {
   return false;
 }
 
+// Valida os campos minimos enviados para criar um agendamento.
 function validarDadosCadastro(dados) {
   if (!dados.empresaId || !dados.servicoId || !dados.nomeCliente) {
     return "Informe empresa, servico e nome do cliente.";
@@ -142,6 +147,7 @@ function obterStatusFinal(status) {
   return null;
 }
 
+// Define quais mudancas de status podem ser feitas pela empresa.
 function transicaoPermitida(statusAtual, statusNovo) {
   if (statusNovo === statusAtual) {
     return true;
@@ -158,6 +164,7 @@ function transicaoPermitida(statusAtual, statusNovo) {
   return false;
 }
 
+// Garante que o cancelamento respeite o prazo minimo configurado.
 function podeCancelar(agendamento) {
   const dataHoraAgendamento = new Date(
     `${agendamento.dataAgendamento}T${agendamento.horarioInicio}:00`
@@ -189,6 +196,7 @@ function montarDadosAgendamento(dados, horarioFim) {
 }
 
 async function listarAgendamentos(req, res) {
+  // Lista os agendamentos conforme os filtros enviados pela tela da empresa.
   try {
     const empresaId = req.query.empresaId;
 
@@ -211,6 +219,7 @@ async function listarAgendamentos(req, res) {
 }
 
 async function listarProfissionais(req, res) {
+  // Retorna somente profissionais ativos para uso nos filtros da agenda.
   try {
     const empresaId = req.query.empresaId;
 
@@ -233,6 +242,7 @@ async function listarProfissionais(req, res) {
 }
 
 async function cadastrarAgendamento(req, res) {
+  // Cria um agendamento apos validar servico, horario e conflitos.
   try {
     const erroValidacao = validarDadosCadastro(req.body);
 
@@ -290,6 +300,7 @@ async function cadastrarAgendamento(req, res) {
 }
 
 async function atualizarStatus(req, res) {
+  // Atualiza o andamento do agendamento respeitando as transicoes permitidas.
   try {
     const empresaId = req.body.empresaId;
     const statusRecebido = req.body.status;

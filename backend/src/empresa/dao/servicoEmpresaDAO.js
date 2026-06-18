@@ -1,5 +1,6 @@
 const { run, get, all } = require("../../config/database");
 
+// Define os campos retornados para servicos da empresa.
 function selecionarCamposServico() {
   return `SELECT
     id,
@@ -17,6 +18,7 @@ function selecionarCamposServico() {
 }
 
 async function listarPorEmpresa(empresaId) {
+  // Lista os servicos da empresa em ordem alfabetica.
   return all(
     `${selecionarCamposServico()}
     WHERE empresa_id = ?
@@ -26,6 +28,7 @@ async function listarPorEmpresa(empresaId) {
 }
 
 async function buscarPorId(id, empresaId) {
+  // Busca um servico especifico dentro da empresa.
   return get(
     `${selecionarCamposServico()}
     WHERE id = ? AND empresa_id = ?`,
@@ -34,6 +37,7 @@ async function buscarPorId(id, empresaId) {
 }
 
 async function criar(dados) {
+  // Cria o servico ja associado ao estabelecimento da empresa.
   const resultado = await run(
     `INSERT INTO servicos (
       empresa_id,
@@ -73,6 +77,7 @@ async function criar(dados) {
 }
 
 async function atualizar(id, dados) {
+  // Atualiza os dados principais de um servico existente.
   const resultado = await run(
     `UPDATE servicos
     SET
@@ -106,6 +111,7 @@ async function atualizar(id, dados) {
 }
 
 async function excluir(id, empresaId) {
+  // Remove o servico apenas quando ele pertence a empresa.
   const resultado = await run(
     "DELETE FROM servicos WHERE id = ? AND empresa_id = ?",
     [id, empresaId]

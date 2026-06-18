@@ -1,5 +1,6 @@
 const { run, get, all } = require("../../config/database");
 
+// Monta os campos padronizados retornados nas consultas da agenda.
 function selecionarCamposAgendamento() {
   return `SELECT
     ag.id,
@@ -26,6 +27,7 @@ function selecionarCamposAgendamento() {
 }
 
 async function listarPorEmpresa(filtros) {
+  // Aplica filtros opcionais sem sair do escopo da empresa.
   const params = [filtros.empresaId];
   const where = ["ag.empresa_id = ?"];
 
@@ -58,6 +60,7 @@ async function listarPorEmpresa(filtros) {
 }
 
 async function buscarPorId(id, empresaId) {
+  // Busca um agendamento especifico pertencente a empresa.
   return get(
     `${selecionarCamposAgendamento()}
     WHERE ag.id = ? AND ag.empresa_id = ?`,
@@ -66,6 +69,7 @@ async function buscarPorId(id, empresaId) {
 }
 
 async function listarProfissionaisAtivos(empresaId) {
+  // Retorna apenas profissionais disponiveis para novos agendamentos.
   return all(
     `SELECT
       id,
@@ -78,6 +82,7 @@ async function listarProfissionaisAtivos(empresaId) {
 }
 
 async function buscarServicoDaEmpresa(servicoId, empresaId) {
+  // Confirma se o servico selecionado pertence ao estabelecimento.
   return get(
     `SELECT
       id,
@@ -92,6 +97,7 @@ async function buscarServicoDaEmpresa(servicoId, empresaId) {
 }
 
 async function buscarHorarioFuncionamento(empresaId, diaSemana) {
+  // Busca abertura, fechamento e intervalo do dia da semana.
   return get(
     `SELECT
       abre,
@@ -106,6 +112,7 @@ async function buscarHorarioFuncionamento(empresaId, diaSemana) {
 }
 
 async function existeBloqueioNoHorario(dados) {
+  // Procura bloqueios que se cruzam com o horario solicitado.
   const params = [
     dados.empresaId,
     dados.dataAgendamento,
@@ -135,6 +142,7 @@ async function existeBloqueioNoHorario(dados) {
 }
 
 async function existeAgendamentoNoHorario(dados) {
+  // Procura agendamentos ativos que se cruzam com o periodo solicitado.
   const params = [
     dados.empresaId,
     dados.dataAgendamento,
@@ -165,6 +173,7 @@ async function existeAgendamentoNoHorario(dados) {
 }
 
 async function criar(dados) {
+  // Insere o agendamento e retorna o registro completo criado.
   const resultado = await run(
     `INSERT INTO agendamentos (
       empresa_id,
@@ -198,6 +207,7 @@ async function criar(dados) {
 }
 
 async function atualizarStatus(id, empresaId, status) {
+  // Atualiza somente o status do agendamento informado.
   await run(
     `UPDATE agendamentos
     SET status = ?, atualizado_em = CURRENT_TIMESTAMP

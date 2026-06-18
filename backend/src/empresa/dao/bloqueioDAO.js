@@ -1,5 +1,6 @@
 const { run, get, all } = require("../../config/database");
 
+// Centraliza os campos retornados para os bloqueios de horarios.
 function selecionarCamposBloqueio() {
   return `SELECT
     bh.id,
@@ -16,6 +17,7 @@ function selecionarCamposBloqueio() {
 }
 
 async function listarPorEmpresa(empresaId) {
+  // Lista bloqueios em ordem de data e horario.
   return all(
     `${selecionarCamposBloqueio()}
     WHERE bh.empresa_id = ?
@@ -25,6 +27,7 @@ async function listarPorEmpresa(empresaId) {
 }
 
 async function buscarPorId(id, empresaId) {
+  // Busca um bloqueio especifico da empresa.
   return get(
     `${selecionarCamposBloqueio()}
     WHERE bh.id = ? AND bh.empresa_id = ?`,
@@ -33,6 +36,7 @@ async function buscarPorId(id, empresaId) {
 }
 
 async function criar(dados) {
+  // Registra o periodo bloqueado para o profissional.
   const resultado = await run(
     `INSERT INTO bloqueios_horarios (
       empresa_id,
@@ -58,6 +62,7 @@ async function criar(dados) {
 }
 
 async function buscarProfissionalDaEmpresa(profissionalId, empresaId) {
+  // Confirma se o profissional esta ativo e pertence a empresa.
   return get(
     `SELECT id, nome
     FROM profissionais
@@ -69,6 +74,7 @@ async function buscarProfissionalDaEmpresa(profissionalId, empresaId) {
 }
 
 async function existeSobreposicao(dados) {
+  // Verifica se o novo bloqueio cruza com outro ja cadastrado.
   return get(
     `SELECT id
     FROM bloqueios_horarios
@@ -89,6 +95,7 @@ async function existeSobreposicao(dados) {
 }
 
 async function excluir(id, empresaId) {
+  // Remove o bloqueio apenas quando ele pertence a empresa.
   const resultado = await run(
     "DELETE FROM bloqueios_horarios WHERE id = ? AND empresa_id = ?",
     [id, empresaId]

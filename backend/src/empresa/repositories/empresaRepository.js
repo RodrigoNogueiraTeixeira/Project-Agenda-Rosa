@@ -21,6 +21,7 @@ async function cadastrarEmpresa(dados) {
 }
 
 async function buscarPerfil(empresaId) {
+  // Busca os dados do perfil ja no formato usado pelo frontend.
   return empresaDAO.buscarPerfil(empresaId);
 }
 

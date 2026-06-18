@@ -1,6 +1,7 @@
 const { get } = require("../../config/database");
 
 async function contarAgendamentosHoje(empresaId, dataHoje) {
+  // Conta os atendimentos ainda considerados ativos para o dia.
   const resultado = await get(
     `SELECT COUNT(*) AS total
     FROM agendamentos
@@ -14,6 +15,7 @@ async function contarAgendamentosHoje(empresaId, dataHoje) {
 }
 
 async function buscarProximoAtendimento(empresaId, dataHoje, horaAtual) {
+  // Busca o proximo horario do dia a partir da hora atual.
   return get(
     `SELECT
       ag.horario_inicio AS horarioInicio,
@@ -34,6 +36,7 @@ async function buscarProximoAtendimento(empresaId, dataHoje, horaAtual) {
 }
 
 async function contarBloqueiosHoje(empresaId, dataHoje) {
+  // Conta quantos bloqueios existem na data de referencia.
   const resultado = await get(
     `SELECT COUNT(*) AS total
     FROM bloqueios_horarios
@@ -46,6 +49,7 @@ async function contarBloqueiosHoje(empresaId, dataHoje) {
 }
 
 async function buscarResumo(filtros) {
+  // Reune os indicadores apresentados na home da empresa.
   const totalAgendamentosHoje = await contarAgendamentosHoje(
     filtros.empresaId,
     filtros.dataHoje

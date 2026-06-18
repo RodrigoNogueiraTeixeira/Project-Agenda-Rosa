@@ -42,6 +42,7 @@ function converterDuracaoParaMinutos(duracao) {
 }
 
 function validarServico(dados) {
+  // Confere se o servico possui dados suficientes para cadastro ou edicao.
   if (!dados.empresaId) {
     return "Empresa nao identificada para cadastrar o servico.";
   }
@@ -83,6 +84,7 @@ function montarDadosServico(dados) {
 }
 
 async function listarServicos(req, res) {
+  // Lista todos os servicos cadastrados pela empresa.
   try {
     const empresaId = req.query.empresaId;
 
@@ -103,6 +105,7 @@ async function listarServicos(req, res) {
 }
 
 async function cadastrarServico(req, res) {
+  // Valida, normaliza e cadastra um novo servico.
   try {
     const erroValidacao = validarServico(req.body);
 
@@ -128,6 +131,7 @@ async function cadastrarServico(req, res) {
 }
 
 async function atualizarServico(req, res) {
+  // Atualiza um servico mantendo a empresa como limite da operacao.
   try {
     const erroValidacao = validarServico(req.body);
 
@@ -162,6 +166,7 @@ async function atualizarServico(req, res) {
 }
 
 async function excluirServico(req, res) {
+  // Remove um servico quando ele pertence a empresa indicada.
   try {
     const empresaId = req.query.empresaId;
 

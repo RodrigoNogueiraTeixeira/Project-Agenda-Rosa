@@ -6,6 +6,7 @@ const botaoSalvarHorarios = document.querySelector(
   "[data-salvar-horarios]"
 );
 
+// Recupera a empresa logada antes de consultar os horarios.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -17,6 +18,7 @@ function obterEmpresaId() {
   return empresaId;
 }
 
+// Facilita a busca de campos dentro de cada linha da tabela.
 function obterCampo(linha, seletor) {
   return linha.querySelector(seletor);
 }
@@ -52,6 +54,7 @@ function montarHorarioDaLinha(linha) {
 }
 
 function montarDadosHorarios() {
+  // Agrupa os sete dias antes de enviar para o backend.
   const horarios = [];
 
   for (const linha of linhasHorarios) {
@@ -224,6 +227,7 @@ for (const linha of linhasHorarios) {
 }
 
 if (botaoSalvarHorarios) {
+  // Salva as alteracoes feitas na tabela de horarios.
   botaoSalvarHorarios.addEventListener("click", salvarHorarios);
 }
 

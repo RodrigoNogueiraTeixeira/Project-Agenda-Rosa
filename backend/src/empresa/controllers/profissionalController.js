@@ -36,6 +36,7 @@ function validarProfissional(dados) {
 }
 
 async function listarProfissionais(req, res) {
+  // Lista profissionais da empresa, podendo filtrar apenas os ativos.
   try {
     const empresaId = req.query.empresaId;
     const somenteAtivos = req.query.somenteAtivos === "true";
@@ -64,6 +65,7 @@ async function listarProfissionais(req, res) {
 }
 
 async function cadastrarProfissional(req, res) {
+  // Cadastra um profissional e seus servicos vinculados.
   try {
     const erroValidacao = validarProfissional(req.body);
 
@@ -94,6 +96,7 @@ async function cadastrarProfissional(req, res) {
 }
 
 async function atualizarProfissional(req, res) {
+  // Atualiza os dados do profissional e refaz seus vinculos de servicos.
   try {
     const erroValidacao = validarProfissional(req.body);
 
@@ -133,6 +136,7 @@ async function atualizarProfissional(req, res) {
 }
 
 async function excluirProfissional(req, res) {
+  // Exclui o profissional apenas dentro da empresa informada.
   try {
     const empresaId = req.query.empresaId;
 

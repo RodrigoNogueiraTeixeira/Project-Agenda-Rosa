@@ -6,14 +6,17 @@ async function listarPorEmpresa(filtros) {
 }
 
 async function criar(dados) {
+  // Cria o profissional junto com seus servicos atendidos.
   return profissionalDAO.criar(dados);
 }
 
 async function atualizar(id, dados) {
+  // Atualiza dados cadastrais e vinculos de servicos.
   return profissionalDAO.atualizar(id, dados);
 }
 
 async function excluir(id, empresaId) {
+  // Exclui o profissional respeitando o limite da empresa.
   return profissionalDAO.excluir(id, empresaId);
 }
 

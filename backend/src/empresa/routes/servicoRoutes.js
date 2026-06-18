@@ -3,6 +3,7 @@ const servicoController = require("../controllers/servicoController");
 
 const router = express.Router();
 
+// Rotas de manutencao dos servicos oferecidos pela empresa.
 router.get("/", servicoController.listarServicos);
 router.post("/", servicoController.cadastrarServico);
 router.put("/:id", servicoController.atualizarServico);

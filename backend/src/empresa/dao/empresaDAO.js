@@ -54,6 +54,7 @@ async function criar(dados) {
 }
 
 async function buscarPerfil(empresaId) {
+  // Junta dados da empresa com o estabelecimento exibido no perfil.
   return get(
     `SELECT
       e.id AS "empresaId",
@@ -78,6 +79,7 @@ async function buscarPerfil(empresaId) {
 }
 
 async function atualizarPerfil(dados) {
+  // Atualiza empresa, estabelecimento, servicos e tipo em uma transacao.
   return transaction(async (tx) => {
     const empresa = await tx.get(
       "SELECT id FROM empresas WHERE id = ?",
@@ -134,6 +136,7 @@ async function atualizarPerfil(dados) {
       .filter(Boolean)
       .join(", ");
 
+    // Mantem o estabelecimento sincronizado com os dados atuais da empresa.
     const resultadoEstabelecimento = await tx.run(
       `INSERT INTO estabelecimentos (
         empresa_id,
@@ -166,6 +169,7 @@ async function atualizarPerfil(dados) {
 
     const estabelecimentoId = resultadoEstabelecimento.lastID;
 
+    // Atualiza os relacionamentos dependentes do estabelecimento.
     await tx.run(
       "UPDATE servicos SET estabelecimento_id = ? WHERE empresa_id = ?",
       [estabelecimentoId, dados.empresaId]

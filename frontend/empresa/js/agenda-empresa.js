@@ -9,6 +9,7 @@ const detalhesConteudo = document.getElementById(
   "detalhes-agendamento"
 );
 
+// Recupera a empresa logada antes de consultar a agenda.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -20,6 +21,7 @@ function obterEmpresaId() {
   return empresaId;
 }
 
+// Busca o valor de um campo e evita erro quando o elemento nao existe.
 function obterValor(id) {
   const campo = document.getElementById(id);
 
@@ -279,6 +281,7 @@ async function carregarAgendamentos() {
 }
 
 function obterMensagemDeConfirmacao(status) {
+  // Define o texto exibido antes de mudar o status.
   if (status === "confirmado") {
     return "Deseja confirmar este agendamento?";
   }
@@ -335,6 +338,7 @@ async function atualizarStatusAgendamento(id, status) {
 }
 
 if (formFiltrosAgenda) {
+  // Recarrega a agenda usando os filtros informados.
   formFiltrosAgenda.addEventListener("submit", function (event) {
     event.preventDefault();
     carregarAgendamentos();

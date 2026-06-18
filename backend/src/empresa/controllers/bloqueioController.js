@@ -1,5 +1,6 @@
 const bloqueioRepository = require("../repositories/bloqueioRepository");
 
+// Confere se o horario esta no formato HH:MM.
 function horaValida(hora) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
 }
@@ -26,6 +27,7 @@ function validarDataBloqueio(dataInformada) {
   return null;
 }
 
+// Valida os campos obrigatorios e a ordem dos horarios do bloqueio.
 function validarBloqueio(dados) {
   if (!dados.empresaId) {
     return "Empresa nao identificada para cadastrar o bloqueio.";
@@ -70,6 +72,7 @@ function montarDadosBloqueio(dados) {
 }
 
 async function listarBloqueios(req, res) {
+  // Busca todos os bloqueios cadastrados para a empresa informada.
   try {
     const empresaId = req.query.empresaId;
 
@@ -90,6 +93,7 @@ async function listarBloqueios(req, res) {
 }
 
 async function cadastrarBloqueio(req, res) {
+  // Cadastra um periodo indisponivel para um profissional.
   try {
     const erroValidacao = validarBloqueio(req.body);
 
@@ -124,6 +128,7 @@ async function cadastrarBloqueio(req, res) {
 }
 
 async function excluirBloqueio(req, res) {
+  // Remove o bloqueio somente quando ele pertence a empresa informada.
   try {
     const empresaId = req.query.empresaId;
 

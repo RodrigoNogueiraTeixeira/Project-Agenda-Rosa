@@ -1,5 +1,6 @@
 const empresaRepository = require("../repositories/empresaRepository");
 
+// Valida as informacoes iniciais usadas no cadastro da empresa.
 function validarCadastroEmpresa(dados) {
   // Confere os campos obrigatorios do cadastro.
   if (
@@ -28,6 +29,7 @@ function validarCadastroEmpresa(dados) {
   return null;
 }
 
+// Valida os dados exibidos e editados no perfil do estabelecimento.
 function validarPerfilEmpresa(dados) {
   // Confere os dados obrigatorios do perfil.
   if (

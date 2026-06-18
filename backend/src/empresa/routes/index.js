@@ -10,6 +10,7 @@ const homeRoutes = require("./homeEmpresaRoutes");
 
 const router = express.Router();
 
+// Agrupa os endpoints da area da empresa por funcionalidade.
 router.use("/cadastro", empresaRoutes);
 router.get("/perfil", empresaController.buscarPerfil);
 router.put("/perfil", empresaController.atualizarPerfil);

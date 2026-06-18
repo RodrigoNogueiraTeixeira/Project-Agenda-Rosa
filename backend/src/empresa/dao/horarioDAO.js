@@ -1,5 +1,6 @@
 const { run, get, all, transaction } = require("../../config/database");
 
+// Define os campos retornados para horarios de funcionamento.
 function selecionarCamposHorario() {
   return `SELECT
     id,
@@ -14,6 +15,7 @@ function selecionarCamposHorario() {
 }
 
 async function listarPorEmpresa(empresaId) {
+  // Lista os dias da semana na ordem correta.
   return all(
     `${selecionarCamposHorario()}
     WHERE empresa_id = ?
@@ -23,6 +25,7 @@ async function listarPorEmpresa(empresaId) {
 }
 
 async function salvarTodos(empresaId, horarios) {
+  // Salva ou atualiza os sete dias dentro de uma mesma transacao.
   return transaction(async (tx) => {
     for (const horario of horarios) {
       await tx.run(

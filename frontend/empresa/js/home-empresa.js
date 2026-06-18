@@ -10,6 +10,7 @@ const indicadorProximoAtendimento = document.getElementById(
 const indicadorBloqueiosHoje = document.getElementById("bloqueios-hoje");
 const botaoSair = document.getElementById("btn-sair");
 
+// Le a empresa salva no login.
 function obterEmpresaId() {
   return localStorage.getItem("empresaId");
 }
@@ -26,6 +27,7 @@ function sairDaConta(event) {
 }
 
 function formatarContador(valor) {
+  // Mantem os indicadores com dois digitos.
   return String(valor || 0).padStart(2, "0");
 }
 
@@ -37,6 +39,7 @@ function exibirResumoVazio() {
 }
 
 function exibirResumo(resumo) {
+  // Atualiza os tres cards de indicadores da home.
   indicadorAgendamentosHoje.textContent = formatarContador(
     resumo.totalAgendamentosHoje
   );
@@ -84,6 +87,7 @@ async function carregarResumoHome() {
 }
 
 if (botaoSair) {
+  // Remove a sessao local ao sair.
   botaoSair.addEventListener("click", sairDaConta);
 }
 

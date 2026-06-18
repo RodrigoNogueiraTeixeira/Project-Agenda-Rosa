@@ -9,6 +9,7 @@ function horaValida(hora) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora));
 }
 
+// Aceita valores numericos ou booleanos para indicar abertura.
 function abreValido(abre) {
   if (abre === 0 || abre === 1) {
     return true;
@@ -112,6 +113,7 @@ function diasDaSemanaValidos(horarios) {
 }
 
 function validarHorarios(dados) {
+  // Valida o pacote completo de horarios antes de salvar.
   if (!dados.empresaId) {
     return "Empresa nao identificada para salvar os horarios.";
   }
@@ -136,6 +138,7 @@ function validarHorarios(dados) {
 }
 
 async function listarHorarios(req, res) {
+  // Carrega os horarios de funcionamento cadastrados para a empresa.
   try {
     const empresaId = req.query.empresaId;
 
@@ -156,6 +159,7 @@ async function listarHorarios(req, res) {
 }
 
 async function salvarHorarios(req, res) {
+  // Salva os sete dias de funcionamento em uma unica chamada.
   try {
     const erroValidacao = validarHorarios(req.body);
 

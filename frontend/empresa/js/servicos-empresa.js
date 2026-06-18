@@ -14,6 +14,7 @@ const campoDuracao = document.getElementById("duracao-servico");
 // Guarda o servico selecionado para edicao.
 let servicoEmEdicaoId = null;
 
+// Recupera a empresa logada antes de consultar servicos.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -25,6 +26,7 @@ function obterEmpresaId() {
   return empresaId;
 }
 
+// Busca o valor digitado em um campo da tela.
 function obterValor(id) {
   const campo = document.getElementById(id);
 
@@ -120,6 +122,7 @@ function limparCampoDuracao() {
 }
 
 function formatarCampoDuracao() {
+  // Exibe a duracao com a unidade usada no formulario.
   const minutos = campoDuracao.value.replace(/\D/g, "");
 
   if (minutos) {
@@ -130,6 +133,7 @@ function formatarCampoDuracao() {
 }
 
 function montarDadosServico() {
+  // Monta os dados enviados para cadastro ou edicao.
   return {
     empresaId: obterEmpresaId(),
     nome: obterValor("nome-servico"),
@@ -155,6 +159,7 @@ function validarFormularioServico(dados) {
 }
 
 function limparFormulario() {
+  // Retorna o formulario para o modo de novo cadastro.
   formServico.reset();
   servicoEmEdicaoId = null;
   botaoSalvarServico.textContent = "Cadastrar serviço";
@@ -205,6 +210,7 @@ function preencherFormularioParaEdicao(servico) {
 }
 
 function obterTextoStatus(status) {
+  // Traduz o status salvo para o texto da tabela.
   if (status === "ativo") {
     return "Ativo";
   }
@@ -302,6 +308,7 @@ function obterDadosDaRequisicao() {
 }
 
 async function salvarServico(event) {
+  // Salva o servico e recarrega a listagem.
   event.preventDefault();
 
   const dados = montarDadosServico();
@@ -384,14 +391,17 @@ async function excluirServico(id) {
 }
 
 if (formServico) {
+  // Intercepta o envio do formulario para usar a API.
   formServico.addEventListener("submit", salvarServico);
 }
 
 if (campoPreco) {
+  // Aplica a mascara de moeda durante a digitacao.
   campoPreco.addEventListener("input", formatarCampoPreco);
 }
 
 if (campoDuracao) {
+  // Mantem a duracao em minutos mesmo enquanto o usuario edita.
   campoDuracao.addEventListener("focus", limparCampoDuracao);
   campoDuracao.addEventListener("input", limparCampoDuracao);
   campoDuracao.addEventListener("blur", formatarCampoDuracao);

@@ -11,6 +11,7 @@ const selectProfissional = document.getElementById(
   "bloqueio-profissional"
 );
 
+// Recupera a empresa logada antes de gerenciar bloqueios.
 function obterEmpresaId() {
   const empresaId = localStorage.getItem("empresaId");
 
@@ -22,6 +23,7 @@ function obterEmpresaId() {
   return empresaId;
 }
 
+// Retorna o valor do campo informado, ja sem espacos extras.
 function obterValor(id) {
   const campo = document.getElementById(id);
 
@@ -32,6 +34,7 @@ function obterValor(id) {
   return campo.value.trim();
 }
 
+// Guarda o nome exibido no select para facilitar a listagem.
 function obterNomeProfissionalSelecionado() {
   if (!selectProfissional) {
     return "";
@@ -90,6 +93,7 @@ async function carregarProfissionais() {
 }
 
 function montarDadosBloqueio() {
+  // Reune os dados do formulario no formato esperado pela API.
   return {
     empresaId: obterEmpresaId(),
     profissionalId: obterValor("bloqueio-profissional"),
@@ -123,6 +127,7 @@ function validarFormularioBloqueio(dados) {
 }
 
 function formatarData(data) {
+  // Converte a data do banco para o formato exibido na tabela.
   const partes = String(data || "").split("-");
 
   if (partes.length !== 3) {
@@ -133,6 +138,7 @@ function formatarData(data) {
 }
 
 function formatarHorario(horario) {
+  // Mantem apenas hora e minuto no texto exibido.
   const valor = String(horario || "");
 
   if (!valor) {
