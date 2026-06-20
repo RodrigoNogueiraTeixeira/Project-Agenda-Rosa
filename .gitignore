@@ -5,3 +5,6 @@ backend/data/db.json
 
 ### VS Code ###
 .vscode/
+
+# Scripts locais
+backend/scripts/seed_20_lojas.js
