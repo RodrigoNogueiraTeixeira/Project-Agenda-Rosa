@@ -14,7 +14,7 @@
 const { Router } = require("express");
 // Importa o "Guarda de Trânsito" (Controller) que sabe o que fazer com cada pedido
 const pagamentosController = require("../controllers/pagamentosController");
-const { verificarToken } = require("../../auth/authMiddleware");
+const { verificarToken } = require("../../middlewares/authMiddleware");
 
 // Inicializa o roteador do Express que usaremos para definir as URLs (endpoints) do fluxo de pagamentos.
 const router = Router();

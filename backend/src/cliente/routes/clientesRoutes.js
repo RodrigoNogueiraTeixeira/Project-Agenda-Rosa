@@ -8,7 +8,7 @@ const { Router } = require("express");
 
 // Importa o controlador correspondente que contém as funções de lógica que devem ser disparadas para cada endpoint.
 const clientesController = require("../controllers/clientesController");
-const { verificarToken } = require("../../auth/authMiddleware");
+const { verificarToken } = require("../../middlewares/authMiddleware");
 
 // Instancia o roteador do Express.
 const router = Router();

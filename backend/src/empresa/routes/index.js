@@ -7,7 +7,7 @@ const horarioRoutes = require("./horarioRoutes");
 const bloqueioRoutes = require("./bloqueioRoutes");
 const agendamentoRoutes = require("./agendamentoRoutes");
 const homeRoutes = require("./homeEmpresaRoutes");
-const { verificarToken } = require("../../auth/authMiddleware");
+const { verificarToken } = require("../../middlewares/authMiddleware");
 
 const router = express.Router();
 

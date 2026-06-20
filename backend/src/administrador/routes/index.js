@@ -3,7 +3,7 @@ const dashboardController = require("../controllers/dashboardController");
 const empresaController = require("../controllers/empresaController");
 const relatorioController = require("../controllers/relatorioController");
 const categoriaController = require("../controllers/categoriaController");
-const { verificarToken } = require("../../auth/authMiddleware");
+const { verificarToken } = require("../../middlewares/authMiddleware");
 
 const router = Router();
 
