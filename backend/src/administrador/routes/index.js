@@ -7,26 +7,23 @@ const { verificarToken } = require("../../middlewares/authMiddleware");
 
 const router = Router();
 
-// Protege TODAS as rotas administrativas, garantindo que o token seja de um administrador
-router.use(verificarToken("administrador"));
-
 // Dashboard
-router.get("/dashboard/stats", dashboardController.getDashboard);
-router.post("/dashboard/apply-period", dashboardController.applyPeriod);
+router.get("/dashboard/stats", verificarToken("administrador"), dashboardController.getDashboard);
+router.post("/dashboard/apply-period", verificarToken("administrador"), dashboardController.applyPeriod);
 
 // Empresas
-router.get("/empresas/pendentes", empresaController.getEmpresasPendentes);
-router.get("/empresas/:id", empresaController.getEmpresaDetalhes);
-router.post("/empresas/:id/aprovar", empresaController.approveEmpresa);
-router.post("/empresas/:id/reprovar", empresaController.rejectEmpresa);
+router.get("/empresas/pendentes", verificarToken("administrador"), empresaController.getEmpresasPendentes);
+router.get("/empresas/:id", verificarToken("administrador"), empresaController.getEmpresaDetalhes);
+router.post("/empresas/:id/aprovar", verificarToken("administrador"), empresaController.approveEmpresa);
+router.post("/empresas/:id/reprovar", verificarToken("administrador"), empresaController.rejectEmpresa);
 
 // Relatorios
-router.get("/relatorios", relatorioController.getRelatorio);
+router.get("/relatorios", verificarToken("administrador"), relatorioController.getRelatorio);
 
-// Categorias
+// Categorias (Apenas Leitura é Pública para os clientes usarem nos filtros)
 router.get("/categorias", categoriaController.getCategorias);
-router.post("/categorias", categoriaController.criarCategoria);
-router.put("/categorias/:id", categoriaController.editarCategoria);
-router.delete("/categorias/:id", categoriaController.excluirCategoria);
+router.post("/categorias", verificarToken("administrador"), categoriaController.criarCategoria);
+router.put("/categorias/:id", verificarToken("administrador"), categoriaController.editarCategoria);
+router.delete("/categorias/:id", verificarToken("administrador"), categoriaController.excluirCategoria);
 
 module.exports = router;
