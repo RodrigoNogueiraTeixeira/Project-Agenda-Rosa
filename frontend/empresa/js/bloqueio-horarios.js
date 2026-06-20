@@ -1,3 +1,30 @@
+
+// Interceptador de Fetch para injetar Token JWT
+if (!window.fetchIntercepted) {
+    const originalFetch = window.fetch;
+    window.fetch = async function () {
+        let [resource, config] = arguments;
+        if(!config) config = {};
+        
+        // Trata o caso em que headers é um Headers object nativo
+        if (config.headers instanceof Headers) {
+            const token = localStorage.getItem("token");
+            if (token) {
+                config.headers.append("Authorization", "Bearer " + token);
+            }
+        } else {
+            if(!config.headers) config.headers = {};
+            const token = localStorage.getItem("token");
+            if(token) {
+                config.headers["Authorization"] = "Bearer " + token;
+            }
+        }
+        
+        return originalFetch(resource, config);
+    };
+    window.fetchIntercepted = true;
+}
+
 const API_BLOQUEIOS_URL = "/api/empresa/bloqueios-horarios";
 const API_PROFISSIONAIS_URL = "/api/empresa/profissionais";
 

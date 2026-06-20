@@ -74,13 +74,7 @@ function montarDadosBloqueio(dados) {
 async function listarBloqueios(req, res) {
   // Busca todos os bloqueios cadastrados para a empresa informada.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const bloqueios = await bloqueioRepository.listarPorEmpresa(empresaId);
     return res.json(bloqueios);
@@ -95,6 +89,9 @@ async function listarBloqueios(req, res) {
 async function cadastrarBloqueio(req, res) {
   // Cadastra um periodo indisponivel para um profissional.
   try {
+    // IDOR fix
+    req.body.empresaId = req.user.id;
+
     const erroValidacao = validarBloqueio(req.body);
 
     if (erroValidacao) {
@@ -130,13 +127,7 @@ async function cadastrarBloqueio(req, res) {
 async function excluirBloqueio(req, res) {
   // Remove o bloqueio somente quando ele pertence a empresa informada.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const removido = await bloqueioRepository.excluir(
       req.params.id,

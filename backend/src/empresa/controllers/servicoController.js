@@ -86,13 +86,7 @@ function montarDadosServico(dados) {
 async function listarServicos(req, res) {
   // Lista todos os servicos cadastrados pela empresa.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const servicos = await servicoRepository.listarPorEmpresa(empresaId);
     return res.json(servicos);
@@ -107,6 +101,7 @@ async function listarServicos(req, res) {
 async function cadastrarServico(req, res) {
   // Valida, normaliza e cadastra um novo servico.
   try {
+    req.body.empresaId = req.user.id;
     const erroValidacao = validarServico(req.body);
 
     if (erroValidacao) {
@@ -133,6 +128,7 @@ async function cadastrarServico(req, res) {
 async function atualizarServico(req, res) {
   // Atualiza um servico mantendo a empresa como limite da operacao.
   try {
+    req.body.empresaId = req.user.id;
     const erroValidacao = validarServico(req.body);
 
     if (erroValidacao) {
@@ -168,13 +164,7 @@ async function atualizarServico(req, res) {
 async function excluirServico(req, res) {
   // Remove um servico quando ele pertence a empresa indicada.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const removido = await servicoRepository.excluir(
       req.params.id,

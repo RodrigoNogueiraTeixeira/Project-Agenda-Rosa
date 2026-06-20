@@ -38,14 +38,8 @@ function validarProfissional(dados) {
 async function listarProfissionais(req, res) {
   // Lista profissionais da empresa, podendo filtrar apenas os ativos.
   try {
-    const empresaId = req.query.empresaId;
+    const empresaId = req.user.id;
     const somenteAtivos = req.query.somenteAtivos === "true";
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
 
     const filtros = {
       empresaId: empresaId,
@@ -67,6 +61,7 @@ async function listarProfissionais(req, res) {
 async function cadastrarProfissional(req, res) {
   // Cadastra um profissional e seus servicos vinculados.
   try {
+    req.body.empresaId = req.user.id;
     const erroValidacao = validarProfissional(req.body);
 
     if (erroValidacao) {
@@ -98,6 +93,7 @@ async function cadastrarProfissional(req, res) {
 async function atualizarProfissional(req, res) {
   // Atualiza os dados do profissional e refaz seus vinculos de servicos.
   try {
+    req.body.empresaId = req.user.id;
     const erroValidacao = validarProfissional(req.body);
 
     if (erroValidacao) {
@@ -138,13 +134,7 @@ async function atualizarProfissional(req, res) {
 async function excluirProfissional(req, res) {
   // Exclui o profissional apenas dentro da empresa informada.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const removido = await profissionalRepository.excluir(
       req.params.id,

@@ -58,7 +58,10 @@ function erroParaStatus(mensagem) {
 // POST /api/agendamentos
 async function criar(req, res) {
   try {
-    const novo = await agendamentosRepository.criarAgendamento(req.body || {});
+    const payload = req.body || {};
+    // Garante que o clienteId é o do token logado (Prevenção de IDOR)
+    payload.clienteId = req.user.id;
+    const novo = await agendamentosRepository.criarAgendamento(payload);
     res.status(201).json({ mensagem: "Agendamento criado com sucesso.", agendamento: novo });
   } catch (error) {
     const status = erroParaStatus(error.message || "");
@@ -69,7 +72,8 @@ async function criar(req, res) {
 // GET /api/clientes/:id/agendamentos
 async function listarPorCliente(req, res) {
   try {
-    const lista = await agendamentosRepository.listarAgendamentosDoCliente(req.params.id);
+    // Busca agendamentos do cliente logado (IDOR fix)
+    const lista = await agendamentosRepository.listarAgendamentosDoCliente(req.user.id);
     res.status(200).json({ agendamentos: lista });
   } catch (error) {
     const status = erroParaStatus(error.message || "");
@@ -80,7 +84,8 @@ async function listarPorCliente(req, res) {
 // PATCH /api/agendamentos/:id/cancelar
 async function cancelar(req, res) {
   try {
-    const resultado = await agendamentosRepository.cancelarAgendamento(req.params.id);
+    // Passa o ID do cliente logado para validar posse (IDOR fix)
+    const resultado = await agendamentosRepository.cancelarAgendamento(req.params.id, req.user.id);
     res.status(200).json({ mensagem: "Agendamento cancelado com sucesso.", agendamento: resultado });
   } catch (error) {
     const status = erroParaStatus(error.message || "");

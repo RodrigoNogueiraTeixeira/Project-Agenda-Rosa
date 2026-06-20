@@ -107,11 +107,7 @@ async function cadastrarEmpresa(req, res) {
 async function buscarPerfil(req, res) {
   // Busca os dados usados na tela de perfil.
   try {
-    if (!req.query.empresaId) {
-      return res.status(400).json({ message: "Informe o ID da empresa." });
-    }
-
-    const perfil = await empresaRepository.buscarPerfil(req.query.empresaId);
+    const perfil = await empresaRepository.buscarPerfil(req.user.id);
 
     if (!perfil) {
       return res.status(404).json({ message: "Empresa nao encontrada." });
@@ -127,6 +123,9 @@ async function buscarPerfil(req, res) {
 async function atualizarPerfil(req, res) {
   // Valida e atualiza os dados do estabelecimento.
   try {
+    // IDOR fix
+    req.body.empresaId = req.user.id;
+
     const erroValidacao = validarPerfilEmpresa(req.body);
 
     if (erroValidacao) {

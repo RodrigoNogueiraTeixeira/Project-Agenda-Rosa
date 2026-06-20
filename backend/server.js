@@ -49,9 +49,9 @@ app.use(express.static(FRONTEND_PATH));
 // Registra todas as rotas da API sob o prefixo '/api' (Ex: /api/agendamentos).
 app.use("/api", apiRoutes);
 
-// Rota inicial: quando alguém entra no link principal (/), o backend redireciona direto para a tela de login.
+// Rota inicial: quando alguém entra no link principal (/), o backend redireciona direto para a home do cliente.
 app.get("/", (req, res) => {
-  res.redirect("/login/html/login.html");
+  res.redirect("/cliente/html/homeDoCliente.html");
 });
 
 // Middleware fallback para tratar qualquer link inválido ou rota não encontrada (Erro 404).
@@ -63,8 +63,8 @@ app.use((req, res) => {
     return;
   }
 
-  // Se for uma página normal que não existe, apenas redireciona de volta para o Login.
-  res.redirect("/login/html/login.html");
+  // Se for uma página normal que não existe, apenas redireciona de volta para a Home.
+  res.redirect("/cliente/html/homeDoCliente.html");
 });
 
 // Função assíncrona responsável por inicializar todo o ecossistema do servidor de forma segura.

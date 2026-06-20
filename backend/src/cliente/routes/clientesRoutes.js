@@ -8,17 +8,18 @@ const { Router } = require("express");
 
 // Importa o controlador correspondente que contém as funções de lógica que devem ser disparadas para cada endpoint.
 const clientesController = require("../controllers/clientesController");
+const { verificarToken } = require("../../auth/authMiddleware");
 
 // Instancia o roteador do Express.
 const router = Router();
 
 // ROTA 1: Retorna os dados de perfil do cliente.
 // Método GET: Utilizado para buscar informações do banco sem fazer alterações.
-router.get("/clientes/:id/perfil", clientesController.buscarPerfil);
+router.get("/clientes/:id/perfil", verificarToken("cliente"), clientesController.buscarPerfil);
 
 // ROTA 2: Atualiza os dados de perfil do cliente.
 // Método PUT: Utilizado para atualizar/substituir informações existentes do cadastro.
-router.put("/clientes/:id/perfil", clientesController.atualizarPerfil);
+router.put("/clientes/:id/perfil", verificarToken("cliente"), clientesController.atualizarPerfil);
 
 // ROTA 3: Cadastra um novo cliente no sistema.
 // Método POST: Utilizado para criar novos registros (enviar dados de formulário de cadastro).

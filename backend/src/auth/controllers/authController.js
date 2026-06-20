@@ -1,5 +1,6 @@
 // Importa o repositório de autenticação (contém as regras de acesso ao banco e verificação de senha).
 const authRepository = require("../repositories/authRepository");
+const jwt = require("jsonwebtoken");
 
 /**
  * Controller responsável por receber as requisições de login, chamar o repositório para
@@ -24,9 +25,18 @@ async function login(req, res) {
       cliente = resultado.usuario;
     }
 
-    // Retorna uma resposta de sucesso (Status HTTP 200 OK) em formato JSON contendo os dados do perfil logado.
+    // Gera o JSON Web Token (JWT) com os dados essenciais do usuário e seu perfil.
+    const secret = process.env.JWT_SECRET || "sua_chave_secreta_super_segura_aqui";
+    const token = jwt.sign(
+      { id: resultado.usuario.id, perfil: resultado.perfil },
+      secret,
+      { expiresIn: "7d" } // Token expira em 7 dias
+    );
+
+    // Retorna uma resposta de sucesso (Status HTTP 200 OK) em formato JSON contendo o token e dados.
     return res.status(200).json({
       mensagem: "Login realizado com sucesso.",
+      token: token,
       perfil: resultado.perfil,
       usuario: resultado.usuario,
       cliente: cliente, // Mantém o objeto de cliente para retrocompatibilidade.

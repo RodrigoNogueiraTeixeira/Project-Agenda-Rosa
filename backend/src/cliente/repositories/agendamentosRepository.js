@@ -630,9 +630,10 @@ async function listarAgendamentosDoCliente(clienteId) {
  * FUNÇÃO: cancelarAgendamento
  * O QUE FAZ: Cancela o agendamento e, se foi pago por Pix/Cartão, devolve o dinheiro automaticamente!
  */
-async function cancelarAgendamento(agendamentoId) {
+async function cancelarAgendamento(agendamentoId, clienteId) {
   // Força o ID virar número puro.
   const id = Number(agendamentoId);
+  const idDoCliente = Number(clienteId);
   
   // Busca o agendamento no banco.
   const agendamento = await agendamentosDAO.buscarPorId(id);
@@ -640,6 +641,11 @@ async function cancelarAgendamento(agendamentoId) {
   // Se ele não existir, não dá pra cancelar.
   if (!agendamento) {
     throw new Error("Agendamento nao encontrado.");
+  }
+
+  // Prevenção IDOR: Garante que o agendamento pertence a quem está pedindo o cancelamento.
+  if (Number(agendamento.cliente_id) !== idDoCliente) {
+    throw new Error("Agendamento nao pertence ao cliente.");
   }
 
   // Se o status já for "cancelado", bloqueia (evita clicar duas vezes e estragar o banco).

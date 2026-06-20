@@ -140,13 +140,7 @@ function validarHorarios(dados) {
 async function listarHorarios(req, res) {
   // Carrega os horarios de funcionamento cadastrados para a empresa.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const horarios = await horarioRepository.listarPorEmpresa(empresaId);
     return res.json(horarios);
@@ -161,6 +155,7 @@ async function listarHorarios(req, res) {
 async function salvarHorarios(req, res) {
   // Salva os sete dias de funcionamento em uma unica chamada.
   try {
+    req.body.empresaId = req.user.id;
     const erroValidacao = validarHorarios(req.body);
 
     if (erroValidacao) {

@@ -1,3 +1,30 @@
+
+// Interceptador de Fetch para injetar Token JWT
+if (!window.fetchIntercepted) {
+    const originalFetch = window.fetch;
+    window.fetch = async function () {
+        let [resource, config] = arguments;
+        if(!config) config = {};
+        
+        // Trata o caso em que headers é um Headers object nativo
+        if (config.headers instanceof Headers) {
+            const token = localStorage.getItem("token");
+            if (token) {
+                config.headers.append("Authorization", "Bearer " + token);
+            }
+        } else {
+            if(!config.headers) config.headers = {};
+            const token = localStorage.getItem("token");
+            if(token) {
+                config.headers["Authorization"] = "Bearer " + token;
+            }
+        }
+        
+        return originalFetch(resource, config);
+    };
+    window.fetchIntercepted = true;
+}
+
 /**
  * ==================================================================================
  * AGENDA ROSA - MÓDULO DO CLIENTE (homeCliente.js)
@@ -1103,3 +1130,30 @@ function verificarCapacitacaoProfissional(elementoQueMudou) {
   }
   return true;
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Exibe o aviso educacional apenas na primeira vez que o usuário entra na Home durante a sessão
+  if (!sessionStorage.getItem("avisoEducacionalLido")) {
+    Swal.fire({
+      title: "Bem-vindo(a) ao Agenda Rosa! 🌸",
+      html: `
+        <p style="text-align: justify; font-size: 15px; margin-bottom: 15px; line-height: 1.5;">
+          Este sistema foi desenvolvido exclusivamente para fins educacionais e acadêmicos. Embora não seja um sistema real em operação (ainda! 😉), sinta-se totalmente à vontade para navegar, conhecer os recursos e testar nossos fluxos de ponta a ponta.
+        </p>
+        <div style="background-color: #fff3f8; padding: 15px; border-radius: 8px; border-left: 5px solid #c93f7d; text-align: left;">
+          <p style="font-size: 14.5px; color: #333; margin: 0; line-height: 1.5;">
+            <b>⚠️ Aviso sobre Cadastro:</b><br>
+            De forma proposital, <b>não exigimos</b> validação ou confirmação de e-mails reais. Isso foi feito para facilitar as avaliações sem que você precise vincular sua conta pessoal do Google, Outlook, etc.<br><br>
+            Fique à vontade para criar uma conta utilizando um e-mail fictício (ex: <i>teste@example.com</i>)!
+          </p>
+        </div>
+      `,
+      icon: "info",
+      confirmButtonText: "Entendi, vamos explorar!",
+      confirmButtonColor: "#c93f7d",
+      width: '600px'
+    }).then(() => {
+      sessionStorage.setItem("avisoEducacionalLido", "true");
+    });
+  }
+});

@@ -14,6 +14,7 @@
 const { Router } = require("express");
 // Importa o "Guarda de Trânsito" (Controller) que sabe o que fazer com cada pedido
 const pagamentosController = require("../controllers/pagamentosController");
+const { verificarToken } = require("../../auth/authMiddleware");
 
 // Inicializa o roteador do Express que usaremos para definir as URLs (endpoints) do fluxo de pagamentos.
 const router = Router();
@@ -34,7 +35,7 @@ router.get("/pagamentos/mercadopago/status-config", pagamentosController.statusC
 // FLUXO: O cliente clica em "Pagar" no frontend. O frontend manda um POST para cá com os dados do agendamento (Ex: Agendamento 5, Valor R$50).
 // O controller recebe, manda criar a cobrança lá no Mercado Pago, e devolve um LINK DE CHECKOUT. 
 // O frontend pega esse link e redireciona o cliente para a tela oficial do Mercado Pago para pagar com Cartão ou Pix.
-router.post("/pagamentos/mercadopago/preference", pagamentosController.criarPreferencia);
+router.post("/pagamentos/mercadopago/preference", verificarToken("cliente"), pagamentosController.criarPreferencia);
 
 // ==========================================
 // ROTA 3: Receber Avisos do Mercado Pago se foi pago ou nao, avisa o banco de dados
@@ -51,7 +52,7 @@ router.post("/pagamentos/mercadopago/webhook", pagamentosController.webhookMerca
 // O QUE É: Uma rota do tipo GET. Aquele ":id" na URL é um parâmetro dinâmico (ex: /pagamentos/123).
 // FLUXO: Usado caso o cliente queira ver o recibo de um pagamento. O Controller vai procurar esse ID do pagamento
 // no nosso próprio banco de dados local (SQLite), para ver se ele está Pendente ou Aprovado.
-router.get("/pagamentos/:id", pagamentosController.buscarPagamento);
+router.get("/pagamentos/:id", verificarToken("cliente"), pagamentosController.buscarPagamento);
 
 // Exporta o roteador para que o arquivo principal do servidor possa plugar essas rotas e expô-las na rede.
 module.exports = router;

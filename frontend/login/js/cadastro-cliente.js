@@ -1,3 +1,30 @@
+
+// Interceptador de Fetch para injetar Token JWT
+if (!window.fetchIntercepted) {
+    const originalFetch = window.fetch;
+    window.fetch = async function () {
+        let [resource, config] = arguments;
+        if(!config) config = {};
+        
+        // Trata o caso em que headers é um Headers object nativo
+        if (config.headers instanceof Headers) {
+            const token = localStorage.getItem("token");
+            if (token) {
+                config.headers.append("Authorization", "Bearer " + token);
+            }
+        } else {
+            if(!config.headers) config.headers = {};
+            const token = localStorage.getItem("token");
+            if(token) {
+                config.headers["Authorization"] = "Bearer " + token;
+            }
+        }
+        
+        return originalFetch(resource, config);
+    };
+    window.fetchIntercepted = true;
+}
+
 // Cadastro usado por clientes e empresas.
 var form = document.querySelector("form");
 var botaoCadastrar = document.querySelector("button[type='submit']");

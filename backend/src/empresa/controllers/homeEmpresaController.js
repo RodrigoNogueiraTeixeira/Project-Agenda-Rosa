@@ -15,13 +15,7 @@ function obterHoraAtual() {
 // Busca os indicadores usados na home da empresa.
 async function buscarResumo(req, res) {
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const filtros = {
       empresaId: empresaId,

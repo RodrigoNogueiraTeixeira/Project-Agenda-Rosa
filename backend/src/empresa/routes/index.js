@@ -7,11 +7,18 @@ const horarioRoutes = require("./horarioRoutes");
 const bloqueioRoutes = require("./bloqueioRoutes");
 const agendamentoRoutes = require("./agendamentoRoutes");
 const homeRoutes = require("./homeEmpresaRoutes");
+const { verificarToken } = require("../../auth/authMiddleware");
 
 const router = express.Router();
 
 // Agrupa os endpoints da area da empresa por funcionalidade.
+
+// Rota publica de cadastro
 router.use("/cadastro", empresaRoutes);
+
+// Rotas protegidas (apenas perfil de empresa logado tem acesso)
+router.use(verificarToken("empresa"));
+
 router.get("/perfil", empresaController.buscarPerfil);
 router.put("/perfil", empresaController.atualizarPerfil);
 router.use("/profissionais", profissionalRoutes);

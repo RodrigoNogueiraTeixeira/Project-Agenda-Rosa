@@ -7,7 +7,13 @@ O **Agenda Rosa** é uma plataforma web moderna de agendamentos online desenvolv
 
 Caso prefira visualizar o sistema funcionando em produção diretamente na nuvem (sem precisar rodar na sua máquina local), o projeto está implantado no Render e pode ser acessado pelo link abaixo:
 
-👉 **[Acesse o Agenda Rosa na Web](https://project-agenda-rosa.onrender.com/cliente)**
+👉 **[Acesse o Agenda Rosa na Web](https://project-agenda-rosa.onrender.com/cliente/html/homeDoCliente.html)**
+
+> [!WARNING]
+> **Aviso sobre lentidão inicial:** O servidor está hospedado no plano gratuito do Render. Por conta disso, a máquina virtual é desligada automaticamente após **15 minutos de inatividade**. Se você for o primeiro a acessar após esse período, a aplicação **poderá levar até 50 segundos para carregar** a primeira vez enquanto a máquina é reativada. Depois disso, a velocidade voltará ao normal.
+
+> [!NOTE]
+> **Facilidade para Testes:** De forma proposital, o sistema não exige verificação ou confirmação de e-mail real no momento do cadastro. Caso queira explorar os fluxos completos do sistema sem vincular sua conta pessoal (Gmail, Outlook, etc.), sinta-se à vontade para criar uma conta utilizando um domínio fictício (ex: `nomeficticio@example.com`).
 
 ---
 
@@ -32,8 +38,8 @@ O ecossistema do Agenda Rosa foi construído com foco em simplicidade, velocidad
 
 ### **Integrações & Serviços Externos**
 * **Brevo (antigo Sendinblue)**: Serviço SMTP utilizado para envio seguro de e-mails de recuperação de senha.
-* **Mercado Pago (Opcional)**: Integração opcional para simulação e processamento de pagamentos.
-* **Open Route Service (Opcional)**: API utilizada para o cálculo de distâncias.
+* **Mercado Pago**: Integração ativa via Webhook e SDK para geração de PIX e Checkout de Cartão de Crédito. Ele gerencia o fluxo completo de "Preference" (pedido de pagamento) e notifica nosso banco de dados em tempo real quando o pagamento é aprovado, alterando o status do agendamento de forma automática.
+* **Open Route Service**: API ativamente conectada ao sistema para geolocalização e geração de coordenadas, permitindo renderizar mapas visuais e rotas precisas para que o cliente saiba exatamente onde o estabelecimento está localizado.
 
 ---
 
@@ -81,15 +87,16 @@ O backend segue o padrão arquitetural em camadas para garantir a separação de
 
 ---
 
-##  Segurança e Criptografia
+## 🔒 Segurança e Criptografia
 
-O projeto utiliza práticas avançadas de proteção de dados:
+O projeto utiliza práticas modernas e robustas para garantir a segurança da API e a integridade dos dados:
 
-* **Criptografia PBKDF2**: Senhas de clientes e empresas são transformadas em hashes criptográficos seguros com adição de `salt` único por registro, utilizando a biblioteca interna `crypto` do Node.js.
-* **Migração Dinâmica de Senhas ("On-the-fly")**:
-  * Para suportar cadastros antigos do banco de dados (que salvavam senhas em texto puro), o sistema faz uma migração automática no momento do login.
-  * Ao fazer login com sucesso usando a senha antiga, o backend gera imediatamente o hash seguro da senha e o grava no banco. Os logins subsequentes passam a usar a criptografia avançada automaticamente, sem interromper a experiência do usuário.
-* **Segurança do Administrador**: As credenciais e o acesso à área de administração são protegidos do código público. A autenticação do administrador é verificada de forma isolada por variáveis criptográficas restritas no ambiente de produção do servidor.
+* **Autenticação via JWT (JSON Web Tokens)**: A API é protegida por tokens criptograficamente assinados, garantindo que o cliente se mantenha autenticado de forma stateless sem necessidade de cookies vulneráveis.
+* **Controle de Autorização (Middlewares)**: Nenhuma rota sensível é pública. O sistema inspeciona rigorosamente se a requisição possui um JWT válido e se o perfil (Cliente, Empresa, Admin) corresponde à rota que está sendo acessada.
+* **Prevenção a IDOR (Insecure Direct Object Reference)**: O backend não confia em IDs fornecidos na URL ou no corpo da requisição para acesso a dados do usuário logado. A identificação (ID) é extraída de forma inviolável diretamente do *payload* interno do JWT, impossibilitando que um usuário forje ações em nome de outro.
+* **Prevenção a SQL Injection**: Toda a camada DAO (`Data Access Object`) interage com o banco de dados via consultas estritamente parametrizadas, impossibilitando a injeção de código malicioso.
+* **Criptografia de Senhas (PBKDF2)**: Senhas de clientes e empresas são transformadas em hashes seguros (SHA-512) com 100.000 iterações e a adição de um `salt` randômico único por registro. A comparação das senhas no login usa `timingSafeEqual` para prevenir ataques baseados em tempo.
+* **Migração Dinâmica de Senhas ("On-the-fly")**: Senhas em texto puro legadas do antigo SQLite são auto-migradas para Hash PBKDF2 no exato momento em que o usuário faz login pela primeira vez com sucesso na nova plataforma.
 
 ---
 
@@ -144,9 +151,9 @@ Configure as variáveis básicas abaixo no seu arquivo `backend/.env` para execu
 
 O desenvolvimento do Agenda Rosa foi realizado de forma colaborativa e dividida entre os membros do grupo, garantindo especialização e integração entre as entregas:
 
-* **Rodrigo Nogueira**: Responsável pela implementação completa da tela de **Login**, fluxo de recuperação de credenciais (**Esqueci minha Senha / Redefinição**) e por toda a jornada e recursos do perfil de **Cliente** (pesquisa de estabelecimentos, visualização de profissionais/serviços, agendamentos de horários e interface do usuário).
+* **Rodrigo Nogueira**: Responsável pela implementação (tanto do front-end visual quanto da API lógica no back-end) da funcionalidade estrita de **Login**. Além disso, gerenciou toda a jornada do perfil de **Cliente** (pesquisa de estabelecimentos, visualização de profissionais e agendamentos) e foi o engenheiro responsável por integrar e implementar as APIs do **Mercado Pago** (para o processamento financeiro dos pagamentos) e do **Open Route Service** (para renderizar os mapas visuais e rotas das localizações das lojas).
 * **Daniel Oliveira**: Responsável pelo desenvolvimento de toda a jornada da **Empresa** (agenda empresarial, cadastro de serviços, cadastro de profissionais, horários de funcionamento, bloqueios) e pelos fluxos de **Cadastro** inicial de novos usuários e empresas.
-* **Maycon Marques**: Responsável pelo desenvolvimento completo da área do **Administrador** (painel de controle, aprovação e reprovação de cadastros de estabelecimentos parceiros, relatórios estatísticos básicos e gerenciamento das categorias de serviços).
+* **Maycon Marques**: Responsável pelo desenvolvimento completo da área do **Administrador** (painel de controle, aprovação e reprovação de cadastros de estabelecimentos parceiros, relatórios estatísticos básicos e gerenciamento das categorias de serviços) e também pela implementação do fluxo de recuperação de credenciais (**Esqueci minha Senha / Redefinição**), integrando e utilizando a API do **Brevo** para o disparo seguro dos e-mails de recuperação.
 
 ### **Metodologia de Trabalho e Gestão do Projeto**
 Para coordenar as entregas e garantir a qualidade do sistema integrado:

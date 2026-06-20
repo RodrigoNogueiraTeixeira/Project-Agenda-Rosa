@@ -3,8 +3,12 @@ const dashboardController = require("../controllers/dashboardController");
 const empresaController = require("../controllers/empresaController");
 const relatorioController = require("../controllers/relatorioController");
 const categoriaController = require("../controllers/categoriaController");
+const { verificarToken } = require("../../auth/authMiddleware");
 
 const router = Router();
+
+// Protege TODAS as rotas administrativas, garantindo que o token seja de um administrador
+router.use(verificarToken("administrador"));
 
 // Dashboard
 router.get("/dashboard/stats", dashboardController.getDashboard);

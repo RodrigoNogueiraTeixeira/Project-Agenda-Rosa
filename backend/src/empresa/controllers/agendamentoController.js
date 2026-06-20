@@ -198,13 +198,10 @@ function montarDadosAgendamento(dados, horarioFim) {
 async function listarAgendamentos(req, res) {
   // Lista os agendamentos conforme os filtros enviados pela tela da empresa.
   try {
-    const empresaId = req.query.empresaId;
+    const empresaId = req.user.id;
 
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    // Atualiza os parametros com o ID correto (IDOR fix)
+    req.query.empresaId = empresaId;
 
     const agendamentos =
       await agendamentoRepository.listarPorEmpresa(req.query);
@@ -221,13 +218,7 @@ async function listarAgendamentos(req, res) {
 async function listarProfissionais(req, res) {
   // Retorna somente profissionais ativos para uso nos filtros da agenda.
   try {
-    const empresaId = req.query.empresaId;
-
-    if (!empresaId) {
-      return res.status(400).json({
-        message: "Informe o ID da empresa.",
-      });
-    }
+    const empresaId = req.user.id;
 
     const profissionais =
       await agendamentoRepository.listarProfissionaisAtivos(empresaId);
@@ -244,6 +235,9 @@ async function listarProfissionais(req, res) {
 async function cadastrarAgendamento(req, res) {
   // Cria um agendamento apos validar servico, horario e conflitos.
   try {
+    // IDOR fix
+    req.body.empresaId = req.user.id;
+
     const erroValidacao = validarDadosCadastro(req.body);
 
     if (erroValidacao) {
@@ -302,12 +296,12 @@ async function cadastrarAgendamento(req, res) {
 async function atualizarStatus(req, res) {
   // Atualiza o andamento do agendamento respeitando as transicoes permitidas.
   try {
-    const empresaId = req.body.empresaId;
+    const empresaId = req.user.id;
     const statusRecebido = req.body.status;
 
-    if (!empresaId || !statusRecebido) {
+    if (!statusRecebido) {
       return res.status(400).json({
-        message: "Informe empresa e status.",
+        message: "Informe o status.",
       });
     }
 
