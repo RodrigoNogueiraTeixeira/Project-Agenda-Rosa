@@ -44,6 +44,13 @@ const campoConfirmarSenha = document.getElementById("confirmarSenha");
 // Função executada ao carregar a página
 window.onload = async function onLoad() {
   if (!formPerfil) return;
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Você precisa estar logado para visualizar ou editar seu perfil.");
+    window.location.href = "../../login/html/login.html";
+    return;
+  }
   
   try {
     // 1. Busca os dados atuais do perfil do cliente no back-end

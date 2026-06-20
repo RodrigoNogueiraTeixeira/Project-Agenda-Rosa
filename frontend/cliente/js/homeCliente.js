@@ -603,6 +603,13 @@ async function confirmarAgendamento() {
   const validacaoData = validarDataAgendamentoFront(data);
   limparFeedbackAgendamento();
 
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("Você precisa estar logado para confirmar um agendamento. Vamos te levar para o login!");
+    window.location.href = "../../login/html/login.html";
+    return;
+  }
+
   if (campoData) campoData.style.borderColor = "";
   if (campoHorario) campoHorario.style.borderColor = "";
   if (selectProfissional) selectProfissional.style.borderColor = "";
