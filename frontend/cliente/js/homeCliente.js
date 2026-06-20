@@ -476,9 +476,22 @@ function configurarBotaoSair() {
     return;
   }
 
-  btnSair.onclick = function onClickSair() {
-    window.location.href = "../../login/html/login.html";
-  };
+  const token = localStorage.getItem("token");
+  if (token) {
+    btnSair.textContent = "Deslogar";
+    btnSair.onclick = function onClickSair() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("clienteId");
+      localStorage.removeItem("clienteNome");
+      localStorage.removeItem("clienteEmail");
+      window.location.href = "../../login/html/login.html";
+    };
+  } else {
+    btnSair.textContent = "Login";
+    btnSair.onclick = function onClickLogin() {
+      window.location.href = "../../login/html/login.html";
+    };
+  }
 }
 
 // Configura todos os eventos do modal.
