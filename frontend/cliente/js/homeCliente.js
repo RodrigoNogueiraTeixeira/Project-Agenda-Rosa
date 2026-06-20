@@ -1138,13 +1138,15 @@ document.addEventListener("DOMContentLoaded", () => {
       title: "Bem-vindo(a) ao Agenda Rosa! 🌸",
       html: `
         <p style="text-align: justify; font-size: 15px; margin-bottom: 15px; line-height: 1.5;">
-          Este sistema foi desenvolvido exclusivamente para fins educacionais e acadêmicos. Embora não seja um sistema real em operação (ainda! 😉), sinta-se totalmente à vontade para navegar, conhecer os recursos e testar nossos fluxos de ponta a ponta.
+          Gostaríamos de informar que este é um projeto acadêmico. O fluxo do sistema está <b>100% funcional</b>, então sinta-se à vontade para testar tudo na prática: desde a busca por estabelecimentos até a finalização de um agendamento!
+        </p>
+        <p style="text-align: justify; font-size: 15px; margin-bottom: 15px; line-height: 1.5;">
+          Apenas um lembrete importante: como se trata de um ambiente de demonstração, os salões e profissionais listados são <b>fictícios</b>. Fique à vontade para realizar agendamentos de teste, mas lembre-se de que os serviços não serão de fato realizados, ok?
         </p>
         <div style="background-color: #fff3f8; padding: 15px; border-radius: 8px; border-left: 5px solid #c93f7d; text-align: left;">
           <p style="font-size: 14.5px; color: #333; margin: 0; line-height: 1.5;">
-            <b>⚠️ Aviso sobre Cadastro:</b><br>
-            De forma proposital, <b>não exigimos</b> validação ou confirmação de e-mails reais. Isso foi feito para facilitar as avaliações sem que você precise vincular sua conta pessoal do Google, Outlook, etc.<br><br>
-            Fique à vontade para criar uma conta utilizando um e-mail fictício (ex: <i>teste@example.com</i>)!
+            <b>⚠️ Dica de Cadastro:</b><br>
+            Para facilitar a sua experiência, nós <b>não exigimos</b> a confirmação de e-mails verdadeiros. Você pode criar a sua conta utilizando um e-mail inventado (ex: <i>teste@example.com</i>) e testar o sistema sem vincular a sua conta pessoal.
           </p>
         </div>
       `,
