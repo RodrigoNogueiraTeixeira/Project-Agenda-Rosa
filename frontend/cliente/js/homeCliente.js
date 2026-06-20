@@ -477,7 +477,8 @@ function configurarBotaoSair() {
   }
 
   const token = localStorage.getItem("token");
-  if (token) {
+  // Verifica também se o token não ficou salvo como a string "null" ou "undefined" acidentalmente no passado
+  if (token && token !== "null" && token !== "undefined" && token.trim() !== "") {
     btnSair.textContent = "Deslogar";
     btnSair.onclick = function onClickSair() {
       localStorage.removeItem("token");
