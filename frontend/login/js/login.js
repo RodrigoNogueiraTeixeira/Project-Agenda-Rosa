@@ -138,6 +138,7 @@ var API_BASE_URL =
  */
 function limparDadosDeAcesso() {
   [
+    "token",
     "clienteId",
     "clienteNome",
     "clienteEmail",
@@ -258,6 +259,10 @@ async function realizarLogin() {
 
     // Salva os dados necessarios e abre a pagina de cada perfil.
     // Se o tipo de perfil retornado pelo login for 'cliente':
+    if (resultado.token) {
+      localStorage.setItem("token", resultado.token);
+    }
+
     if (resultado.perfil === "cliente") {
       // Armazena o ID do cliente convertido em String no LocalStorage do navegador.
       localStorage.setItem("clienteId", String(resultado.usuario.id));

@@ -192,15 +192,9 @@ async function realizarCadastro(event) {
       return;
     }
 
-    alert("Cadastro realizado com sucesso!");
+    alert("Cadastro realizado com sucesso! Faça login para continuar.");
 
-    if (corpo.cliente) {
-      localStorage.setItem("clienteId", String(corpo.cliente.id));
-      localStorage.setItem("clienteNome", corpo.cliente.nome || "");
-      localStorage.setItem("clienteEmail", corpo.cliente.email || "");
-    }
-
-    window.location.href = "../../cliente/html/homeDoCliente.html";
+    window.location.href = "./login.html";
   } catch (error) {
     alert("Nao foi possivel cadastrar: " + error.message);
   } finally {
